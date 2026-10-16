@@ -1,0 +1,56 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover — QA suite</title>
+  <style>
+    :root {
+      --bg: #f6f3ec; --ink: #1d1b16; --muted: #6b665a; --line: #d9d3c3;
+      --card: #fffdf7; --accent: #b4410a;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root { --bg: #17150f; --ink: #f1ede1; --muted: #a39e8f; --line: #36322a; --card: #1f1c14; --accent: #f08a4b; }
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font: 16px/1.6 system-ui, "Noto Sans Thai", sans-serif; }
+    main { max-width: 760px; margin: 0 auto; padding: 56px 16px 64px; }
+    h1 { font: 700 clamp(2rem, 6vw, 3.25rem)/1.05 Georgia, "Noto Serif Thai", serif; margin: 0 0 12px; letter-spacing: -0.02em; }
+    .lead { color: var(--muted); max-width: 52ch; margin: 0 0 40px; }
+    h2 { font-size: .8rem; text-transform: uppercase; letter-spacing: .12em; color: var(--accent); margin: 40px 0 12px; }
+    ul { list-style: none; margin: 0; padding: 0; border-top: 1px solid var(--line); }
+    li { border-bottom: 1px solid var(--line); }
+    a.row { display: flex; justify-content: space-between; gap: 16px; align-items: baseline; padding: 14px 4px; color: inherit; text-decoration: none; transition: padding-left .15s ease, background .15s ease; }
+    a.row:hover, a.row:focus-visible { padding-left: 14px; background: var(--card); outline: none; }
+    a.row:focus-visible { box-shadow: inset 3px 0 0 var(--accent); }
+    .t { font-weight: 600; }
+    .d { color: var(--muted); font-size: .9rem; text-align: right; }
+    footer { margin-top: 48px; color: var(--muted); font-size: .85rem; }
+    @media (max-width: 520px) { a.row { flex-direction: column; gap: 2px; } .d { text-align: left; } }
+    @media (prefers-reduced-motion: reduce) { a.row { transition: none; } }
+  </style>
+</head>
+<body>
+  <main>
+    <h1>testover</h1>
+    <p class="lead">ชุดทดสอบ QA ด้วย Playwright รันอัตโนมัติทุกสุดสัปดาห์ · Playwright QA suite, run automatically on weekends.</p>
+
+    <h2>เอกสาร · Docs</h2>
+    <ul>
+      <li><a class="row" href="docs/overview.html"><span class="t">ภาพรวม</span><span class="d">ภาษาไทย</span></a></li>
+      <li><a class="row" href="docs/overview.en.html" lang="en"><span class="t">Overview</span><span class="d">English</span></a></li>
+      <li><a class="row" href="docs/testing-structure.html"><span class="t">โครงสร้างการเทส</span><span class="d">ภาษาไทย</span></a></li>
+      <li><a class="row" href="docs/testing-structure.en.html" lang="en"><span class="t">Testing structure</span><span class="d">English</span></a></li>
+      <li><a class="row" href="docs/guide.html"><span class="t">คู่มือตั้งค่า · Setup guide</span><span class="d">webhook, secret, cron</span></a></li>
+    </ul>
+
+    <h2>รายงานล่าสุด · Latest reports</h2>
+    <ul>
+      <li><a class="row" href="reports/allure/"><span class="t">Allure report</span><span class="d">จากรอบ Weekend E2E ล่าสุด · latest Weekend E2E run</span></a></li>
+      <li><a class="row" href="reports/playwright/"><span class="t">Playwright report</span><span class="d">traces &amp; screenshots</span></a></li>
+    </ul>
+
+    <footer><a href="https://github.com/mongoemon/testover" style="color:inherit">github.com/mongoemon/testover</a></footer>
+  </main>
+</body>
+</html>

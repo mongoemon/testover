@@ -1,0 +1,109 @@
+name: Publish site
+
+# Publishes docs/ plus the latest Allure and Playwright reports to GitHub Pages.
+# Does not touch weekend-e2e.yml or smoke.yml: it only reads the artifacts that
+# Weekend E2E already uploads (allure-report, playwright-report).
+on:
+  workflow_run:
+    workflows: ['Weekend E2E']
+    types: [completed]
+    branches: [main]
+  push:
+    branches: [main]
+    paths:
+      - 'docs/**'
+      - '.github/pages/**'
+      - '.github/workflows/pages.yml'
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  actions: read   # download artifacts from the Weekend E2E run
+  pages: write
+  id-token: write
+
+# One deploy at a time; never cancel a deploy that is mid-flight.
+concurrency:
+  group: pages
+  cancel-in-progress: false
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Find the Weekend E2E run to take reports from
+        id: run
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          if [ "${{ github.event_name }}" = "workflow_run" ]; then
+            id="${{ github.event.workflow_run.id }}"
+          else
+            # push / manual: reuse the newest finished run, so a docs-only
+            # push does not wipe the reports already published.
+            id=$(gh run list --workflow weekend-e2e.yml --repo "${{ github.repository }}" \
+                   --limit 10 --json databaseId,status \
+                   --jq '[.[] | select(.status=="completed")][0].databaseId // empty')
+          fi
+          echo "id=${id}" >> "$GITHUB_OUTPUT"
+
+      - name: Assemble site
+        run: |
+          mkdir -p _site/reports/allure _site/reports/playwright
+          cp -r docs _site/docs
+          cp README.md _site/README.md
+          cp .github/pages/index.html _site/index.html
+          touch _site/.nojekyll
+
+      - name: Download Allure report
+        if: steps.run.outputs.id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: allure-report
+          path: _site/reports/allure
+          run-id: ${{ steps.run.outputs.id }}
+          github-token: ${{ github.token }}
+
+      - name: Download Playwright report
+        if: steps.run.outputs.id != ''
+        continue-on-error: true
+        uses: actions/download-artifact@v4
+        with:
+          name: playwright-report
+          path: _site/reports/playwright-raw
+          run-id: ${{ steps.run.outputs.id }}
+          github-token: ${{ github.token }}
+
+      - name: Finalize report folders
+        run: |
+          # The artifact holds playwright-report/ and test-results/; keep only the HTML report.
+          if [ -d _site/reports/playwright-raw/playwright-report ]; then
+            cp -r _site/reports/playwright-raw/playwright-report/. _site/reports/playwright/
+          fi
+          rm -rf _site/reports/playwright-raw
+          # Placeholder when no report exists yet, so links never 404.
+          for dir in allure playwright; do
+            if [ ! -f "_site/reports/$dir/index.html" ]; then
+              echo '<!doctype html><meta charset="utf-8"><title>No report yet</title><p>ยังไม่มีรายงาน — จะปรากฏหลังรัน Weekend E2E ครั้งถัดไป / No report yet: it appears after the next Weekend E2E run.</p>' > "_site/reports/$dir/index.html"
+            fi
+          done
+
+      - uses: actions/configure-pages@v5
+
+      - uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4
