@@ -1,0 +1,458 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>โครงสร้างการเทส testover</title>
+  <meta name="description" content="แผนที่ระบบ automated test ของ testover: ชั้นของเทส, contract, characterization, เครื่องมือที่ใช้ และวิธีเลือกรัน">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --pass: #0b6e4f; --fail: #b3261e;
+      --c-unit: #3b6ea5; --c-contract: #b7791f; --c-char: #8a4fa0; --c-e2e: #0b6e4f; --c-a11y: #b3261e; --c-smoke: #2c7a7b;
+      --code-bg: #1d2320; --code-ink: #e9f1ec; --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+        --c-unit: #7fb0e6; --c-contract: #e6b75c; --c-char: #c79be0; --c-e2e: #4cc79a; --c-a11y: #ff8a80; --c-smoke: #6fd0d1;
+        --code-bg: #0c110f; --code-ink: #e1ece6;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+      --c-unit: #7fb0e6; --c-contract: #e6b75c; --c-char: #c79be0; --c-e2e: #4cc79a; --c-a11y: #ff8a80; --c-smoke: #6fd0d1;
+      --code-bg: #0c110f; --code-ink: #e1ece6;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.75; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; }
+    pre { background: var(--code-bg); color: var(--code-ink); padding: .9rem 1.1rem; border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.6; margin: .75rem 0; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3.2rem 0 2rem; border-bottom: 2px solid var(--ink); }
+    .topbar { float: right; margin-top: 1rem; display: flex; gap: .5rem; }
+    .pill { background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; text-decoration: none; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; }
+    h1 { font-size: clamp(2rem, 1.1rem + 4.2vw, 3.5rem); line-height: 1.15; margin: .4rem 0 1rem; letter-spacing: -.01em; }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 62ch; margin: 0 0 1rem; }
+    nav.toc { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1.2rem; }
+    nav.toc a { font-size: .85rem; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: .15rem .75rem; color: var(--ink); background: var(--surface); }
+    nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+    h2.sec { font-size: 1.6rem; margin: 4rem 0 .4rem; line-height: 1.25; scroll-margin-top: 1rem; }
+    h2.sec .no { font-family: var(--font-mono); color: var(--accent); font-size: 1rem; margin-right: .5rem; }
+    .sub { color: var(--muted); margin: 0 0 1.4rem; max-width: 66ch; }
+    h3 { margin: 1.6rem 0 .3rem; font-size: 1.12rem; }
+
+    /* totals strip */
+    .totals { display: grid; grid-template-columns: repeat(4, 1fr); gap: 0; border: 1px solid var(--ink); border-radius: var(--radius); overflow: hidden; background: var(--surface); margin-top: 1.6rem; }
+    .totals > div { padding: .9rem 1.1rem; border-right: 1px solid var(--line); }
+    .totals > div:last-child { border-right: 0; }
+    .totals .n { display: block; font-family: var(--font-mono); font-size: 2rem; font-weight: 700; line-height: 1.2; color: var(--accent); }
+    .totals .l { font-size: .85rem; color: var(--muted); line-height: 1.4; display: block; }
+
+    /* layers */
+    .axis { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem; }
+    .layers { display: grid; gap: .75rem; }
+    .layer { --c: var(--accent); display: grid; grid-template-columns: 5.2rem 1fr; background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: var(--radius); overflow: hidden; }
+    .layer .count { display: grid; place-content: center; text-align: center; padding: .6rem; background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+    .layer .count b { font-family: var(--font-mono); font-size: 1.7rem; line-height: 1.1; color: var(--c); }
+    .layer .count span { font-size: .7rem; color: var(--muted); }
+    .layer .body { padding: .8rem 1.1rem; }
+    .layer h3 { margin: 0 0 .1rem; font-size: 1.1rem; }
+    .layer p { margin: .2rem 0; font-size: .95rem; }
+    .layer .meta { font-size: .82rem; color: var(--muted); margin-top: .4rem; }
+    .layer.unit { --c: var(--c-unit); } .layer.contract { --c: var(--c-contract); } .layer.char { --c: var(--c-char); }
+    .layer.e2e { --c: var(--c-e2e); } .layer.a11y { --c: var(--c-a11y); } .layer.smoke { --c: var(--c-smoke); }
+
+    /* compare */
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .box { background: var(--surface); border: 1px solid var(--line); border-top: 5px solid var(--c, var(--accent)); border-radius: var(--radius); padding: 1rem 1.2rem 1.1rem; }
+    .box.contract { --c: var(--c-contract); } .box.char { --c: var(--c-char); }
+    .box h3 { margin: 0 0 .1rem; }
+    .box .tag { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .box dl { margin: .7rem 0 0; display: grid; gap: .5rem; }
+    .box dt { font-size: .75rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--c); }
+    .box dd { margin: 0; font-size: .93rem; }
+    .quote { border-left: 4px solid var(--accent); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.2rem 0; }
+
+    /* boundary diagram */
+    .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem; }
+    .chain { display: flex; flex-wrap: wrap; align-items: stretch; gap: 0; margin: .4rem 0 1rem; }
+    .node { background: color-mix(in srgb, var(--ink) 5%, var(--surface)); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .8rem; font-size: .88rem; display: grid; place-content: center; text-align: center; min-width: 7.5rem; }
+    .node small { display: block; color: var(--muted); font-family: var(--font-mono); font-size: .72rem; }
+    .arrow { display: grid; place-content: center; text-align: center; padding: 0 .4rem; min-width: 5.2rem; font-size: .75rem; font-family: var(--font-mono); color: var(--c-contract); font-weight: 700; }
+    .arrow::after { content: "──▶"; font-weight: 400; color: var(--muted); letter-spacing: -.1em; }
+    .diagram h4 { margin: .8rem 0 .2rem; font-size: .9rem; font-family: var(--font-mono); color: var(--muted); font-weight: 600; }
+
+    /* tables */
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: .9rem; }
+    th, td { text-align: left; padding: .6rem .85rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+    td.num { font-family: var(--font-mono); text-align: right; white-space: nowrap; }
+
+    /* tools */
+    .tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .tool { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: .3rem; }
+    .tool .nm { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+    .tool h3 { margin: 0; font-size: 1.05rem; font-family: var(--font-mono); }
+    .tool .ver { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); }
+    .tool .role { font-size: .75rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+    .tool p { margin: 0; font-size: .92rem; }
+    .tool .where { margin-top: auto; padding-top: .5rem; border-top: 1px dashed var(--line); font-size: .8rem; color: var(--muted); }
+
+    /* pipeline */
+    ol.pipe { list-style: none; padding: 0; margin: 0; display: grid; gap: 0; counter-reset: p; }
+    ol.pipe li { counter-increment: p; position: relative; padding: .75rem 1rem .75rem 3.2rem; background: var(--surface); border: 1px solid var(--line); margin-bottom: -1px; font-size: .93rem; }
+    ol.pipe li:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+    ol.pipe li:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+    ol.pipe li::before { content: counter(p); position: absolute; left: .8rem; top: .75rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-size: .8rem; font-weight: 700; }
+
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.25rem 0; font-size: .94rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+
+    @media (max-width: 720px) {
+      .totals { grid-template-columns: 1fr 1fr; }
+      .totals > div:nth-child(2) { border-right: 0; }
+      .totals > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .compare { grid-template-columns: 1fr; }
+      .layer { grid-template-columns: 4.2rem 1fr; }
+      .arrow { min-width: 100%; padding: .2rem 0; }
+      .arrow::after { content: "▼"; }
+      .node { min-width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="topbar">
+      <a class="pill" href="testing-structure.en.html" hreflang="en" lang="en">English</a>
+      <button class="pill" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">สลับธีม</button>
+    </div>
+    <div class="eyebrow">testover · แผนที่ระบบเทส</div>
+    <h1>เทสในโปรเจกต์นี้มีกี่ชั้น<br>แต่ละชั้นกันอะไร</h1>
+    <p class="lead">หน้านี้ไล่ให้เห็นทั้งระบบ automated test: มีเทสแบบไหนบ้าง ใช้เครื่องมืออะไร รันตอนไหน และ contract กับ characterization test ต่างจากเทสทั่วไปอย่างไร เขียนให้คนที่ยังไม่เคยทำ QA อัตโนมัติอ่านเข้าใจ</p>
+
+    <div class="totals" aria-label="จำนวนเทสทั้งหมด">
+      <div><span class="n">127</span><span class="l">เทสที่ใช้เบราว์เซอร์จริง (Playwright)</span></div>
+      <div><span class="n">42</span><span class="l">เทสที่ไม่ใช้เบราว์เซอร์ (node:test)</span></div>
+      <div><span class="n">3</span><span class="l">ขอบเขตที่มี contract ตรวจ</span></div>
+      <div><span class="n">2</span><span class="l">workflow บน GitHub Actions</span></div>
+    </div>
+    <nav class="toc" aria-label="สารบัญ">
+      <a href="#layers">1 ชั้นของเทส</a>
+      <a href="#contract">2 Contract</a>
+      <a href="#characterization">3 Characterization</a>
+      <a href="#tools">4 เครื่องมือ</a>
+      <a href="#pipeline">5 รันตอนไหน</a>
+      <a href="#choose">6 เลือกรันอะไร</a>
+      <a href="#gaps">7 สิ่งที่ยังขาด</a>
+    </nav>
+  </header>
+
+  <h2 class="sec" id="layers"><span class="no">1</span>ชั้นของเทส</h2>
+  <p class="sub">ยิ่งเทสอยู่ด้านบนยิ่งเร็วและชี้จุดพังได้ตรง ยิ่งอยู่ด้านล่างยิ่งเหมือนผู้ใช้จริงแต่ช้ากว่า ทั้งหกชั้นนี้เสริมกัน ไม่ได้แทนกัน</p>
+  <div class="axis" aria-hidden="true"><span>▲ เร็ว · ชี้จุดพังแม่น</span><span>เหมือนผู้ใช้จริง · ช้ากว่า ▼</span></div>
+
+  <div class="layers">
+    <div class="layer unit">
+      <div class="count"><b>42</b><span>เคส</span></div>
+      <div class="body">
+        <h3>Unit test <small>— ทดสอบโค้ดชิ้นเล็กโดยตรง</small></h3>
+        <p>เรียกฟังก์ชันหรือเซิร์ฟเวอร์ตรงๆ ไม่เปิดเบราว์เซอร์ จึงจบในเสี้ยววินาที เช่น เช็กว่าเซิร์ฟเวอร์ตอบ 200/301/304/400/404/405/500 ถูกต้อง และสคริปต์แจ้งผลสร้างข้อความ PASS/FAIL ได้ตรง</p>
+        <div class="meta"><code>unit/server.test.mjs</code> (15) · <code>unit/notify.test.mjs</code> (16) · <code>unit/contracts.test.mjs</code> (11) · รัน <code>npm run test:unit</code></div>
+      </div>
+    </div>
+
+    <div class="layer contract">
+      <div class="count"><b>6 + 11</b><span>เคส</span></div>
+      <div class="body">
+        <h3>Contract test <small>— ข้อตกลงเรื่องรูปร่างข้อมูล</small></h3>
+        <p>กำหนด "รูปร่างที่ข้อมูลต้องเป็น" ไว้ที่เดียว (schema) แล้วเช็กทุกจุดที่ข้อมูลข้ามจากส่วนหนึ่งไปอีกส่วน ถ้าฝั่งหนึ่งเปลี่ยนรูปแล้วอีกฝั่งไม่รู้ เทสจะพังทันที ดูรายละเอียดในข้อ 2</p>
+        <div class="meta"><code>contracts/schemas.mjs</code> · <code>tests/contracts/storage.spec.ts</code> (6) · ส่วนที่เหลืออยู่ใน <code>unit/contracts.test.mjs</code> (11)</div>
+      </div>
+    </div>
+
+    <div class="layer char">
+      <div class="count"><b>37</b><span>เคส</span></div>
+      <div class="body">
+        <h3>Characterization test <small>— จดว่าวันนี้แอปทำอะไร</small></h3>
+        <p>ไม่ได้ถามว่า "ควรทำอะไร" แต่บันทึก "ตอนนี้ทำอะไรอยู่จริง" รวมถึงพฤติกรรมแปลกๆ ไว้เป็นหลักฐาน เพื่อให้รู้ทันทีเมื่อมีใครไปเปลี่ยนมันโดยไม่ตั้งใจ ดูรายละเอียดในข้อ 3</p>
+        <div class="meta"><code>tests/characterization/validation.spec.ts</code> · <code>tests/characterization/resilience.spec.ts</code></div>
+      </div>
+    </div>
+
+    <div class="layer e2e">
+      <div class="count"><b>70</b><span>เคส</span></div>
+      <div class="body">
+        <h3>E2E regression <small>— ใช้เว็บแทนผู้ใช้จริง</small></h3>
+        <p>เปิดเบราว์เซอร์จริง คลิก กรอก แล้วเช็กผล แบ่งตามส่วนของแอป: สมัคร/login 27, งาน 27, โปรไฟล์ 10 และเส้นทางเต็มหลายหน้า 6 ข้อมูลที่ใช้เป็นผู้ใช้สมมติ (<code>demo</code>, <code>alice</code>)</p>
+        <div class="meta"><code>login.spec.ts</code> · <code>tasks.spec.ts</code> · <code>profile.spec.ts</code> · <code>journey.spec.ts</code> · Page Object อยู่ที่ <code>tests/support/pages.ts</code></div>
+      </div>
+    </div>
+
+    <div class="layer a11y">
+      <div class="count"><b>14</b><span>เคส</span></div>
+      <div class="body">
+        <h3>Accessibility test <small>— คนใช้ได้ทุกแบบไหม</small></h3>
+        <p>ให้ axe-core สแกนทุกหน้าและทุกสถานะ (ปกติ, มี error, กำลังแก้, dark mode) ตามมาตรฐาน WCAG 2.1 ระดับ A และ AA และมีเคสพิเศษที่ยัดข้อผิดพลาดเข้าไปเองเพื่อพิสูจน์ว่าตัวสแกนจับได้จริง ไม่ผ่านแบบเงียบๆ</p>
+        <div class="meta"><code>tests/a11y.spec.ts</code> · เคสที่ติด tag <code>@a11y</code> รวม 16 (รวมเคสคีย์บอร์ดและ title ในไฟล์อื่น)</div>
+      </div>
+    </div>
+
+    <div class="layer smoke">
+      <div class="count"><b>5</b><span>เคส</span></div>
+      <div class="body">
+        <h3>Smoke test <small>— ชุดเร็วเช็กว่ายังไม่พังหนัก</small></h3>
+        <p>ไม่ใช่เทสชนิดใหม่ แต่เป็นการเลือก 5 เคสจาก E2E ที่เป็นเส้นทางสำคัญที่สุดมารันก่อน (ติด tag <code>@smoke</code>) ใช้กับทุก push และ pull request</p>
+        <div class="meta">รัน <code>npm run test:smoke</code> · workflow <code>smoke.yml</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tablewrap" style="margin-top:1.2rem">
+    <table>
+      <thead><tr><th>ส่วนของโปรเจกต์</th><th>มีไว้ทำอะไร</th></tr></thead>
+      <tbody>
+        <tr><td><code>app/index.html</code>, <code>app/server.mjs</code></td><td>แอป Task Board และเซิร์ฟเวอร์ static ที่เป็นเป้าหมายของเทสทั้งหมด</td></tr>
+        <tr><td><code>tests/support/pages.ts</code></td><td>Page Object: รวมวิธี "กดปุ่มนี้ กรอกช่องนั้น" ไว้ที่เดียว เทสจึงอ่านง่ายและแก้ที่เดียวเมื่อหน้าตาเปลี่ยน</td></tr>
+        <tr><td><code>tests/support/storage.ts</code></td><td>ตัวช่วยอ่าน/เขียน localStorage ตรงๆ: <code>seedStorage</code> (ยัดข้อมูลแล้ว reload), <code>readJson</code>, <code>readRaw</code>, <code>dumpStorage</code></td></tr>
+        <tr><td><code>tests/fixtures/reports/</code></td><td>รายงานจำลอง 3 แบบ (<code>pass</code>, <code>fail-nested</code>, <code>empty</code>) ให้ unit test ใช้ทดสอบสคริปต์แจ้งผล โดยไม่ต้องรัน Playwright จริง</td></tr>
+        <tr><td><code>contracts/schemas.mjs</code></td><td>ที่เดียวที่นิยามรูปร่างข้อมูลทั้ง 3 ขอบเขต ทั้ง Playwright และ node:test import ไปใช้ร่วมกัน</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="sec" id="contract"><span class="no">2</span>Contract test: ข้อตกลงระหว่างสองฝั่ง</h2>
+  <p class="sub">เปรียบเหมือนแบบฟอร์มที่สองแผนกตกลงกันว่าต้องกรอกช่องอะไรบ้าง ถ้าแผนกหนึ่งเปลี่ยนแบบฟอร์มโดยไม่บอก อีกแผนกจะอ่านไม่ออก contract test คือคนตรวจแบบฟอร์มทุกครั้งที่ส่งต่อ</p>
+
+  <div class="diagram">
+    <h4>ข้อมูลข้ามขอบเขตตรงไหนบ้างในโปรเจกต์นี้</h4>
+    <div class="chain">
+      <div class="node">แอป<small>app/index.html</small></div>
+      <div class="arrow">C1</div>
+      <div class="node">localStorage<small>tb.users · tb.session · tb.theme · tb.tasks.&lt;user&gt;</small></div>
+    </div>
+    <div class="chain">
+      <div class="node">Playwright<small>ผลการรัน</small></div>
+      <div class="arrow">C2</div>
+      <div class="node">results.json<small>test-results/</small></div>
+      <div class="arrow">อ่านโดย</div>
+      <div class="node">notify.mjs<small>สรุปผล</small></div>
+      <div class="arrow">C3</div>
+      <div class="node">webhook body<small>content + text</small></div>
+      <div class="arrow">ส่งให้</div>
+      <div class="node">Discord / Slack</div>
+    </div>
+  </div>
+
+  <div class="tablewrap" style="margin-top:1rem">
+    <table>
+      <thead><tr><th>ชื่อ</th><th>ข้อตกลงว่าอย่างไร</th><th>ตรวจโดย</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>C1</b> localStorage</td>
+          <td>แอปเขียนได้เฉพาะ key ที่กำหนด และรูปข้อมูลต้องตรง เช่น งานแต่ละชิ้นต้องเป็น <code>{ id: จำนวนเต็ม, title: ข้อความ, priority: low|medium|high, done: จริง/เท็จ }</code> id ห้ามซ้ำ session ต้องชี้ไปผู้ใช้ที่มีอยู่จริง และงานต้องเป็นของผู้ใช้ที่มีอยู่</td>
+          <td><code>tests/contracts/storage.spec.ts</code> ขับ UI จริง (สมัคร เพิ่ม/แก้/ลบงาน เปลี่ยนโปรไฟล์ ลบบัญชี สลับผู้ใช้) แล้วตรวจ storage หลังแต่ละขั้น</td>
+        </tr>
+        <tr>
+          <td><b>C2</b> รายงาน Playwright</td>
+          <td>ไฟล์ <code>results.json</code> ต้องมี <code>stats</code> (expected, unexpected, flaky, skipped เป็นจำนวนเต็มไม่ติดลบ) และ <code>suites</code> ที่มี title เพราะ <code>notify.mjs</code> พึ่งพาแค่ส่วนนี้</td>
+          <td><code>unit/contracts.test.mjs</code> ตรวจกับ fixture 3 แบบ และกับรายงานจากการรันจริงครั้งล่าสุด (ถ้ามีไฟล์) พร้อมเคสที่ต้องถูกปฏิเสธ</td>
+        </tr>
+        <tr>
+          <td><b>C3</b> body ที่ส่ง webhook</td>
+          <td>ต้องมี <code>content</code> (Discord) และ <code>text</code> (Slack) เป็นข้อความไม่ว่างและเหมือนกัน ห้ามมี field เกิน</td>
+          <td><code>unit/contracts.test.mjs</code> ยกเซิร์ฟเวอร์ปลอมขึ้นมารับ แล้วรัน <code>notify.mjs</code> จริง เก็บ body ที่ส่งมาตรวจกับ schema</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>จุดเด่นคือ schema อยู่ที่เดียว (<code>contracts/schemas.mjs</code> เขียนด้วย zod) ทั้งเทสในเบราว์เซอร์และเทส node ใช้ไฟล์เดียวกัน จึงไม่มีทางที่สองฝั่งจะเข้าใจ "รูปร่างที่ถูก" ไม่ตรงกัน และ state ที่ตรวจเกิดจากการขับ UI จริง ไม่ได้สร้างขึ้นเองด้วยมือ</p>
+
+  <h2 class="sec" id="characterization"><span class="no">3</span>Characterization test: จดสิ่งที่เป็นอยู่</h2>
+  <p class="sub">เหมือนถ่ายรูปห้องก่อนย้ายของ ไม่ได้บอกว่าห้องควรหน้าตาแบบนี้ แต่ถ้าวันหลังมีอะไรหายไปจะรู้ทันที เหมาะกับโค้ดที่ยังไม่มีสเปกเขียนไว้ชัด หรือก่อนจะแก้ของเก่าที่ไม่แน่ใจว่าอะไรผูกกันอยู่</p>
+
+  <div class="compare">
+    <div class="box contract">
+      <span class="tag">Contract</span>
+      <h3>"ข้อมูลต้องเป็นแบบนี้"</h3>
+      <dl>
+        <div><dt>คำถามที่ตอบ</dt><dd>สองฝั่งยังคุยกันรู้เรื่องไหม</dd></div>
+        <div><dt>ตัวอย่างในโปรเจกต์</dt><dd>งานทุกชิ้นต้องมี priority เป็น low, medium หรือ high เท่านั้น</dd></div>
+        <div><dt>ถ้าเทสพัง</dt><dd>ส่วนใหญ่คือบั๊ก หรือมีคนเปลี่ยนรูปข้อมูลฝั่งเดียว ให้แก้ให้ตรงกัน หรือถ้าตั้งใจเปลี่ยน ให้แก้ schema ที่เดียว</dd></div>
+      </dl>
+    </div>
+    <div class="box char">
+      <span class="tag">Characterization</span>
+      <h3>"วันนี้มันทำแบบนี้"</h3>
+      <dl>
+        <div><dt>คำถามที่ตอบ</dt><dd>พฤติกรรมเปลี่ยนไปจากเมื่อวานหรือเปล่า</dd></div>
+        <div><dt>ตัวอย่างในโปรเจกต์</dt><dd>username 20 ตัวอักษรผ่าน 21 ไม่ผ่าน และข้อความ error ออกมาเรียงลำดับตายตัว</dd></div>
+        <div><dt>ถ้าเทสพัง</dt><dd>ยังไม่ต้องตกใจ ถามก่อนว่า "ตั้งใจเปลี่ยนไหม" ถ้าตั้งใจ ให้แก้ค่าที่คาดไว้ ถ้าไม่ตั้งใจ ให้แก้โค้ด</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <h3>ในโปรเจกต์ครอบคลุมอะไรบ้าง</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>ไฟล์</th><th>จดไว้ว่า</th></tr></thead>
+      <tbody>
+        <tr><td><code>validation.spec.ts</code></td><td>ขอบเขตของทุกฟอร์ม: ความยาว username (3 ถึง 20 ตัว, ใช้ได้เฉพาะตัวอักษร ตัวเลข underscore), รหัสผ่านขั้นต่ำ 8 ตัว, ชื่องานไม่เกิน 80 ตัว, ลำดับการตรวจ (ตรวจ username ก่อนรหัสผ่าน ตรวจรหัสเดิมก่อนความยาวก่อนการยืนยัน), username ไม่สนตัวพิมพ์เล็ก/ใหญ่ แต่รหัสผ่านสนใจ, login ผิดทุกกรณีใช้ข้อความเดียวกัน</td></tr>
+        <tr><td><code>resilience.spec.ts</code></td><td>แอปบูตอย่างไรเมื่อ storage ผิดปกติ (JSON พัง, ข้อมูลผิดชนิด, งานผิดรูปปนกับงานดี, theme แปลก) และกฎการ redirect ของแต่ละ route รวมถึง title ของแต่ละหน้า</td></tr>
+        <tr><td><code>unit/contracts.test.mjs</code></td><td>ข้อความที่ <code>notify.mjs</code> สร้างจากรายงานแต่ละแบบ ตรงตามตัวอักษร และรายงานที่ไม่มีเทสเลยถูกนับเป็น PASS</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="quote">
+    <b>เคสที่ขึ้นต้นด้วย QUIRK</b> คือพฤติกรรมที่น่าจะไม่ตั้งใจ แต่จดไว้ตามจริงก่อน ตอนนี้มี 4 เคส:
+    <ul>
+      <li>ชื่ออย่าง <code>__proto__</code> และ <code>constructor</code> สมัครได้</li>
+      <li>ถ้า <code>tb.users</code> ถูกเก็บเป็น array แอปจะไม่ซ่อมให้และทุกคน login ไม่ได้</li>
+      <li>งานที่ข้อมูลเสียจะแค่ไม่แสดง แต่ถูกลบถาวรเมื่อมีการเปลี่ยนแปลงครั้งถัดไป</li>
+      <li>รหัสผ่านใหม่ถูกเก็บเป็นข้อความธรรมดา (ตั้งใจเพื่อให้เป็นแอปทดลอง)</li>
+    </ul>
+    เมื่อแก้บั๊กเหล่านี้ในอนาคต เคส QUIRK จะพัง ซึ่งเป็นสัญญาณที่ดี ให้เปลี่ยนค่าที่คาดไว้เป็นพฤติกรรมใหม่ที่ถูกต้อง
+  </div>
+
+  <h2 class="sec" id="tools"><span class="no">4</span>เครื่องมือที่ใช้อยู่และหน้าที่ของแต่ละตัว</h2>
+  <p class="sub">รายการนี้ดึงจาก <code>package.json</code>, <code>playwright.config.ts</code> และไฟล์ workflow ที่ใช้งานจริง</p>
+
+  <div class="tools">
+    <div class="tool">
+      <div class="nm"><h3>Playwright Test</h3><span class="ver">@playwright/test 1.49.1</span></div>
+      <span class="role">ตัวรันเทสหลัก</span>
+      <p>เปิด Chromium จริง ควบคุมเบราว์เซอร์ให้คลิกและกรอกข้อมูล มีระบบ assert, retry และรันขนานในตัว ตั้งให้เปิดเว็บเทสให้เองก่อนรัน</p>
+      <div class="where">ไฟล์ตั้งค่า <code>playwright.config.ts</code> · retry 2 ครั้งและ 2 workers บน CI · เก็บ screenshot/video/trace เฉพาะเคสที่พัง</div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>node:test</h3><span class="ver">มากับ Node.js</span></div>
+      <span class="role">ตัวรัน unit test</span>
+      <p>test runner ที่มีในตัว Node ไม่ต้องติดตั้งเพิ่ม ใช้กับเทสที่ไม่ต้องเปิดเบราว์เซอร์ ผลจึงออกเร็ว มีโหมดวัด coverage ในตัว</p>
+      <div class="where"><code>npm run test:unit</code> · <code>npm run test:unit:coverage</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>zod</h3><span class="ver">zod 4.6.7</span></div>
+      <span class="role">นิยาม contract</span>
+      <p>ไลบรารีเขียน schema ของข้อมูลแล้วตรวจว่าข้อมูลจริงตรงไหม ใช้เป็นภาษากลางของ contract ทั้งสามขอบเขต</p>
+      <div class="where"><code>contracts/schemas.mjs</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>axe-core</h3><span class="ver">@axe-core/playwright 4.14.0</span></div>
+      <span class="role">ตรวจ accessibility</span>
+      <p>สแกนหน้าเว็บหา violation ตาม WCAG 2.1 A/AA เช่น ภาพไม่มี alt, สีตัวอักษรตัดกับพื้นไม่พอ, ฟอร์มไม่มี label</p>
+      <div class="where"><code>tests/a11y.spec.ts</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>Node HTTP server</h3><span class="ver">app/server.mjs</span></div>
+      <span class="role">เว็บเป้าหมายของเทส</span>
+      <p>เซิร์ฟเวอร์ static ที่เขียนเอง ไม่ต้องติดตั้งอะไรเพิ่ม Playwright เปิดให้อัตโนมัติ (พอร์ต 3000 เปลี่ยนได้ด้วย <code>PORT</code>) หรือชี้ไปเว็บอื่นด้วย <code>BASE_URL</code></p>
+      <div class="where">ตัวเซิร์ฟเวอร์เองก็มี unit test (<code>unit/server.test.mjs</code>)</div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>Playwright reporters</h3><span class="ver">list · html · json</span></div>
+      <span class="role">รายงานผลระหว่างรัน</span>
+      <p><b>list</b> พิมพ์ผลในเทอร์มินัล <b>html</b> สร้างรายงานเปิดดูด้วย <code>npm run report</code> <b>json</b> เขียน <code>test-results/results.json</code> ซึ่งสคริปต์แจ้งผลอ่านต่อ</p>
+      <div class="where">ถ้าสั่ง <code>--reporter</code> เองจะไม่มี results.json และแจ้งผลผิดเป็น FAIL</div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>Allure</h3><span class="ver">allure-playwright 3.1.0 · allure-commandline 2.46.1</span></div>
+      <span class="role">รายงานเชิงลึก</span>
+      <p>เก็บผลดิบเป็น <code>allure-results</code> แล้วสร้างรายงานที่แบ่งตามพฤติกรรมและ suite ดูย้อนหลังได้ ต้องมี Java ในเครื่องตอนสร้างรายงาน</p>
+      <div class="where"><code>npm run allure:generate</code> · <code>allure:open</code> · <code>allure:serve</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>GitHub Actions</h3><span class="ver">checkout / setup-node / upload-artifact v4</span></div>
+      <span class="role">ตัวสั่งรันอัตโนมัติ</span>
+      <p>รันบนเครื่อง ubuntu และ Node 22 มี 2 workflow: <b>Smoke</b> ทุก push ไป main และทุก PR, <b>Weekend E2E</b> ตามเวลาเสาร์-อาทิตย์ แล้วอัปโหลดรายงานเก็บไว้ (14 วัน)</p>
+      <div class="where"><code>.github/workflows/smoke.yml</code> · <code>weekend-e2e.yml</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>notify.mjs + Webhook</h3><span class="ver">Discord / Slack</span></div>
+      <span class="role">แจ้งผลเข้าแชต</span>
+      <p>สคริปต์อ่าน results.json สรุปเป็นข้อความ ✅/❌ แล้ว POST เข้า webhook ที่เก็บเป็นความลับใน GitHub Secrets (<code>WEBHOOK_URL</code>) รันทุกครั้งแม้เทสพัง</p>
+      <div class="where"><code>scripts/notify.mjs</code></div>
+    </div>
+  </div>
+
+  <h2 class="sec" id="pipeline"><span class="no">5</span>รันตอนไหน ผลไปไหน</h2>
+  <p class="sub">เส้นทางของ workflow เต็มตอนเสาร์-อาทิตย์ ส่วน Smoke ใช้เฉพาะขั้น 1 ถึง 4 กับเทส 5 เคส</p>
+  <ol class="pipe">
+    <li>GitHub Actions ปลุก workflow ตามเวลา (เสาร์และอาทิตย์ 09:00 เวลาไทย) หรือมีคนกดรันเอง</li>
+    <li>ติดตั้งของ: <code>npm ci</code> และ <code>npx playwright install --with-deps chromium</code></li>
+    <li>Playwright เปิดเว็บ Task Board แล้วรันเทส 127 เคส (ผิดพลาดจะ retry ได้ 2 ครั้ง)</li>
+    <li>อัปโหลด <code>playwright-report</code> และ <code>test-results</code> เป็น artifact</li>
+    <li>ติดตั้ง Java แล้วสร้างรายงาน Allure และอัปโหลดเป็น artifact</li>
+    <li><code>notify.mjs</code> อ่าน results.json ส่งข้อความสรุปเข้า Discord หรือ Slack พร้อมลิงก์ไปดู run</li>
+  </ol>
+
+  <h2 class="sec" id="choose"><span class="no">6</span>แก้อะไรอยู่ ควรรันอะไร</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>สถานการณ์</th><th>คำสั่ง</th></tr></thead>
+      <tbody>
+        <tr><td>เพิ่งแก้นิดเดียว อยากเช็กเร็ว</td><td><code>npm run test:smoke</code></td></tr>
+        <tr><td>แก้สคริปต์แจ้งผลหรือเซิร์ฟเวอร์</td><td><code>npm run test:unit</code></td></tr>
+        <tr><td>แก้รูปแบบข้อมูลที่เก็บใน storage</td><td><code>npx playwright test --grep @contract</code></td></tr>
+        <tr><td>แก้กฎตรวจข้อมูลหรือข้อความ error</td><td><code>npx playwright test --grep @characterization</code></td></tr>
+        <tr><td>แก้หน้าตา เลย์เอาต์ สี</td><td><code>npx playwright test --grep @a11y</code></td></tr>
+        <tr><td>ก่อน release</td><td><code>npm run test:unit</code> แล้ว <code>npm test</code></td></tr>
+        <tr><td>อยากเห็นว่าคำสั่งจะรันอะไรโดยไม่รัน</td><td><code>npx playwright test --list --grep @contract</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Tag ลักษณะเคสที่ใช้อยู่: <code>@smoke</code> <code>@validation</code> <code>@security</code> <code>@persistence</code> <code>@resilience</code> <code>@destructive</code> <code>@a11y</code> <code>@responsive</code> <code>@contract</code> <code>@characterization</code> และ tag ตามพื้นที่ <code>@auth</code> <code>@tasks</code> <code>@profile</code> <code>@journey</code> เคสหนึ่งมีได้หลาย tag</p>
+
+  <h2 class="sec" id="gaps"><span class="no">7</span>สิ่งที่ควรรู้: ช่องว่างตอนนี้</h2>
+  <div class="note"><b>Unit test ยังไม่รันใน CI</b> ทั้ง <code>smoke.yml</code> และ <code>weekend-e2e.yml</code> รันเฉพาะ Playwright เท่านั้น เทส 42 เคสใน <code>unit/</code> (รวม contract C2 และ C3) ต้องสั่ง <code>npm run test:unit</code> เองในเครื่อง ถ้าอยากให้ถูกจับอัตโนมัติ ให้เพิ่ม step นี้ใน workflow</div>
+  <div class="note"><b>ยังไม่มี heartbeat</b> ถ้า schedule ของ GitHub ถูกปิดหรือล่ม จะไม่มีข้อความเข้าเลยและไม่มีใครรู้ README แนะนำ healthchecks.io แต่ยังไม่ได้ต่อ</div>
+  <div class="note"><b>เทส Chromium อย่างเดียว</b> ยังไม่ครอบคลุม Firefox หรือ Safari</div>
+
+  <section class="next">
+    <h2>อ่านต่อ</h2>
+    <ul>
+      <li>ภาพรวมโปรเจกต์สำหรับคนใหม่: <a href="overview.html">overview.html</a></li>
+      <li>ตั้ง webhook, secret และเวลา cron: <a href="guide.html">guide.html</a></li>
+      <li>คู่มือ tag: <a href="tags.md">tags.md</a></li>
+    </ul>
+  </section>
+
+  <footer>testover · ตัวเลขนับจากการรัน <code>playwright test --list</code> และ <code>npm run test:unit</code> จริง · <a href="testing-structure.en.html" hreflang="en" lang="en">Read in English</a></footer>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try { var saved = localStorage.getItem('theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+</body>
+</html>

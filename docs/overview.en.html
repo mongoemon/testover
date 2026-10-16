@@ -1,0 +1,283 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover Start Here</title>
+  <meta name="description" content="Overview of the testover project for newcomers: what it is, what it does, and its goal, told as a 6-step user journey.">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --pass: #0b6e4f; --fail: #b3261e;
+      --code-bg: #1d2320; --code-ink: #e9f1ec;
+      --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+        --code-bg: #0c110f; --code-ink: #e1ece6;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+      --code-bg: #0c110f; --code-ink: #e1ece6;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.7; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .88em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; }
+    pre { background: var(--code-bg); color: var(--code-ink); padding: .9rem 1.1rem; border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: .85rem; line-height: 1.6; margin: .75rem 0; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3.5rem 0 2.25rem; border-bottom: 2px solid var(--ink); }
+    .topbar { float: right; margin-top: 1rem; display: flex; gap: .5rem; }
+    .pill { background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; text-decoration: none; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; }
+    h1 { font-size: clamp(2.1rem, 1.2rem + 4.5vw, 3.8rem); line-height: 1.1; margin: .4rem 0 1rem; letter-spacing: -.02em; }
+    .lead { font-size: 1.15rem; color: var(--muted); max-width: 58ch; margin: 0 0 1.5rem; }
+
+    .answers { display: grid; grid-template-columns: repeat(3, 1fr); margin-top: 2rem; border: 1px solid var(--ink); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+    .answers > div { padding: 1.1rem 1.25rem; border-right: 1px solid var(--line); }
+    .answers > div:last-child { border-right: 0; }
+    .answers h2 { margin: 0 0 .3rem; font-size: .8rem; font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+    .answers p { margin: 0; font-size: .98rem; }
+
+    h2.sec { font-size: 1.6rem; margin: 4rem 0 .4rem; line-height: 1.25; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 62ch; }
+
+    ol.journey { list-style: none; margin: 0; padding: 0; position: relative; }
+    ol.journey::before { content: ""; position: absolute; left: 23px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+    .step { position: relative; padding-left: 68px; margin-bottom: 1.5rem; }
+    .dot { position: absolute; left: 0; top: 0; width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; box-shadow: 0 0 0 6px var(--bg); }
+    .step-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.3rem 1.2rem; transition: border-color .15s, transform .15s; }
+    .step-card:hover { border-color: var(--accent); transform: translateX(3px); }
+    .step-card .who { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .step-card h3 { margin: .15rem 0 .35rem; font-size: 1.2rem; line-height: 1.35; }
+    .step-card p { margin: .35rem 0; }
+    .step-card .out { margin-top: .7rem; padding-top: .6rem; border-top: 1px dashed var(--line); font-size: .92rem; color: var(--muted); }
+    .step-card .out b { color: var(--accent); font-weight: 600; }
+    .step-card details { margin-top: .6rem; }
+    .step-card summary { cursor: pointer; color: var(--accent); font-size: .92rem; }
+    .step-card ul { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .95rem; }
+
+    .msgs { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .75rem; }
+    .msg { border-radius: 8px; padding: .7rem .9rem; font-size: .85rem; font-family: var(--font-mono); line-height: 1.55; border-left: 5px solid; background: color-mix(in srgb, var(--ink) 5%, var(--surface)); }
+    .msg.pass { border-color: var(--pass); }
+    .msg.fail { border-color: var(--fail); }
+    .msg strong { display: block; }
+
+    .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .cap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; }
+    .cap:nth-child(2) { margin-top: 1rem; } .cap:nth-child(4) { margin-top: 1rem; }
+    .cap h3 { margin: 0 0 .25rem; font-size: 1.05rem; }
+    .cap p { margin: 0; font-size: .93rem; color: var(--muted); }
+    .cap .n { font-family: var(--font-mono); font-size: 1.9rem; font-weight: 700; color: var(--accent); line-height: 1.2; display: block; }
+
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: .93rem; }
+    th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+    tr:last-child td { border-bottom: 0; }
+    .tablewrap { overflow-x: auto; }
+
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.25rem 0; font-size: .95rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+
+    @media (max-width: 680px) {
+      .answers { grid-template-columns: 1fr; }
+      .answers > div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .answers > div:last-child { border-bottom: 0; }
+      .msgs { grid-template-columns: 1fr; }
+      .cap:nth-child(n) { margin-top: 0; }
+      .step { padding-left: 58px; }
+      .dot { width: 40px; height: 40px; font-size: 1rem; }
+      ol.journey::before { left: 19px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .step-card, .step-card:hover { transition: none; transform: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="topbar">
+      <a class="pill" href="overview.html" hreflang="th" lang="th">ภาษาไทย</a>
+      <button class="pill" id="theme" type="button" aria-label="Toggle light/dark theme">Theme</button>
+    </div>
+    <div class="eyebrow">testover · start here</div>
+    <h1>When the site breaks and nobody's looking, you still hear first</h1>
+    <p class="lead">testover is an automated test suite for a Task Board web app. It runs by itself every Saturday and Sunday and posts ✅ pass or ❌ fail to your team chat, with nobody pressing a thing.</p>
+
+    <div class="answers">
+      <div>
+        <h2>What it is</h2>
+        <p>A sample web app (Task Board), 127 Playwright tests, and a runner plus notifier that works automatically on GitHub Actions.</p>
+      </div>
+      <div>
+        <h2>What it does</h2>
+        <p>Tests sign-up/login, task management, the profile page and the full user flow, then reports results to Discord or Slack.</p>
+      </div>
+      <div>
+        <h2>The goal</h2>
+        <p>Know right away whether the core features still work, without waiting for users to report it. It also serves as an end-to-end example for practicing QA automation.</p>
+      </div>
+    </div>
+  </header>
+
+  <h2 class="sec">The project in 6 steps</h2>
+  <p class="sub">Follow along step by step to see what each part of the project is for and how the parts connect.</p>
+
+  <ol class="journey">
+    <li class="step">
+      <span class="dot" aria-hidden="true">1</span>
+      <div class="step-card">
+        <div class="who">The starting problem</div>
+        <h3>Nobody opens the site to check every week</h3>
+        <p>Basics like login or adding a task can break silently over a weekend, and you only find out when users complain. Checking by hand is slow and easy to forget.</p>
+        <div class="out"><b>The fix:</b> let a machine check on a schedule and report back in chat.</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">2</span>
+      <div class="step-card">
+        <div class="who">What gets tested</div>
+        <h3>The Task Board app built into this project</h3>
+        <p>A user signs up or logs in → adds tasks with a priority → ticks them done, edits, deletes, searches and filters → updates their profile, changes the password, turns on dark mode, or deletes the account.</p>
+        <p>Data lives in the browser's localStorage with no backend, so the app is easy to run and gives stable results.</p>
+        <div class="out"><b>Files:</b> <code>app/index.html</code>, <code>app/server.mjs</code> · demo user <code>demo</code> / <code>demo1234</code></div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">3</span>
+      <div class="step-card">
+        <div class="who">The checker</div>
+        <h3>Playwright opens a real browser and uses the app like a person</h3>
+        <p>127 tests click buttons and fill forms, then check the result. They cover normal use, wrong or empty input, data after a reload, a phone-sized screen, and corrupted storage. Every test starts with a fresh browser, so nothing carries over between tests.</p>
+        <details>
+          <summary>See what's covered</summary>
+          <ul>
+            <li><b>login.spec</b>: sign-up, login/logout, route guard, 404</li>
+            <li><b>tasks.spec</b>: add/edit/delete/tick, search, filter</li>
+            <li><b>profile.spec</b>: display name, password, dark mode, delete account</li>
+            <li><b>journey.spec</b>: the full path from sign-up to account deletion, and two users whose data never mixes</li>
+            <li><b>contracts/</b> and <b>characterization/</b>: data-shape agreements and recorded behaviour (see <a href="testing-structure.en.html">test structure</a>)</li>
+            <li><b>a11y.spec</b>: accessibility scan with axe, WCAG 2.1 A/AA</li>
+          </ul>
+        </details>
+        <div class="out"><b>Files:</b> <code>tests/*.spec.ts</code>, <code>tests/support/pages.ts</code> (Page Objects)</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">4</span>
+      <div class="step-card">
+        <div class="who">You try it locally</div>
+        <h3>Run it in 3 commands</h3>
+        <p>You need Node.js 20 or newer. The app starts automatically.</p>
+<pre>npm install
+npx playwright install chromium   # first time only
+npm test                          # run all 127 tests</pre>
+        <p>For a quick look use <code>npm run test:smoke</code> (the 5 core tests). To watch the browser work use <code>npm run test:headed</code>, then open the report with <code>npm run report</code>.</p>
+        <div class="out"><b>You get:</b> pass/fail per test, plus screenshots, video and a trace for any test that fails.</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">5</span>
+      <div class="step-card">
+        <div class="who">It runs itself</div>
+        <h3>GitHub Actions runs every Saturday and Sunday</h3>
+        <p>The <code>weekend-e2e.yml</code> workflow starts every Saturday and Sunday at 09:00 Thailand time. It has a 20-minute timeout so a stuck job can't hang, and you can also run it by hand from the Actions tab whenever you want an extra check.</p>
+        <div class="out"><b>Good to know:</b> GitHub cron uses UTC and can start several minutes late.</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">6</span>
+      <div class="step-card">
+        <div class="who">What lands in your inbox</div>
+        <h3>A summary message in Discord or Slack</h3>
+        <p><code>scripts/notify.mjs</code> reads the test results and posts them to a webhook. On failure it names the failing tests and links to the run, where the full report is in Artifacts.</p>
+        <div class="msgs">
+          <div class="msg pass"><strong>✅ PASS — weekend QA run</strong>passed: 127 | failed: 0<br>flaky: 0 | skipped: 0</div>
+          <div class="msg fail"><strong>❌ FAIL — weekend QA run</strong>passed: 126 | failed: 1<br>• Task board › deletes only the targeted task</div>
+        </div>
+        <div class="out"><b>The end goal:</b> open chat on a weekend morning, see ✅ and relax, or see ❌ and know exactly what to fix.</div>
+      </div>
+    </li>
+  </ol>
+
+  <h2 class="sec">What the project can do</h2>
+  <p class="sub">Numbers below are taken from the project README.</p>
+  <div class="caps">
+    <div class="cap"><span class="n">127</span><h3>Test cases</h3><p>E2E, contract, characterization and accessibility (plus 42 unit tests)</p></div>
+    <div class="cap"><span class="n">5</span><h3>Smoke tests</h3><p>A fast set for the main path: <code>npm run test:smoke</code></p></div>
+    <div class="cap"><span class="n">10</span><h3>Tags by test type</h3><p>Run only @security, @validation and more with <code>--grep</code></p></div>
+    <div class="cap"><span class="n">2</span><h3>Notification channels</h3><p>Discord and Slack share one webhook format, no code changes</p></div>
+  </div>
+
+  <h2 class="sec">Key files to know</h2>
+  <p class="sub">If you want to change or add something, look here first.</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>File / folder</th><th>Role</th></tr></thead>
+      <tbody>
+        <tr><td><code>app/</code></td><td>The Task Board app and a tiny static server, used as the test target</td></tr>
+        <tr><td><code>tests/</code></td><td>All Playwright tests, split by area of the app</td></tr>
+        <tr><td><code>unit/</code></td><td>Unit tests for the server and the notify script</td></tr>
+        <tr><td><code>scripts/notify.mjs</code></td><td>Reads test results and posts them to a webhook</td></tr>
+        <tr><td><code>.github/workflows/weekend-e2e.yml</code></td><td>The schedule that runs everything automatically on GitHub</td></tr>
+        <tr><td><code>playwright.config.ts</code></td><td>Playwright settings (web server, reporters, retries)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>Heads up:</strong> the app stores passwords as plain text in localStorage on purpose, so it can be tested without a backend. Never do this in a real product. Your webhook URL is a secret: keep it in GitHub Secrets only.</div>
+
+  <section class="next">
+    <h2>Where to go next</h2>
+    <ul>
+      <li>Set up a webhook, secret and cron time: <a href="guide.html">guide.html</a> (Thai; has a checklist and a time converter)</li>
+      <li>The full test structure (contract, characterization, tools): <a href="testing-structure.en.html">testing-structure.en.html</a></li>
+      <li>When to use each tag: <a href="tags.md">tags.md</a></li>
+      <li>Everything else, plus common fixes: <a href="../README.md">README.md</a> (Thai)</li>
+    </ul>
+  </section>
+
+  <footer>testover · an overview for newcomers. Numbers and steps come from README.md. <a href="overview.html" hreflang="th" lang="th">อ่านเป็นภาษาไทย</a></footer>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+</body>
+</html>

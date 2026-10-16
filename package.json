@@ -1,0 +1,31 @@
+{
+  "name": "testover",
+  "version": "1.0.0",
+  "private": true,
+  "engines": { "node": ">=22" },
+  "description": "Small Playwright QA suite, run automatically on weekends with pass/fail notification",
+  "scripts": {
+    "test": "playwright test",
+    "test:unit": "node --test \"unit/*.test.mjs\"",
+    "test:unit:coverage": "node --test --experimental-test-coverage \"unit/*.test.mjs\"",
+    "test:contract": "node --test unit/contracts.test.mjs && playwright test --grep @contract",
+    "test:characterization": "playwright test --grep @characterization",
+    "test:smoke": "playwright test --grep @smoke",
+    "test:security": "playwright test --grep @security",
+    "test:safe": "playwright test --grep-invert @destructive",
+    "test:headed": "playwright test --headed",
+    "report": "playwright show-report",
+    "allure:generate": "allure generate allure-results --clean -o allure-report",
+    "allure:open": "allure open allure-report",
+    "allure:serve": "allure serve allure-results",
+    "notify": "node scripts/notify.mjs"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "4.14.0",
+    "@playwright/test": "1.49.1",
+    "@types/node": "22.10.2",
+    "allure-commandline": "2.46.1",
+    "allure-playwright": "3.1.0",
+    "zod": "4.6.7"
+  }
+}

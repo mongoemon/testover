@@ -1,0 +1,455 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>คู่มือ QA เสาร์-อาทิตย์</title>
+  <style>
+    :root {
+      --bg: #f6f3ec;
+      --surface: #fffdf8;
+      --ink: #1d2320;
+      --muted: #5d6a63;
+      --line: #ddd6c6;
+      --accent: #0b6e4f;
+      --accent-ink: #ffffff;
+      --pass: #0b6e4f;
+      --fail: #b3261e;
+      --code-bg: #1d2320;
+      --code-ink: #e9f1ec;
+      --radius: 10px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2;
+        --line: #2e3a35; --accent: #4cc79a; --accent-ink: #0c1612;
+        --pass: #4cc79a; --fail: #ff8a80; --code-bg: #0c110f; --code-ink: #e1ece6;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2;
+      --line: #2e3a35; --accent: #4cc79a; --accent-ink: #0c1612;
+      --pass: #4cc79a; --fail: #ff8a80; --code-bg: #0c110f; --code-ink: #e1ece6;
+    }
+    * { box-sizing: border-box; }
+    body {
+      margin: 0; background: var(--bg); color: var(--ink);
+      font-family: var(--font-body); line-height: 1.7; font-size: 1rem;
+    }
+    .wrap { max-width: 880px; margin: 0 auto; padding: 0 16px 6rem; }
+    header.hero { padding: 3.5rem 0 2rem; border-bottom: 2px solid var(--ink); margin-bottom: 2.5rem; }
+    .eyebrow { font-family: var(--font-mono); font-size: .8rem; letter-spacing: .08em; color: var(--accent); text-transform: uppercase; }
+    h1 { font-size: clamp(2rem, 1.2rem + 4vw, 3.4rem); line-height: 1.15; margin: .4rem 0 1rem; }
+    .lead { font-size: 1.1rem; color: var(--muted); max-width: 60ch; margin: 0; }
+    h2 { font-size: 1.5rem; margin: 3.5rem 0 .75rem; display: flex; gap: .6rem; align-items: baseline; }
+    h2 .num { font-family: var(--font-mono); color: var(--accent); font-size: 1rem; }
+    h3 { margin: 1.5rem 0 .4rem; font-size: 1.1rem; }
+    p { margin: .5rem 0 1rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .88em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; }
+    .card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.25rem; }
+    .note { border-left: 4px solid var(--accent); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; }
+    .note.warn { border-color: var(--fail); }
+
+    /* flow */
+    .flow { list-style: none; padding: 0; margin: 1.5rem 0; display: grid; gap: 0; counter-reset: step; }
+    .flow li { position: relative; padding: .9rem 1rem .9rem 3.4rem; background: var(--surface); border: 1px solid var(--line); margin-bottom: -1px; counter-increment: step; }
+    .flow li:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+    .flow li:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+    .flow li::before {
+      content: counter(step); position: absolute; left: .9rem; top: .9rem;
+      width: 1.7rem; height: 1.7rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink);
+      display: grid; place-items: center; font-family: var(--font-mono); font-size: .85rem; font-weight: 700;
+    }
+    .flow strong { display: block; }
+    .flow span { color: var(--muted); font-size: .93rem; }
+
+    /* table */
+    .tbl { width: 100%; border-collapse: collapse; margin: 1rem 0; font-size: .95rem; }
+    .tbl th, .tbl td { text-align: left; padding: .55rem .7rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    .tbl th { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .05em; text-transform: uppercase; color: var(--muted); border-bottom: 2px solid var(--ink); }
+    .tbl-scroll { overflow-x: auto; }
+
+    /* code block */
+    .code { position: relative; margin: .75rem 0 1.25rem; }
+    .code pre { margin: 0; background: var(--code-bg); color: var(--code-ink); padding: 1rem; border-radius: var(--radius); overflow-x: auto; font-family: var(--font-mono); font-size: .85rem; line-height: 1.6; }
+    .copy {
+      position: absolute; top: .5rem; right: .5rem; font: inherit; font-size: .75rem;
+      background: transparent; color: var(--code-ink); border: 1px solid #ffffff55; border-radius: 6px; padding: .2rem .6rem; cursor: pointer;
+    }
+    .copy:hover, .copy:focus-visible { background: #ffffff22; outline: 2px solid var(--accent); outline-offset: 1px; }
+
+    /* tabs */
+    .tabs [role=tablist] { display: flex; gap: .25rem; border-bottom: 2px solid var(--ink); }
+    .tabs [role=tab] { font: inherit; background: transparent; color: var(--ink); border: 0; padding: .5rem 1rem; cursor: pointer; border-radius: 8px 8px 0 0; }
+    .tabs [role=tab][aria-selected=true] { background: var(--ink); color: var(--bg); }
+    .tabs [role=tab]:focus-visible { outline: 2px solid var(--accent); outline-offset: -2px; }
+    .tabs [role=tabpanel] { padding: 1rem 0 0; }
+    .tabs ol { padding-left: 1.3rem; }
+
+    /* checklist */
+    .check { list-style: none; padding: 0; margin: 1rem 0; }
+    .check li { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); margin-bottom: .6rem; padding: .75rem 1rem; }
+    .check label { display: flex; gap: .75rem; align-items: flex-start; cursor: pointer; font-weight: 600; }
+    .check input { margin-top: .45rem; width: 1.1rem; height: 1.1rem; accent-color: var(--accent); flex: none; }
+    .check input:checked + .t { text-decoration: line-through; color: var(--muted); }
+    .check .detail { margin: .4rem 0 0 1.85rem; }
+    .progress { height: 8px; background: var(--line); border-radius: 99px; overflow: hidden; margin: 1rem 0 .3rem; }
+    .progress > i { display: block; height: 100%; width: 0; background: var(--accent); transition: width .25s; }
+    @media (prefers-reduced-motion: reduce) { .progress > i { transition: none; } }
+
+    /* cron tool */
+    .tool { display: grid; gap: 1rem; }
+    .days { display: flex; flex-wrap: wrap; gap: .4rem; }
+    .days label { cursor: pointer; position: relative; }
+    .days input { position: absolute; opacity: 0; pointer-events: none; }
+    .days span { display: inline-block; min-width: 3.2rem; text-align: center; padding: .4rem .7rem; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); }
+    .days input:checked + span { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    .days input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .tool input[type=time] { font: inherit; padding: .4rem .6rem; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); color: var(--ink); }
+    .result { font-family: var(--font-mono); font-size: 1.25rem; background: var(--code-bg); color: var(--code-ink); padding: .9rem 1rem; border-radius: var(--radius); overflow-x: auto; }
+    .result small { display: block; font-size: .8rem; color: #9fb3a8; margin-top: .3rem; font-family: var(--font-body); }
+
+    /* messages */
+    .msg { font-family: var(--font-mono); font-size: .85rem; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .8rem 1rem; white-space: pre-wrap; margin: .5rem 0; overflow-wrap: anywhere; }
+    .msg.pass { border-left: 5px solid var(--pass); }
+    .msg.fail { border-left: 5px solid var(--fail); }
+
+    .themebtn { float: right; font: inherit; font-size: .8rem; background: transparent; color: var(--ink); border: 1px solid var(--line); border-radius: 99px; padding: .25rem .8rem; cursor: pointer; }
+    .themebtn:focus-visible { outline: 2px solid var(--accent); }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <button class="themebtn" id="theme-toggle" type="button">สลับโหมดสว่าง/มืด</button>
+    <div class="eyebrow">testover · playwright · github actions</div>
+    <h1>เทสแอปให้เอง<br>ทุกเสาร์-อาทิตย์</h1>
+    <p class="lead">หน้านี้อธิบายว่าโปรเจกต์นี้ทำอะไร ทำงานเป็นลำดับยังไง และต้องตั้งค่าอะไรบ้างจึงจะได้รับข้อความ ✅ PASS / ❌ FAIL ทุกสุดสัปดาห์โดยไม่ต้องเปิดเครื่องทิ้งไว้</p>
+  </header>
+
+  <h2><span class="num">01</span> โปรเจกต์นี้กำลังทำอะไร</h2>
+  <p>เรามีเว็บ Task Board (สมัครสมาชิก, login, จัดการงาน, โปรไฟล์) และชุดเทสอัตโนมัติ 127 เคส (รวมตรวจ accessibility ด้วย axe) ที่ทำงานเหมือนคนจริงๆ
+     คือเปิดเบราว์เซอร์ กรอกข้อมูล กดปุ่ม แล้วตรวจว่าผลตรงกับที่ควรเป็น
+     จากนั้นให้ GitHub รันชุดเทสนี้ตามเวลาที่ตั้งไว้ และส่งผลเข้าแชตของเรา</p>
+
+  <ol class="flow">
+    <li><strong>GitHub ปลุกงานตามเวลา (cron)</strong><span>ทุกเสาร์และอาทิตย์ 09:00 เวลาไทย บนเครื่องเสมือนของ GitHub ไม่ต้องใช้คอมของเรา</span></li>
+    <li><strong>เตรียมเครื่อง</strong><span>ดึงโค้ด ติดตั้ง Node, ติดตั้งแพ็กเกจ และเบราว์เซอร์ Chromium</span></li>
+    <li><strong>เปิดเว็บที่จะเทส</strong><span>Playwright สั่ง <code>node app/server.mjs</code> ให้เองที่พอร์ต 3000</span></li>
+    <li><strong>รันเทส 127 เคส</strong><span>ถ้าเคสไหนพัง จะลองใหม่อีก 2 ครั้ง (กันเคสที่ล้มเพราะจังหวะ) แล้วเก็บ screenshot/video/trace ไว้</span></li>
+    <li><strong>บันทึกผลเป็นไฟล์</strong><span>ได้ <code>test-results/results.json</code> และรายงาน HTML อัปโหลดเก็บไว้ 14 วัน</span></li>
+    <li><strong>ส่งแจ้งเตือน</strong><span><code>scripts/notify.mjs</code> อ่านผล สรุปเป็นข้อความ แล้วยิงเข้า Webhook ของ Discord/Slack — ทำเสมอ ไม่ว่าผ่านหรือพัง</span></li>
+  </ol>
+
+  <div class="note"><strong>ทำไมส่งทั้งตอนผ่านและตอนพัง?</strong>
+    ถ้าส่งเฉพาะตอนพัง เมื่อไม่มีข้อความเข้าเราแยกไม่ออกว่า "ทุกอย่างปกติ" หรือ "ระบบไม่ได้รันเลย"</div>
+
+  <h2><span class="num">02</span> ไฟล์แต่ละตัวทำหน้าที่อะไร</h2>
+  <div class="tbl-scroll">
+  <table class="tbl">
+    <thead><tr><th>ไฟล์</th><th>หน้าที่</th></tr></thead>
+    <tbody>
+      <tr><td><code>app/index.html</code></td><td>เว็บที่ถูกเทส: สมัครสมาชิก/login (<code>demo</code>/<code>demo1234</code> มีให้ตั้งแต่เริ่ม), task board (priority, แก้, ลบ, ค้นหา, กรอง), โปรไฟล์ (เปลี่ยนชื่อ/รหัสผ่าน, dark mode, ลบบัญชี) เก็บข้อมูลใน localStorage</td></tr>
+      <tr><td><code>app/server.mjs</code></td><td>เซิร์ฟเวอร์เล็กๆ เสิร์ฟหน้าเว็บ ไม่ต้องติดตั้งอะไรเพิ่ม</td></tr>
+      <tr><td><code>tests/support/pages.ts</code></td><td>Page Object (AuthPage, TasksPage, ProfilePage) ให้ทุกเคสใช้ท่าเดียวกัน แก้ที่เดียวเมื่อหน้าเว็บเปลี่ยน</td></tr>
+      <tr><td><code>tests/login.spec.ts</code></td><td>สมัครสมาชิก, login/logout, ผู้ที่ยังไม่ login เข้าหน้าภายในไม่ได้, session, หน้า 404, title</td></tr>
+      <tr><td><code>tests/tasks.spec.ts</code></td><td>เพิ่ม/แก้/ลบ/ติ๊กเสร็จ, ค้นหา, กรอง, Clear completed, ข้อมูลคงอยู่หลัง reload</td></tr>
+      <tr><td><code>tests/profile.spec.ts</code></td><td>เปลี่ยนชื่อ, เปลี่ยนรหัสผ่าน, dark mode, ลบบัญชี</td></tr>
+      <tr><td><code>tests/journey.spec.ts</code></td><td>เส้นทางเต็มตั้งแต่สมัครจนลบบัญชี, ผู้ใช้ 2 คนข้อมูลไม่ปนกัน, จอมือถือ, ข้อมูลใน storage เสีย</td></tr>
+      <tr><td><code>playwright.config.ts</code></td><td>ตั้งค่า retry, เก็บหลักฐานตอนพัง, เปิดเว็บให้เอง, สร้าง <code>results.json</code></td></tr>
+      <tr><td><code>scripts/notify.mjs</code></td><td>อ่าน <code>results.json</code> แล้วส่งข้อความเข้า <code>WEBHOOK_URL</code></td></tr>
+      <tr><td><code>tests/a11y.spec.ts</code></td><td>axe ตรวจ accessibility (WCAG 2.1 A/AA) ทุกหน้าและทุกสถานะสำคัญ รวมโหมดมืด</td></tr>
+      <tr><td><code>.github/workflows/smoke.yml</code></td><td>ชุดเร็ว <code>@smoke</code> ทุกครั้งที่ push เข้า <code>main</code> และทุก pull request (ไม่ส่ง webhook)</td></tr>
+      <tr><td><code>.github/workflows/weekend-e2e.yml</code></td><td>รันทุกเคสเสาร์-อาทิตย์ตามเวลาที่ตั้ง แล้วแจ้งผลเข้า webhook</td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <h2><span class="num">03</span> เช็กลิสต์ตั้งค่า (ติ๊กตามได้)</h2>
+  <p>สถานะที่ติ๊กจะจำไว้ในเบราว์เซอร์นี้</p>
+  <div class="progress" aria-hidden="true"><i id="bar"></i></div>
+  <div id="progress-text" style="color:var(--muted);font-size:.9rem"></div>
+
+  <ul class="check" id="checklist">
+    <li>
+      <label><input type="checkbox" data-id="local"><span class="t">รันเทสในเครื่องให้ผ่านก่อน</span></label>
+      <div class="detail">
+        <div class="code"><pre>npm install
+npx playwright install chromium
+npm test</pre><button class="copy" type="button">คัดลอก</button></div>
+        ต้องเห็น <code>127 passed</code> (ชุดเร็ว 5 เคสรันด้วย <code>npm run test:smoke</code>)
+      </div>
+    </li>
+
+    <li>
+      <label><input type="checkbox" data-id="webhook"><span class="t">สร้าง Webhook แล้วเก็บ URL ไว้</span></label>
+      <div class="detail">ดูวิธีที่หัวข้อ 04</div>
+    </li>
+
+    <li>
+      <label><input type="checkbox" data-id="webhook-test"><span class="t">ทดสอบ Webhook ในเครื่อง</span></label>
+      <div class="detail">
+        <div class="code"><pre># PowerShell
+$env:WEBHOOK_URL = "วาง URL ที่นี่"; npm run notify</pre><button class="copy" type="button">คัดลอก</button></div>
+        ต้องเห็น <code>Notification sent.</code> และมีข้อความเข้าช่องแชต (รัน <code>npm test</code> มาก่อนแล้ว เพื่อให้มีไฟล์ผลเทส)
+      </div>
+    </li>
+
+    <li>
+      <label><input type="checkbox" data-id="git"><span class="t">สร้าง repo บน GitHub แล้ว push</span></label>
+      <div class="detail">
+        <div class="code"><pre>git init
+git add .
+git commit -m "feat: add weekend QA suite"
+git branch -M main
+git remote add origin https://github.com/&lt;user&gt;/&lt;repo&gt;.git
+git push -u origin main</pre><button class="copy" type="button">คัดลอก</button></div>
+      </div>
+    </li>
+
+    <li>
+      <label><input type="checkbox" data-id="secret"><span class="t">ตั้ง Secret ชื่อ WEBHOOK_URL</span></label>
+      <div class="detail">repo → Settings → Secrets and variables → Actions → New repository secret
+        (Name: <code>WEBHOOK_URL</code>, Secret: URL จากหัวข้อ 04)</div>
+    </li>
+
+    <li>
+      <label><input type="checkbox" data-id="manual"><span class="t">กดรันด้วยมือหนึ่งครั้ง</span></label>
+      <div class="detail">แท็บ Actions → Weekend E2E → Run workflow แล้วรอข้อความเข้า</div>
+    </li>
+
+    <li>
+      <label><input type="checkbox" data-id="cron"><span class="t">ตรวจเวลา cron</span></label>
+      <div class="detail">ใช้ตัวช่วยในหัวข้อ 05 แล้วแก้ในไฟล์ workflow ถ้าต้องการเวลาอื่น</div>
+    </li>
+  </ul>
+
+  <h2><span class="num">04</span> สร้าง Webhook</h2>
+  <p>Webhook คือ URL ที่ใครก็ตามที่มี URL นี้ ส่งข้อความเข้าช่องแชตได้ สคริปต์ของเราส่งทั้งฟิลด์
+     <code>content</code> (Discord) และ <code>text</code> (Slack) จึงใช้ได้ทั้งสองที่โดยไม่ต้องแก้โค้ด</p>
+
+  <div class="tabs" id="tabs">
+    <div role="tablist" aria-label="เลือกแพลตฟอร์ม">
+      <button role="tab" aria-selected="true" aria-controls="p-discord" id="t-discord" type="button">Discord</button>
+      <button role="tab" aria-selected="false" aria-controls="p-slack" id="t-slack" type="button" tabindex="-1">Slack</button>
+      <button role="tab" aria-selected="false" aria-controls="p-line" id="t-line" type="button" tabindex="-1">LINE</button>
+    </div>
+    <div role="tabpanel" id="p-discord" aria-labelledby="t-discord">
+      <ol>
+        <li>คลิกขวาที่ช่องที่ต้องการ → <strong>Edit Channel</strong></li>
+        <li><strong>Integrations → Webhooks → New Webhook</strong></li>
+        <li>ตั้งชื่อ เช่น <code>QA Bot</code> เลือกช่อง</li>
+        <li>กด <strong>Copy Webhook URL</strong> (หน้าตา <code>https://discord.com/api/webhooks/…</code>)</li>
+      </ol>
+    </div>
+    <div role="tabpanel" id="p-slack" aria-labelledby="t-slack" hidden>
+      <ol>
+        <li>เปิด <a href="https://api.slack.com/apps" target="_blank" rel="noopener">api.slack.com/apps</a> → <strong>Create New App → From scratch</strong></li>
+        <li>เมนู <strong>Incoming Webhooks</strong> → เปิด <strong>Activate</strong></li>
+        <li><strong>Add New Webhook to Workspace</strong> → เลือกช่อง → Copy URL (หน้าตา <code>https://hooks.slack.com/services/…</code>)</li>
+      </ol>
+    </div>
+    <div role="tabpanel" id="p-line" aria-labelledby="t-line" hidden>
+      <p>LINE Notify ปิดบริการไปแล้ว ถ้าจะใช้ LINE ต้องใช้ LINE Messaging API ซึ่งรูปแบบการส่งต่างจาก webhook ข้างต้น
+         และต้องแก้ <code>scripts/notify.mjs</code> เพิ่ม (โปรเจกต์นี้ยังไม่ได้ทำ)</p>
+    </div>
+  </div>
+
+  <div class="note warn"><strong>Webhook URL คือรหัสลับ</strong> —
+    ห้ามใส่ในโค้ดหรือ commit เก็บใน GitHub Secrets เท่านั้น ถ้าหลุดให้ลบ webhook เดิมแล้วสร้างใหม่ทันที</div>
+
+  <h2><span class="num">05</span> ตั้งเวลารัน (cron)</h2>
+  <p>เวลาถูกกำหนดในไฟล์ <code>.github/workflows/weekend-e2e.yml</code> บรรทัด <code>cron</code>
+     ซึ่ง <strong>GitHub ใช้เวลา UTC เสมอ</strong> (ไทย = UTC+7) เลยต้องแปลงก่อน ลองใช้ตัวช่วยนี้:</p>
+
+  <div class="card tool">
+    <fieldset style="border:0;padding:0;margin:0">
+      <legend style="font-weight:600;margin-bottom:.4rem">วัน (เวลาไทย)</legend>
+      <div class="days" id="days">
+        <label><input type="checkbox" value="1"><span>จ.</span></label>
+        <label><input type="checkbox" value="2"><span>อ.</span></label>
+        <label><input type="checkbox" value="3"><span>พ.</span></label>
+        <label><input type="checkbox" value="4"><span>พฤ.</span></label>
+        <label><input type="checkbox" value="5"><span>ศ.</span></label>
+        <label><input type="checkbox" value="6" checked><span>ส.</span></label>
+        <label><input type="checkbox" value="0" checked><span>อา.</span></label>
+      </div>
+    </fieldset>
+    <div>
+      <label for="time" style="font-weight:600;display:block;margin-bottom:.4rem">เวลา (เวลาไทย)</label>
+      <input id="time" type="time" value="09:00">
+    </div>
+    <div class="result" aria-live="polite">
+      <span id="cron-out">0 2 * * 6,0</span>
+      <small id="cron-explain"></small>
+    </div>
+    <div class="code" style="margin:0">
+      <pre id="yaml-out"></pre>
+      <button class="copy" type="button" id="copy-yaml">คัดลอก</button>
+    </div>
+  </div>
+
+  <h3>กฎสั้นๆ ที่ควรจำ</h3>
+  <ul>
+    <li>รูปแบบ: <code>นาที ชั่วโมง วันที่ เดือน วันในสัปดาห์</code> (0 = อาทิตย์ … 6 = เสาร์)</li>
+    <li>ถ้าเวลาไทยก่อน 07:00 วันใน cron จะถอยไป 1 วัน เช่น เสาร์ 06:00 ไทย = <em>ศุกร์</em> 23:00 UTC</li>
+    <li>งานอาจเริ่ม <strong>ช้าได้หลายนาที</strong> ถือเป็นเรื่องปกติของ GitHub</li>
+    <li>repo ที่ไม่มีกิจกรรม 60 วัน GitHub จะปิด schedule ให้ ต้องกด Enable ใหม่ในแท็บ Actions</li>
+    <li>schedule ทำงานเฉพาะบน default branch (<code>main</code>)</li>
+  </ul>
+
+  <div class="note"><strong>ทดสอบ schedule:</strong> ชั่วคราวเปลี่ยนเป็น <code>*/10 * * * *</code> แล้ว push รอดูว่าข้อความเข้า
+    แล้ว <strong>เปลี่ยนกลับทันที</strong> ไม่เช่นนั้นจะรันทุก 10 นาที</div>
+
+  <h2><span class="num">06</span> ข้อความที่จะได้รับ</h2>
+  <div class="msg pass">✅ PASS — weekend QA run
+passed: 127 | failed: 0 | flaky: 0 | skipped: 0
+https://github.com/&lt;user&gt;/&lt;repo&gt;/actions/runs/123456789</div>
+  <div class="msg fail">❌ FAIL — weekend QA run
+passed: 126 | failed: 1 | flaky: 0 | skipped: 0
+• Task board › completing, editing, deleting › deletes only the targeted task
+https://github.com/&lt;user&gt;/&lt;repo&gt;/actions/runs/123456789</div>
+  <p><strong>flaky</strong> = เคสที่พังก่อนแต่ผ่านตอนลองใหม่ ถ้าขึ้นบ่อยควรตามแก้
+     กดลิงก์แล้วโหลด artifact <code>playwright-report</code> เพื่อดู screenshot, video, trace ของเคสที่พัง</p>
+
+  <h2><span class="num">07</span> ถ้าไม่เป็นไปตามคาด</h2>
+  <div class="tbl-scroll">
+  <table class="tbl">
+    <thead><tr><th>อาการ</th><th>ตรวจอะไร</th></tr></thead>
+    <tbody>
+      <tr><td>workflow รันแต่ไม่มีข้อความเข้า</td><td>ยังไม่ตั้ง secret <code>WEBHOOK_URL</code> หรือชื่อผิด (log จะเขียน <code>skipping send</code>)</td></tr>
+      <tr><td><code>Webhook responded 404</code></td><td>webhook ถูกลบหรือ URL ผิด สร้างใหม่แล้วอัปเดต secret</td></tr>
+      <tr><td><code>Webhook responded 429</code></td><td>ส่งถี่เกินไป ลดความถี่ cron</td></tr>
+      <tr><td>ไม่รันตามเวลาเลย</td><td>ยังไม่ push ไป <code>main</code> / schedule ถูกปิดหลัง 60 วันไม่มีกิจกรรม</td></tr>
+      <tr><td>รันผิดวัน</td><td>ลืมแปลง UTC ใช้ตัวช่วยหัวข้อ 05</td></tr>
+      <tr><td>พังเฉพาะบน GitHub</td><td>ดู trace ใน artifact แล้ว <code>npx playwright show-trace &lt;ไฟล์&gt;</code></td></tr>
+    </tbody>
+  </table>
+  </div>
+
+  <p style="margin-top:3rem;color:var(--muted);font-size:.9rem">รายละเอียดเพิ่มเติมอยู่ใน <code>README.md</code></p>
+</div>
+
+<script>
+  // ---------- safe storage ----------
+  function readStore(key) {
+    try { return JSON.parse(localStorage.getItem(key) || 'null'); } catch (e) { return null; }
+  }
+  function writeStore(key, value) {
+    try { localStorage.setItem(key, JSON.stringify(value)); } catch (e) { /* storage unavailable: ignore */ }
+  }
+
+  // ---------- theme ----------
+  const root = document.documentElement;
+  const savedTheme = readStore('testover-theme');
+  if (savedTheme === 'light' || savedTheme === 'dark') root.dataset.theme = savedTheme;
+  document.getElementById('theme-toggle').addEventListener('click', () => {
+    const dark = root.dataset.theme === 'dark' ||
+      (!root.dataset.theme && matchMedia('(prefers-color-scheme: dark)').matches);
+    root.dataset.theme = dark ? 'light' : 'dark';
+    writeStore('testover-theme', root.dataset.theme);
+  });
+
+  // ---------- copy buttons ----------
+  async function copyText(text, button) {
+    const original = button.textContent;
+    try {
+      await navigator.clipboard.writeText(text);
+      button.textContent = 'คัดลอกแล้ว';
+    } catch (e) {
+      button.textContent = 'คัดลอกไม่ได้';
+    }
+    setTimeout(() => { button.textContent = original; }, 1500);
+  }
+  document.querySelectorAll('.code').forEach((block) => {
+    const button = block.querySelector('.copy');
+    const pre = block.querySelector('pre');
+    if (!button || !pre || button.id === 'copy-yaml') return;
+    button.addEventListener('click', () => copyText(pre.textContent, button));
+  });
+
+  // ---------- checklist ----------
+  const boxes = Array.from(document.querySelectorAll('#checklist input[type=checkbox]'));
+  const done = new Set(readStore('testover-checklist') || []);
+  function updateProgress() {
+    const count = boxes.filter((box) => box.checked).length;
+    document.getElementById('bar').style.width = `${(count / boxes.length) * 100}%`;
+    document.getElementById('progress-text').textContent = `เสร็จแล้ว ${count} จาก ${boxes.length} ขั้นตอน`;
+  }
+  boxes.forEach((box) => {
+    box.checked = done.has(box.dataset.id);
+    box.addEventListener('change', () => {
+      if (box.checked) done.add(box.dataset.id); else done.delete(box.dataset.id);
+      writeStore('testover-checklist', Array.from(done));
+      updateProgress();
+    });
+  });
+  updateProgress();
+
+  // ---------- tabs ----------
+  const tabs = Array.from(document.querySelectorAll('#tabs [role=tab]'));
+  function selectTab(tab) {
+    tabs.forEach((t) => {
+      const on = t === tab;
+      t.setAttribute('aria-selected', String(on));
+      t.tabIndex = on ? 0 : -1;
+      document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+    });
+    tab.focus();
+  }
+  tabs.forEach((tab, index) => {
+    tab.addEventListener('click', () => selectTab(tab));
+    tab.addEventListener('keydown', (event) => {
+      if (event.key === 'ArrowRight') selectTab(tabs[(index + 1) % tabs.length]);
+      if (event.key === 'ArrowLeft') selectTab(tabs[(index - 1 + tabs.length) % tabs.length]);
+    });
+  });
+
+  // ---------- cron helper ----------
+  const THAI_OFFSET_HOURS = 7;
+  const DAY_NAMES = ['อาทิตย์', 'จันทร์', 'อังคาร', 'พุธ', 'พฤหัสบดี', 'ศุกร์', 'เสาร์'];
+  const dayBoxes = Array.from(document.querySelectorAll('#days input'));
+  const timeInput = document.getElementById('time');
+  const cronOut = document.getElementById('cron-out');
+  const explain = document.getElementById('cron-explain');
+  const yamlOut = document.getElementById('yaml-out');
+
+  function buildCron(thaiDays, hour, minute) {
+    const utcHourRaw = hour - THAI_OFFSET_HOURS;
+    const dayShift = utcHourRaw < 0 ? -1 : 0;
+    const utcHour = (utcHourRaw + 24) % 24;
+    const utcDays = thaiDays.map((d) => (d + dayShift + 7) % 7);
+    return { utcHour, utcDays, expression: `${minute} ${utcHour} * * ${utcDays.join(',')}` };
+  }
+
+  function updateCron() {
+    const thaiDays = dayBoxes.filter((b) => b.checked).map((b) => Number(b.value));
+    const [h, m] = (timeInput.value || '').split(':').map(Number);
+    if (thaiDays.length === 0 || Number.isNaN(h) || Number.isNaN(m)) {
+      cronOut.textContent = '—';
+      explain.textContent = 'เลือกอย่างน้อย 1 วัน และใส่เวลา';
+      yamlOut.textContent = '';
+      return;
+    }
+    const sorted = [...thaiDays].sort((a, b) => ((a + 6) % 7) - ((b + 6) % 7));
+    const { utcHour, utcDays, expression } = buildCron(sorted, h, m);
+    const pad = (n) => String(n).padStart(2, '0');
+    cronOut.textContent = expression;
+    explain.textContent =
+      `ไทย ${sorted.map((d) => DAY_NAMES[d]).join(', ')} เวลา ${pad(h)}:${pad(m)} ` +
+      `= UTC ${utcDays.map((d) => DAY_NAMES[d]).join(', ')} เวลา ${pad(utcHour)}:${pad(m)}`;
+    yamlOut.textContent = `on:\n  schedule:\n    - cron: '${expression}'\n  workflow_dispatch:`;
+  }
+  dayBoxes.forEach((b) => b.addEventListener('change', updateCron));
+  timeInput.addEventListener('input', updateCron);
+  document.getElementById('copy-yaml').addEventListener('click', (event) => {
+    copyText(yamlOut.textContent, event.currentTarget);
+  });
+  updateCron();
+</script>
+</body>
+</html>

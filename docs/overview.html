@@ -1,0 +1,289 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover เริ่มต้นที่นี่</title>
+  <meta name="description" content="ภาพรวมโปรเจกต์ testover สำหรับคนใหม่: คืออะไร ทำอะไรได้ เป้าหมายคืออะไร ผ่าน user journey 6 ขั้น">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --pass: #0b6e4f; --fail: #b3261e;
+      --code-bg: #1d2320; --code-ink: #e9f1ec;
+      --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+        --code-bg: #0c110f; --code-ink: #e1ece6;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+      --code-bg: #0c110f; --code-ink: #e1ece6;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.75; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .88em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; }
+    pre { background: var(--code-bg); color: var(--code-ink); padding: .9rem 1.1rem; border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: .85rem; line-height: 1.6; margin: .75rem 0; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    /* hero */
+    header.hero { padding: 3.5rem 0 2.25rem; border-bottom: 2px solid var(--ink); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; }
+    h1 { font-size: clamp(2.1rem, 1.2rem + 4.5vw, 3.8rem); line-height: 1.12; margin: .4rem 0 1rem; letter-spacing: -.01em; }
+    .lead { font-size: 1.15rem; color: var(--muted); max-width: 58ch; margin: 0 0 1.5rem; }
+    .toggle-group { float: right; margin-top: 1rem; display: flex; gap: .5rem; }
+    .toggle { text-decoration: none; background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; }
+    .toggle:hover { border-color: var(--accent); color: var(--accent); }
+
+    /* three answers */
+    .answers { display: grid; grid-template-columns: repeat(3, 1fr); gap: 0; margin-top: 2rem; border: 1px solid var(--ink); border-radius: var(--radius); overflow: hidden; background: var(--surface); }
+    .answers > div { padding: 1.1rem 1.25rem; border-right: 1px solid var(--line); }
+    .answers > div:last-child { border-right: 0; }
+    .answers h2 { margin: 0 0 .3rem; font-size: .8rem; font-family: var(--font-mono); letter-spacing: .08em; text-transform: uppercase; color: var(--accent); }
+    .answers p { margin: 0; font-size: .98rem; }
+
+    h2.sec { font-size: 1.6rem; margin: 4rem 0 .4rem; line-height: 1.25; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 62ch; }
+
+    /* journey */
+    ol.journey { list-style: none; margin: 0; padding: 0; position: relative; }
+    ol.journey::before { content: ""; position: absolute; left: 23px; top: 8px; bottom: 8px; width: 2px; background: var(--line); }
+    .step { position: relative; padding-left: 68px; margin-bottom: 1.5rem; }
+    .dot { position: absolute; left: 0; top: 0; width: 48px; height: 48px; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; font-size: 1.1rem; box-shadow: 0 0 0 6px var(--bg); }
+    .step-card { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.1rem 1.3rem 1.2rem; transition: border-color .15s, transform .15s; }
+    .step-card:hover { border-color: var(--accent); transform: translateX(3px); }
+    .step-card .who { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .08em; text-transform: uppercase; color: var(--muted); }
+    .step-card h3 { margin: .15rem 0 .35rem; font-size: 1.2rem; line-height: 1.35; }
+    .step-card p { margin: .35rem 0; }
+    .step-card .out { margin-top: .7rem; padding-top: .6rem; border-top: 1px dashed var(--line); font-size: .92rem; color: var(--muted); }
+    .step-card .out b { color: var(--accent); font-weight: 600; }
+    .step-card details { margin-top: .6rem; }
+    .step-card summary { cursor: pointer; color: var(--accent); font-size: .92rem; }
+    .step-card ul { margin: .5rem 0 0; padding-left: 1.2rem; font-size: .95rem; }
+
+    /* msg preview */
+    .msgs { display: grid; grid-template-columns: 1fr 1fr; gap: .75rem; margin-top: .75rem; }
+    .msg { border-radius: 8px; padding: .7rem .9rem; font-size: .85rem; font-family: var(--font-mono); line-height: 1.55; border-left: 5px solid; background: color-mix(in srgb, var(--ink) 5%, var(--surface)); }
+    .msg.pass { border-color: var(--pass); }
+    .msg.fail { border-color: var(--fail); }
+    .msg strong { display: block; }
+
+    /* capabilities */
+    .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .cap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; }
+    .cap:nth-child(2) { margin-top: 1rem; } .cap:nth-child(4) { margin-top: 1rem; }
+    .cap h3 { margin: 0 0 .25rem; font-size: 1.05rem; }
+    .cap p { margin: 0; font-size: .93rem; color: var(--muted); }
+    .cap .n { font-family: var(--font-mono); font-size: 1.9rem; font-weight: 700; color: var(--accent); line-height: 1.2; display: block; }
+
+    /* files */
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: .93rem; }
+    th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+    tr:last-child td { border-bottom: 0; }
+    .tablewrap { overflow-x: auto; }
+
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.25rem 0; font-size: .95rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+
+    @media (max-width: 680px) {
+      .answers { grid-template-columns: 1fr; }
+      .answers > div { border-right: 0; border-bottom: 1px solid var(--line); }
+      .answers > div:last-child { border-bottom: 0; }
+      .msgs { grid-template-columns: 1fr; }
+      .cap:nth-child(n) { margin-top: 0; }
+      .step { padding-left: 58px; }
+      .dot { width: 40px; height: 40px; font-size: 1rem; }
+      ol.journey::before { left: 19px; }
+    }
+    @media (prefers-reduced-motion: reduce) {
+      html { scroll-behavior: auto; }
+      .step-card, .step-card:hover { transition: none; transform: none; }
+    }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="toggle-group">
+      <a class="toggle" href="overview.en.html" hreflang="en" lang="en">English</a>
+      <button class="toggle" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">สลับธีม</button>
+    </div>
+    <div class="eyebrow">testover · เริ่มต้นที่นี่</div>
+    <h1>เว็บพังตอนไม่มีใครดู<br>เราก็ยังรู้ก่อนใคร</h1>
+    <p class="lead">testover คือชุดเทสอัตโนมัติสำหรับเว็บ Task Board ที่ทำงานเองทุกเสาร์-อาทิตย์ แล้วส่งผล ✅ ผ่าน หรือ ❌ พัง เข้าแชตของทีม โดยไม่ต้องมีใครกดอะไร</p>
+
+    <div class="answers">
+      <div>
+        <h2>คืออะไร</h2>
+        <p>เว็บตัวอย่าง (Task Board) + เทส Playwright 127 เคส + ตัวรันและแจ้งผลอัตโนมัติบน GitHub Actions</p>
+      </div>
+      <div>
+        <h2>ทำอะไรได้</h2>
+        <p>ทดสอบสมัคร/login, จัดการงาน, โปรไฟล์ และเส้นทางใช้งานเต็ม แล้วรายงานผลเข้า Discord หรือ Slack</p>
+      </div>
+      <div>
+        <h2>เป้าหมาย</h2>
+        <p>รู้ทันทีว่าฟีเจอร์หลักยังใช้ได้ไหม ไม่ต้องรอผู้ใช้มาแจ้ง และเป็นโปรเจกต์ตัวอย่างให้ฝึกทำ QA อัตโนมัติครบวงจร</p>
+      </div>
+    </div>
+  </header>
+
+  <h2 class="sec">เส้นทางของโปรเจกต์ใน 6 ขั้น</h2>
+  <p class="sub">ลองตามไปทีละขั้น จะเห็นว่าของแต่ละชิ้นในโปรเจกต์มีไว้ทำอะไร และต่อกันอย่างไร</p>
+
+  <ol class="journey">
+    <li class="step">
+      <span class="dot" aria-hidden="true">1</span>
+      <div class="step-card">
+        <div class="who">ปัญหาที่เริ่มต้น</div>
+        <h3>ไม่มีใครเปิดเว็บเช็กทุกสัปดาห์</h3>
+        <p>ฟีเจอร์พื้นฐานอย่าง login หรือเพิ่มงานอาจพังเงียบๆ ตอนวันหยุด กว่าจะรู้ก็เมื่อผู้ใช้บ่น การเช็กด้วยมือก็ช้าและลืมง่าย</p>
+        <div class="out"><b>ทางออก:</b> ให้เครื่องเช็กแทนตามเวลา แล้วบอกผลทางแชต</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">2</span>
+      <div class="step-card">
+        <div class="who">สิ่งที่ถูกทดสอบ</div>
+        <h3>เว็บ Task Board ที่สร้างไว้ในโปรเจกต์</h3>
+        <p>ผู้ใช้สมัคร/login → เพิ่มงานพร้อมระดับความสำคัญ → ติ๊กเสร็จ แก้ ลบ ค้นหา กรอง → ตั้งค่าโปรไฟล์ เปลี่ยนรหัสผ่าน เปิด dark mode หรือลบบัญชี</p>
+        <p>ข้อมูลเก็บใน localStorage ของเบราว์เซอร์ ไม่ต้องมี backend จึงรันง่ายและผลคงที่</p>
+        <div class="out"><b>ไฟล์:</b> <code>app/index.html</code>, <code>app/server.mjs</code> · ผู้ใช้ทดลอง <code>demo</code> / <code>demo1234</code></div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">3</span>
+      <div class="step-card">
+        <div class="who">ตัวตรวจสอบ</div>
+        <h3>Playwright เปิดเบราว์เซอร์จริงแล้วลองใช้แทนคน</h3>
+        <p>เทส 127 เคสคลิกปุ่ม กรอกฟอร์ม แล้วเช็กว่าผลตรงตามคาด ทั้งกรณีปกติ กรอกผิด/ว่าง ข้อมูลหลัง reload จอมือถือ และข้อมูลใน storage ที่เสีย แต่ละเคสเริ่มด้วยเบราว์เซอร์ใหม่ ไม่มีข้อมูลค้างข้ามเคส</p>
+        <details>
+          <summary>ดูว่าครอบคลุมอะไรบ้าง</summary>
+          <ul>
+            <li><b>login.spec</b> — สมัคร, login/logout, route guard, 404</li>
+            <li><b>tasks.spec</b> — เพิ่ม/แก้/ลบ/ติ๊ก, ค้นหา, กรอง</li>
+            <li><b>profile.spec</b> — ชื่อ, รหัสผ่าน, dark mode, ลบบัญชี</li>
+            <li><b>journey.spec</b> — เส้นทางเต็มตั้งแต่สมัครจนลบบัญชี, ผู้ใช้ 2 คนข้อมูลไม่ปนกัน</li>
+            <li><b>contracts/</b> และ <b>characterization/</b> — ข้อตกลงรูปข้อมูลและพฤติกรรมที่จดไว้ (ดู <a href="testing-structure.html">โครงสร้างการเทส</a>)</li>
+            <li><b>a11y.spec</b> — สแกน accessibility ด้วย axe ตาม WCAG 2.1 A/AA</li>
+          </ul>
+        </details>
+        <div class="out"><b>ไฟล์:</b> <code>tests/*.spec.ts</code>, <code>tests/support/pages.ts</code> (Page Object)</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">4</span>
+      <div class="step-card">
+        <div class="who">คุณลองเองในเครื่อง</div>
+        <h3>รันได้ใน 3 คำสั่ง</h3>
+        <p>ต้องมี Node.js 20 ขึ้นไป ระบบเปิดเว็บให้เองอัตโนมัติ</p>
+<pre>npm install
+npx playwright install chromium   # ครั้งแรกครั้งเดียว
+npm test                          # รันทั้ง 127 เคส</pre>
+        <p>อยากดูเร็วๆ ใช้ <code>npm run test:smoke</code> (5 เคสหลัก) หรืออยากเห็นเบราว์เซอร์ทำงานใช้ <code>npm run test:headed</code> แล้วเปิดรายงานด้วย <code>npm run report</code></p>
+        <div class="out"><b>ได้:</b> ผ่าน/พังรายเคส พร้อม screenshot, video, trace ของเคสที่พัง</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">5</span>
+      <div class="step-card">
+        <div class="who">ทำงานเอง ไม่ต้องมีคนกด</div>
+        <h3>GitHub Actions รันทุกเสาร์-อาทิตย์</h3>
+        <p>Workflow <code>weekend-e2e.yml</code> ตั้งเวลาเริ่มทุกเสาร์และอาทิตย์ 09:00 (เวลาไทย) ตั้งเวลาหมดไว้ 20 นาทีกันค้าง และกดรันเองได้จากแท็บ Actions เมื่ออยากเช็กนอกรอบ</p>
+        <div class="out"><b>ข้อควรรู้:</b> cron ของ GitHub ใช้เวลา UTC และอาจเริ่มช้าได้หลายนาที</div>
+      </div>
+    </li>
+
+    <li class="step">
+      <span class="dot" aria-hidden="true">6</span>
+      <div class="step-card">
+        <div class="who">ผลลัพธ์ที่คุณได้รับ</div>
+        <h3>ข้อความสรุปเด้งเข้า Discord / Slack</h3>
+        <p>สคริปต์ <code>scripts/notify.mjs</code> อ่านผลเทสแล้วส่งเข้า webhook ถ้าพัง จะบอกชื่อเคสที่พังและลิงก์ไปดู run พร้อมรายงานละเอียดใน Artifacts</p>
+        <div class="msgs">
+          <div class="msg pass"><strong>✅ PASS — weekend QA run</strong>passed: 127 | failed: 0<br>flaky: 0 | skipped: 0</div>
+          <div class="msg fail"><strong>❌ FAIL — weekend QA run</strong>passed: 126 | failed: 1<br>• Task board › deletes only the targeted task</div>
+        </div>
+        <div class="out"><b>เป้าหมายสุดท้าย:</b> เช้าวันหยุด เปิดแชตมาเห็น ✅ ก็สบายใจ เห็น ❌ ก็รู้ทันทีว่าต้องแก้อะไร</div>
+      </div>
+    </li>
+  </ol>
+
+  <h2 class="sec">สรุปสิ่งที่โปรเจกต์ทำได้</h2>
+  <p class="sub">ตัวเลขด้านล่างอ้างจาก README ของโปรเจกต์</p>
+  <div class="caps">
+    <div class="cap"><span class="n">127</span><h3>เคสทดสอบ</h3><p>E2E, contract, characterization และ accessibility (ยังมี unit test อีก 42)</p></div>
+    <div class="cap"><span class="n">5</span><h3>Smoke test</h3><p>ชุดเร็วเช็กเส้นทางหลัก ใช้ <code>npm run test:smoke</code></p></div>
+    <div class="cap"><span class="n">10</span><h3>Tag แยกชนิดเคส</h3><p>เลือกรันเฉพาะ @security, @validation ฯลฯ ด้วย <code>--grep</code></p></div>
+    <div class="cap"><span class="n">2</span><h3>ช่องทางแจ้งผล</h3><p>Discord และ Slack ใช้ webhook เดียวกัน ไม่ต้องแก้โค้ด</p></div>
+  </div>
+
+  <h2 class="sec">ไฟล์สำคัญที่ควรรู้จัก</h2>
+  <p class="sub">ถ้าจะเริ่มแก้หรือเพิ่มอะไร ให้ดูตรงนี้ก่อน</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>ไฟล์/โฟลเดอร์</th><th>ทำหน้าที่</th></tr></thead>
+      <tbody>
+        <tr><td><code>app/</code></td><td>เว็บ Task Board และเซิร์ฟเวอร์ static เล็กๆ ที่ใช้เป็นเป้าหมายการเทส</td></tr>
+        <tr><td><code>tests/</code></td><td>เทส Playwright ทั้งหมด แยกตามพื้นที่ของแอป</td></tr>
+        <tr><td><code>unit/</code></td><td>unit test ของตัวเซิร์ฟเวอร์และสคริปต์แจ้งผล</td></tr>
+        <tr><td><code>scripts/notify.mjs</code></td><td>อ่านผลเทสแล้วส่งเข้า webhook</td></tr>
+        <tr><td><code>.github/workflows/weekend-e2e.yml</code></td><td>ตั้งเวลาให้ทุกอย่างรันอัตโนมัติบน GitHub</td></tr>
+        <tr><td><code>playwright.config.ts</code></td><td>ตั้งค่า Playwright (เปิดเว็บ, reporter, retry)</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="note"><strong>ข้อควรระวัง:</strong> แอปนี้เก็บรหัสผ่านเป็นข้อความธรรมดาใน localStorage โดยตั้งใจ เพื่อให้เทสได้โดยไม่ต้องมี backend ห้ามนำแบบนี้ไปใช้กับงานจริง และ Webhook URL คือรหัสลับ ให้เก็บใน GitHub Secrets เท่านั้น</div>
+
+  <section class="next">
+    <h2>ไปต่อที่ไหนดี</h2>
+    <ul>
+      <li>อยากตั้ง webhook, secret และเวลา cron: <a href="guide.html">guide.html</a> (มีเช็กลิสต์และตัวช่วยแปลงเวลา)</li>
+      <li>โครงสร้างเทสทั้งหมด (contract, characterization, เครื่องมือ): <a href="testing-structure.html">testing-structure.html</a></li>
+      <li>อยากรู้ว่า tag แต่ละตัวใช้ตอนไหน: <a href="tags.md">tags.md</a></li>
+      <li>รายละเอียดทั้งหมดและวิธีแก้ปัญหาที่พบบ่อย: <a href="../README.md">README.md</a></li>
+    </ul>
+  </section>
+
+  <footer>testover · หน้านี้เป็นภาพรวมสำหรับคนใหม่ ตัวเลขและขั้นตอนอ้างอิงจาก README.md</footer>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+</body>
+</html>

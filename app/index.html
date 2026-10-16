@@ -1,0 +1,551 @@
+<!doctype html>
+<html lang="en" data-theme="light">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>Task Board</title>
+  <style>
+    :root {
+      --bg: #f7f5f0; --surface: #ffffff; --ink: #1d2320; --muted: #66716b;
+      --line: #dcd7ca; --accent: #0b6e4f; --accent-ink: #ffffff; --danger: #b3261e;
+    }
+    :root[data-theme="dark"] {
+      --bg: #141916; --surface: #1c2420; --ink: #e8efe9; --muted: #9bada2;
+      --line: #2f3b35; --accent: #4cc79a; --accent-ink: #0c1612; --danger: #ff8a80;
+    }
+    * { box-sizing: border-box; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: system-ui, sans-serif; line-height: 1.5; }
+    header#app-header { display: flex; flex-wrap: wrap; align-items: center; gap: 1rem; padding: .75rem 1rem; border-bottom: 2px solid var(--ink); background: var(--surface); }
+    header .brand { font-weight: 700; color: var(--ink); text-decoration: none; margin-right: auto; }
+    nav a { margin-right: .75rem; color: var(--muted); }
+    nav a[aria-current="page"] { color: var(--ink); font-weight: 700; text-decoration: none; border-bottom: 2px solid var(--accent); }
+    main { max-width: 560px; margin: 2rem auto; padding: 0 1rem 4rem; }
+    h1 { margin-top: 0; }
+    form { display: grid; gap: .6rem; margin-bottom: 1rem; }
+    .field { display: grid; gap: .2rem; }
+    .field > label { font-weight: 600; }
+    input[type=text], input[type=password], input[type=search], select {
+      padding: .5rem; font: inherit; border: 1px solid var(--line); border-radius: 6px; background: var(--surface); color: var(--ink);
+    }
+    button { font: inherit; padding: .45rem .9rem; border-radius: 6px; border: 1px solid var(--ink); background: var(--surface); color: var(--ink); cursor: pointer; }
+    button[type=submit], button.primary { background: var(--accent); color: var(--accent-ink); border-color: var(--accent); }
+    button.danger { color: var(--danger); border-color: var(--danger); }
+    button[aria-pressed="true"] { background: var(--ink); color: var(--bg); }
+    button:disabled { opacity: .45; cursor: not-allowed; }
+    .error { color: var(--danger); margin: 0 0 .75rem; padding-left: 1.1rem; }
+    p.error, div.error { padding-left: 0; }
+    .error-list { margin: 0; padding-left: 1.1rem; }
+    .flash, [role=status] { color: var(--accent); font-weight: 600; margin: 0 0 1rem; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: .5rem; align-items: end; margin-bottom: .75rem; }
+    .toolbar .field { flex: 1; min-width: 10rem; }
+    .filters { display: flex; gap: .25rem; }
+    ul.tasks { list-style: none; padding: 0; margin: 0; }
+    ul.tasks li { display: flex; align-items: center; gap: .5rem; padding: .5rem 0; border-bottom: 1px solid var(--line); }
+    ul.tasks li.done .task-title { text-decoration: line-through; color: var(--muted); }
+    .task-title { flex: 1; overflow-wrap: anywhere; }
+    .badge { font-size: .75rem; padding: .1rem .5rem; border-radius: 99px; border: 1px solid var(--line); }
+    .badge[data-priority="high"] { border-color: var(--danger); color: var(--danger); }
+    .edit-form { display: flex; gap: .4rem; width: 100%; margin: 0; }
+    .edit-form input { flex: 1; }
+    .footer { display: flex; justify-content: space-between; align-items: center; margin-top: .75rem; }
+    .muted { color: var(--muted); }
+    section.card { border: 1px solid var(--line); border-radius: 10px; padding: 1rem; margin-bottom: 1.25rem; background: var(--surface); }
+    section.card h2 { margin-top: 0; font-size: 1.1rem; }
+    [hidden] { display: none !important; }
+    #version-badge { position: fixed; right: .75rem; bottom: .75rem; padding: .15rem .6rem; font-size: .75rem; color: var(--muted); background: var(--surface); border: 1px solid var(--line); border-radius: 99px; user-select: none; -webkit-user-select: none; -webkit-touch-callout: none; touch-action: manipulation; }
+    #version-badge.pressing { border-color: var(--accent); color: var(--accent); }
+    #changelog-dialog { max-width: 420px; width: calc(100% - 2rem); padding: 1rem 1.25rem; border: 1px solid var(--ink); border-radius: 10px; background: var(--surface); color: var(--ink); }
+    #changelog-dialog::backdrop { background: rgb(0 0 0 / .45); }
+    #changelog-dialog h2 { margin: 0 0 .75rem; font-size: 1.1rem; }
+    #changelog-dialog h3 { margin: .75rem 0 .25rem; font-size: .95rem; }
+    #changelog-dialog ul { margin: 0; padding-left: 1.1rem; }
+    #changelog-dialog form { display: flex; justify-content: flex-end; margin: 1rem 0 0; }
+  </style>
+</head>
+<body>
+  <header id="app-header" hidden>
+    <a class="brand" href="#/">Task Board</a>
+    <nav aria-label="Main">
+      <a href="#/tasks" id="nav-tasks">Tasks</a>
+      <a href="#/profile" id="nav-profile">Profile</a>
+    </nav>
+    <span id="greeting"></span>
+    <button id="logout" type="button">Logout</button>
+  </header>
+  <main id="view"></main>
+  <button id="version-badge" type="button" aria-haspopup="dialog" title="Press and hold to see the change log"></button>
+  <dialog id="changelog-dialog" aria-labelledby="changelog-title">
+    <h2 id="changelog-title">Change log</h2>
+    <div id="changelog-body"></div>
+    <form method="dialog"><button class="primary" type="submit">Close</button></form>
+  </dialog>
+
+  <script>
+    (() => {
+      'use strict';
+
+      // NOTE: demo app only. Passwords are stored in plain text in localStorage on purpose
+      // so the QA suite can exercise flows without a backend. Never do this in a real product.
+      const KEYS = {
+        users: 'tb.users',
+        session: 'tb.session',
+        theme: 'tb.theme',
+        tasks: (username) => `tb.tasks.${username}`,
+      };
+      const USERNAME_RE = /^[a-z0-9_]{3,20}$/;
+      const MIN_PASSWORD = 8;
+      const MAX_TITLE = 80;
+      const PRIORITIES = [
+        { value: 'low', label: 'Low' },
+        { value: 'medium', label: 'Medium' },
+        { value: 'high', label: 'High' },
+      ];
+
+      // ---------- storage (tolerates missing or corrupted data) ----------
+      const store = {
+        get(key, fallback) {
+          try {
+            const raw = localStorage.getItem(key);
+            return raw === null ? fallback : JSON.parse(raw);
+          } catch (e) {
+            return fallback;
+          }
+        },
+        set(key, value) { localStorage.setItem(key, JSON.stringify(value)); },
+        remove(key) { localStorage.removeItem(key); },
+      };
+
+      if (store.get(KEYS.users, null) === null) {
+        store.set(KEYS.users, { demo: { password: 'demo1234', displayName: 'Demo User' } });
+      }
+
+      const getUsers = () => {
+        const users = store.get(KEYS.users, {});
+        return users && typeof users === 'object' && !Array.isArray(users) ? users : {};
+      };
+      const hasUser = (users, name) => Object.hasOwn(users, name);
+
+      const sessionUser = () => {
+        const name = store.get(KEYS.session, null);
+        const users = getUsers();
+        return typeof name === 'string' && hasUser(users, name) ? { username: name, ...users[name] } : null;
+      };
+
+      const isValidTask = (t) =>
+        t && typeof t === 'object' && Number.isInteger(t.id) && typeof t.title === 'string' &&
+        typeof t.done === 'boolean' && PRIORITIES.some((p) => p.value === t.priority);
+      const loadTasks = (username) => {
+        const tasks = store.get(KEYS.tasks(username), []);
+        return Array.isArray(tasks) ? tasks.filter(isValidTask) : [];
+      };
+
+      // ---------- tiny DOM helper (no innerHTML: user text is always a text node) ----------
+      const PROPERTY_ATTRS = ['value', 'checked', 'disabled'];
+      function h(tag, props = {}, ...children) {
+        const el = document.createElement(tag);
+        for (const [key, value] of Object.entries(props)) {
+          if (key === 'class') el.className = value;
+          else if (key.startsWith('on')) el.addEventListener(key.slice(2), value);
+          else if (PROPERTY_ATTRS.includes(key)) el[key] = value;
+          else if (value === true) el.setAttribute(key, '');
+          else if (value !== false && value != null) el.setAttribute(key, value);
+        }
+        for (const child of children.flat()) {
+          if (child != null && child !== false) el.append(child);
+        }
+        return el;
+      }
+      let fieldCounter = 0;
+      const field = (label, control) => {
+        fieldCounter += 1;
+        control.id = `field-${fieldCounter}`;
+        return h('div', { class: 'field' }, h('label', { for: control.id }, label), control);
+      };
+
+      // ---------- shell ----------
+      const view = document.getElementById('view');
+      const header = document.getElementById('app-header');
+      const greeting = document.getElementById('greeting');
+      const navLinks = { '/tasks': document.getElementById('nav-tasks'), '/profile': document.getElementById('nav-profile') };
+      let flash = null;
+
+      const setTitle = (name) => { document.title = `Task Board — ${name}`; };
+      const applyTheme = (theme) => { document.documentElement.dataset.theme = theme === 'dark' ? 'dark' : 'light'; };
+      applyTheme(store.get(KEYS.theme, 'light'));
+
+      const currentRoute = () => location.hash.replace(/^#/, '') || '/';
+      function navigate(path) {
+        if (location.hash === `#${path}`) render();
+        else location.hash = path;
+      }
+
+      function renderHeader(user, route) {
+        header.hidden = !user;
+        if (!user) return;
+        greeting.textContent = `Hello, ${user.displayName}`;
+        for (const [path, link] of Object.entries(navLinks)) {
+          if (path === route) link.setAttribute('aria-current', 'page');
+          else link.removeAttribute('aria-current');
+        }
+      }
+
+      // ---------- views ----------
+      function loginView() {
+        setTitle('Login');
+        const username = h('input', { type: 'text', autocomplete: 'off' });
+        const password = h('input', { type: 'password', autocomplete: 'off' });
+        const error = h('p', { class: 'error', role: 'alert', hidden: true });
+        const fail = (message) => { error.textContent = message; error.hidden = false; };
+
+        const form = h('form', {
+          novalidate: true,
+          onsubmit: (event) => {
+            event.preventDefault();
+            const name = username.value.trim().toLowerCase();
+            if (name === '') return fail('Username is required');
+            if (password.value === '') return fail('Password is required');
+            const users = getUsers();
+            if (!hasUser(users, name) || users[name].password !== password.value) {
+              return fail('Username and password do not match');
+            }
+            store.set(KEYS.session, name);
+            navigate('/tasks');
+          },
+        }, field('Username', username), field('Password', password), h('button', { type: 'submit' }, 'Login'));
+
+        return h('section', {}, h('h1', {}, 'Sign in'), form, error,
+          h('p', {}, h('a', { href: '#/register' }, 'Create an account')));
+      }
+
+      function registerView() {
+        setTitle('Register');
+        const username = h('input', { type: 'text', autocomplete: 'off' });
+        const displayName = h('input', { type: 'text', autocomplete: 'off' });
+        const password = h('input', { type: 'password', autocomplete: 'new-password' });
+        const confirm = h('input', { type: 'password', autocomplete: 'new-password' });
+        // role="alert" on a <ul> would replace its list semantics, so the list lives inside the alert.
+        const errorList = h('ul', { class: 'error-list' });
+        const errors = h('div', { class: 'error', role: 'alert', hidden: true }, errorList);
+
+        const form = h('form', {
+          novalidate: true,
+          onsubmit: (event) => {
+            event.preventDefault();
+            const name = username.value.trim().toLowerCase();
+            const display = displayName.value.trim();
+            const found = [];
+            if (!USERNAME_RE.test(name)) found.push('Username must be 3-20 characters (letters, numbers, underscore)');
+            if (display === '') found.push('Display name is required');
+            if (password.value.length < MIN_PASSWORD) found.push(`Password must be at least ${MIN_PASSWORD} characters`);
+            if (password.value !== confirm.value) found.push('Passwords do not match');
+            const users = getUsers();
+            if (found.length === 0 && hasUser(users, name)) found.push('Username is already taken');
+
+            errorList.replaceChildren(...found.map((message) => h('li', {}, message)));
+            errors.hidden = found.length === 0;
+            if (found.length > 0) return;
+
+            store.set(KEYS.users, { ...users, [name]: { password: password.value, displayName: display } });
+            store.set(KEYS.session, name);
+            flash = `Welcome, ${display}!`;
+            navigate('/tasks');
+          },
+        },
+        field('Username', username), field('Display name', displayName),
+        field('Password', password), field('Confirm password', confirm),
+        h('button', { type: 'submit' }, 'Create account'));
+
+        return h('section', {}, h('h1', {}, 'Create account'), form, errors,
+          h('p', {}, h('a', { href: '#/login' }, 'Back to login')));
+      }
+
+      function validateTitle(title) {
+        if (title === '') return 'Task title is required';
+        if (title.length > MAX_TITLE) return `Task title must be ${MAX_TITLE} characters or fewer`;
+        return '';
+      }
+
+      function tasksView(user) {
+        setTitle('Tasks');
+        const key = KEYS.tasks(user.username);
+        let tasks = loadTasks(user.username);
+        let filter = 'all';
+        let query = '';
+        let editingId = null;
+        let nextId = tasks.reduce((max, t) => Math.max(max, t.id), 0) + 1;
+
+        const persist = () => store.set(key, tasks);
+        const error = h('p', { class: 'error', role: 'alert', hidden: true });
+        const showError = (message) => { error.textContent = message; error.hidden = message === ''; };
+
+        const titleInput = h('input', { type: 'text', autocomplete: 'off' });
+        const prioritySelect = h('select', {},
+          ...PRIORITIES.map((p) => h('option', { value: p.value, selected: p.value === 'medium' }, p.label)));
+
+        const addForm = h('form', {
+          novalidate: true,
+          onsubmit: (event) => {
+            event.preventDefault();
+            const title = titleInput.value.trim();
+            const problem = validateTitle(title);
+            if (problem) return showError(problem);
+            showError('');
+            tasks = [...tasks, { id: nextId++, title, priority: prioritySelect.value, done: false }];
+            persist();
+            titleInput.value = '';
+            prioritySelect.value = 'medium';
+            draw();
+            titleInput.focus();
+          },
+        }, field('New task', titleInput), field('Priority', prioritySelect), h('button', { type: 'submit' }, 'Add task'));
+
+        const searchInput = h('input', {
+          type: 'search',
+          oninput: (event) => { query = event.target.value.trim().toLowerCase(); draw(); },
+        });
+        const filterButtons = [['all', 'All'], ['active', 'Active'], ['completed', 'Completed']].map(([value, label]) =>
+          [value, h('button', { type: 'button', 'aria-pressed': 'false', onclick: () => { filter = value; draw(); } }, label)]);
+
+        const list = h('ul', { class: 'tasks', 'data-testid': 'task-list' });
+        const empty = h('p', { id: 'task-empty', class: 'muted', hidden: true });
+        const count = h('p', { id: 'task-count', class: 'muted' });
+        const clearButton = h('button', {
+          type: 'button',
+          onclick: () => { tasks = tasks.filter((t) => !t.done); persist(); draw(); },
+        }, 'Clear completed');
+
+        function renderItem(task) {
+          if (task.id === editingId) {
+            const input = h('input', { type: 'text', value: task.title, 'aria-label': 'Edit title' });
+            queueMicrotask(() => input.focus());
+            return h('li', {}, h('form', {
+              class: 'edit-form',
+              novalidate: true,
+              onsubmit: (event) => {
+                event.preventDefault();
+                const title = input.value.trim();
+                const problem = validateTitle(title);
+                if (problem) return showError(problem);
+                showError('');
+                tasks = tasks.map((t) => (t.id === task.id ? { ...t, title } : t));
+                editingId = null;
+                persist();
+                draw();
+              },
+            }, input, h('button', { type: 'submit' }, 'Save'),
+            h('button', { type: 'button', onclick: () => { editingId = null; showError(''); draw(); } }, 'Cancel')));
+          }
+          const priority = PRIORITIES.find((p) => p.value === task.priority);
+          return h('li', { class: task.done ? 'done' : '' },
+            h('input', {
+              type: 'checkbox',
+              checked: task.done,
+              'aria-label': `Complete ${task.title}`,
+              onchange: () => {
+                tasks = tasks.map((t) => (t.id === task.id ? { ...t, done: !t.done } : t));
+                persist();
+                draw();
+              },
+            }),
+            h('span', { class: 'task-title' }, task.title),
+            h('span', { class: 'badge', 'data-priority': task.priority }, priority.label),
+            h('button', {
+              type: 'button',
+              'aria-label': `Edit ${task.title}`,
+              onclick: () => { editingId = task.id; showError(''); draw(); },
+            }, 'Edit'),
+            h('button', {
+              type: 'button',
+              class: 'danger',
+              'aria-label': `Delete ${task.title}`,
+              onclick: () => {
+                tasks = tasks.filter((t) => t.id !== task.id);
+                if (editingId === task.id) editingId = null;
+                persist();
+                draw();
+              },
+            }, 'Delete'));
+        }
+
+        function draw() {
+          const visible = tasks.filter((t) => {
+            const matchesFilter = filter === 'all' || (filter === 'active' ? !t.done : t.done);
+            return matchesFilter && t.title.toLowerCase().includes(query);
+          });
+          list.replaceChildren(...visible.map(renderItem));
+          empty.textContent = tasks.length === 0 ? 'No tasks yet. Add your first task above.'
+            : visible.length === 0 ? 'No matching tasks' : '';
+          empty.hidden = empty.textContent === '';
+          for (const [value, button] of filterButtons) button.setAttribute('aria-pressed', String(value === filter));
+          const left = tasks.filter((t) => !t.done).length;
+          count.textContent = `${left} ${left === 1 ? 'task' : 'tasks'} left`;
+          clearButton.disabled = !tasks.some((t) => t.done);
+        }
+
+        draw();
+        return h('section', {},
+          h('h1', {}, 'Tasks'), addForm, error,
+          h('div', { class: 'toolbar' }, field('Search tasks', searchInput),
+            h('div', { class: 'filters', role: 'group', 'aria-label': 'Filter tasks' }, filterButtons.map(([, b]) => b))),
+          list, empty, h('div', { class: 'footer' }, count, clearButton));
+      }
+
+      function profileView(user) {
+        setTitle('Profile');
+        const error = h('p', { class: 'error', role: 'alert', hidden: true });
+        const status = h('p', { role: 'status', hidden: true });
+        const show = (kind, message) => {
+          error.hidden = kind !== 'error';
+          status.hidden = kind !== 'ok';
+          error.textContent = kind === 'error' ? message : '';
+          status.textContent = kind === 'ok' ? message : '';
+        };
+
+        const nameInput = h('input', { type: 'text', value: user.displayName, autocomplete: 'off' });
+        const nameForm = h('form', {
+          novalidate: true,
+          onsubmit: (event) => {
+            event.preventDefault();
+            const displayName = nameInput.value.trim();
+            if (displayName === '') return show('error', 'Display name is required');
+            const users = getUsers();
+            store.set(KEYS.users, { ...users, [user.username]: { ...users[user.username], displayName } });
+            renderHeader(sessionUser(), '/profile');
+            show('ok', 'Profile updated');
+          },
+        }, field('Display name', nameInput), h('button', { type: 'submit' }, 'Save profile'));
+
+        const current = h('input', { type: 'password', autocomplete: 'off' });
+        const next = h('input', { type: 'password', autocomplete: 'new-password' });
+        const confirm = h('input', { type: 'password', autocomplete: 'new-password' });
+        const passwordForm = h('form', {
+          novalidate: true,
+          onsubmit: (event) => {
+            event.preventDefault();
+            const users = getUsers();
+            const record = users[user.username];
+            if (current.value !== record.password) return show('error', 'Current password is incorrect');
+            if (next.value.length < MIN_PASSWORD) return show('error', `New password must be at least ${MIN_PASSWORD} characters`);
+            if (next.value !== confirm.value) return show('error', 'Passwords do not match');
+            store.set(KEYS.users, { ...users, [user.username]: { ...record, password: next.value } });
+            current.value = next.value = confirm.value = '';
+            show('ok', 'Password changed');
+          },
+        }, field('Current password', current), field('New password', next),
+        field('Confirm new password', confirm), h('button', { type: 'submit' }, 'Change password'));
+
+        const darkToggle = h('input', {
+          type: 'checkbox',
+          checked: document.documentElement.dataset.theme === 'dark',
+          onchange: (event) => {
+            const theme = event.target.checked ? 'dark' : 'light';
+            store.set(KEYS.theme, theme);
+            applyTheme(theme);
+          },
+        });
+
+        const deleteButton = h('button', {
+          type: 'button',
+          class: 'danger',
+          onclick: () => {
+            if (!window.confirm('Delete your account and all tasks?')) return;
+            const { [user.username]: removed, ...rest } = getUsers();
+            store.set(KEYS.users, rest);
+            store.remove(KEYS.tasks(user.username));
+            store.remove(KEYS.session);
+            flash = 'Account deleted';
+            navigate('/login');
+          },
+        }, 'Delete account');
+
+        return h('section', {},
+          h('h1', {}, 'Profile'),
+          h('p', {}, 'Username: ', h('strong', { id: 'profile-username' }, user.username)),
+          error, status,
+          h('section', { class: 'card' }, h('h2', {}, 'Details'), nameForm),
+          h('section', { class: 'card' }, h('h2', {}, 'Password'), passwordForm),
+          h('section', { class: 'card' }, h('h2', {}, 'Appearance'),
+            h('label', {}, darkToggle, ' Dark mode')),
+          h('section', { class: 'card' }, h('h2', {}, 'Danger zone'), deleteButton));
+      }
+
+      function notFoundView() {
+        setTitle('Not found');
+        return h('section', {}, h('h1', {}, 'Page not found'),
+          h('p', {}, h('a', { href: '#/' }, 'Back to home')));
+      }
+
+      // ---------- router ----------
+      function render() {
+        const route = currentRoute();
+        const user = sessionUser();
+
+        if (route === '/') return navigate(user ? '/tasks' : '/login');
+        if ((route === '/tasks' || route === '/profile') && !user) {
+          flash = 'Please sign in to continue';
+          return navigate('/login');
+        }
+        if ((route === '/login' || route === '/register') && user) return navigate('/tasks');
+
+        renderHeader(user, route);
+        let node;
+        if (route === '/login') node = loginView();
+        else if (route === '/register') node = registerView();
+        else if (route === '/tasks') node = tasksView(user);
+        else if (route === '/profile') node = profileView(user);
+        else node = notFoundView();
+
+        if (flash) {
+          node.prepend(h('p', { role: 'status', class: 'flash' }, flash));
+          flash = null;
+        }
+        view.replaceChildren(node);
+      }
+
+      // ---------- version badge + change log (press and hold the badge) ----------
+      // Versions are dates (YYYY.MM.DD). Add new entries at the top; the badge shows the first one.
+      const CHANGELOG = [
+        { version: '2026.10.16', changes: ['Added version badge; press and hold it to view this change log'] },
+      ];
+      const LONG_PRESS_MS = 600;
+
+      function setupChangelog() {
+        const badge = document.getElementById('version-badge');
+        const dialog = document.getElementById('changelog-dialog');
+        const body = document.getElementById('changelog-body');
+        badge.textContent = `v${CHANGELOG[0].version}`;
+        body.replaceChildren(...CHANGELOG.flatMap((entry) => [
+          h('h3', {}, `v${entry.version}`),
+          h('ul', {}, entry.changes.map((change) => h('li', {}, change))),
+        ]));
+
+        let timer = null;
+        const cancel = () => { clearTimeout(timer); timer = null; badge.classList.remove('pressing'); };
+        const open = () => { cancel(); if (!dialog.open) dialog.showModal(); };
+
+        badge.addEventListener('pointerdown', (event) => {
+          if (event.button !== 0) return;
+          badge.classList.add('pressing');
+          timer = setTimeout(open, LONG_PRESS_MS);
+        });
+        for (const type of ['pointerup', 'pointerleave', 'pointercancel']) badge.addEventListener(type, cancel);
+        badge.addEventListener('contextmenu', (event) => event.preventDefault());
+        // Keyboard fallback: a plain click cannot be told apart from a long press, so Enter/Space opens it.
+        badge.addEventListener('keydown', (event) => {
+          if (event.key === 'Enter' || event.key === ' ') { event.preventDefault(); open(); }
+        });
+        dialog.addEventListener('click', (event) => { if (event.target === dialog) dialog.close(); });
+      }
+      setupChangelog();
+
+      document.getElementById('logout').addEventListener('click', () => {
+        store.remove(KEYS.session);
+        flash = 'You have been signed out';
+        navigate('/login');
+      });
+      window.addEventListener('hashchange', render);
+      render();
+    })();
+  </script>
+</body>
+</html>

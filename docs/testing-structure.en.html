@@ -1,0 +1,450 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover Test Structure</title>
+  <meta name="description" content="A map of testover's automated test system: test layers, contract and characterization tests, the tools in use, and how to choose what to run.">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --pass: #0b6e4f; --fail: #b3261e;
+      --c-unit: #3b6ea5; --c-contract: #b7791f; --c-char: #8a4fa0; --c-e2e: #0b6e4f; --c-a11y: #b3261e; --c-smoke: #2c7a7b;
+      --code-bg: #1d2320; --code-ink: #e9f1ec; --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+        --c-unit: #7fb0e6; --c-contract: #e6b75c; --c-char: #c79be0; --c-e2e: #4cc79a; --c-a11y: #ff8a80; --c-smoke: #6fd0d1;
+        --code-bg: #0c110f; --code-ink: #e1ece6;
+      }
+    }
+    :root[data-theme="dark"] {
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --pass: #4cc79a; --fail: #ff8a80;
+      --c-unit: #7fb0e6; --c-contract: #e6b75c; --c-char: #c79be0; --c-e2e: #4cc79a; --c-a11y: #ff8a80; --c-smoke: #6fd0d1;
+      --code-bg: #0c110f; --code-ink: #e1ece6;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.7; }
+    .wrap { max-width: 980px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3.2rem 0 2rem; border-bottom: 2px solid var(--ink); }
+    .topbar { float: right; margin-top: 1rem; display: flex; gap: .5rem; }
+    .pill { background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; text-decoration: none; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; }
+    h1 { font-size: clamp(2rem, 1.1rem + 4.2vw, 3.5rem); line-height: 1.1; margin: .4rem 0 1rem; letter-spacing: -.02em; }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 62ch; margin: 0 0 1rem; }
+    nav.toc { display: flex; flex-wrap: wrap; gap: .4rem; margin-top: 1.2rem; }
+    nav.toc a { font-size: .85rem; text-decoration: none; border: 1px solid var(--line); border-radius: 999px; padding: .15rem .75rem; color: var(--ink); background: var(--surface); }
+    nav.toc a:hover { border-color: var(--accent); color: var(--accent); }
+
+    h2.sec { font-size: 1.6rem; margin: 4rem 0 .4rem; line-height: 1.25; scroll-margin-top: 1rem; }
+    h2.sec .no { font-family: var(--font-mono); color: var(--accent); font-size: 1rem; margin-right: .5rem; }
+    .sub { color: var(--muted); margin: 0 0 1.4rem; max-width: 66ch; }
+    h3 { margin: 1.6rem 0 .3rem; font-size: 1.12rem; }
+
+    .totals { display: grid; grid-template-columns: repeat(4, 1fr); border: 1px solid var(--ink); border-radius: var(--radius); overflow: hidden; background: var(--surface); margin-top: 1.6rem; }
+    .totals > div { padding: .9rem 1.1rem; border-right: 1px solid var(--line); }
+    .totals > div:last-child { border-right: 0; }
+    .totals .n { display: block; font-family: var(--font-mono); font-size: 2rem; font-weight: 700; line-height: 1.2; color: var(--accent); }
+    .totals .l { font-size: .85rem; color: var(--muted); line-height: 1.4; display: block; }
+
+    .axis { display: flex; justify-content: space-between; font-family: var(--font-mono); font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .06em; margin-bottom: .5rem; }
+    .layers { display: grid; gap: .75rem; }
+    .layer { --c: var(--accent); display: grid; grid-template-columns: 5.2rem 1fr; background: var(--surface); border: 1px solid var(--line); border-left: 6px solid var(--c); border-radius: var(--radius); overflow: hidden; }
+    .layer .count { display: grid; place-content: center; text-align: center; padding: .6rem; background: color-mix(in srgb, var(--c) 10%, var(--surface)); }
+    .layer .count b { font-family: var(--font-mono); font-size: 1.7rem; line-height: 1.1; color: var(--c); }
+    .layer .count span { font-size: .7rem; color: var(--muted); }
+    .layer .body { padding: .8rem 1.1rem; }
+    .layer h3 { margin: 0 0 .1rem; font-size: 1.1rem; }
+    .layer h3 small { font-weight: 400; color: var(--muted); font-size: .85rem; }
+    .layer p { margin: .2rem 0; font-size: .95rem; }
+    .layer .meta { font-size: .82rem; color: var(--muted); margin-top: .4rem; }
+    .layer.unit { --c: var(--c-unit); } .layer.contract { --c: var(--c-contract); } .layer.char { --c: var(--c-char); }
+    .layer.e2e { --c: var(--c-e2e); } .layer.a11y { --c: var(--c-a11y); } .layer.smoke { --c: var(--c-smoke); }
+
+    .compare { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; }
+    .box { background: var(--surface); border: 1px solid var(--line); border-top: 5px solid var(--c, var(--accent)); border-radius: var(--radius); padding: 1rem 1.2rem 1.1rem; }
+    .box.contract { --c: var(--c-contract); } .box.char { --c: var(--c-char); }
+    .box h3 { margin: 0 0 .1rem; }
+    .box .tag { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); text-transform: uppercase; letter-spacing: .08em; }
+    .box dl { margin: .7rem 0 0; display: grid; gap: .5rem; }
+    .box dt { font-size: .75rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--c); }
+    .box dd { margin: 0; font-size: .93rem; }
+    .quote { border-left: 4px solid var(--accent); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.2rem 0; }
+
+    .diagram { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1.2rem; }
+    .chain { display: flex; flex-wrap: wrap; align-items: stretch; margin: .4rem 0 1rem; }
+    .node { background: color-mix(in srgb, var(--ink) 5%, var(--surface)); border: 1px solid var(--line); border-radius: 10px; padding: .55rem .8rem; font-size: .88rem; display: grid; place-content: center; text-align: center; min-width: 7.5rem; }
+    .node small { display: block; color: var(--muted); font-family: var(--font-mono); font-size: .72rem; }
+    .arrow { display: grid; place-content: center; text-align: center; padding: 0 .4rem; min-width: 5.2rem; font-size: .75rem; font-family: var(--font-mono); color: var(--c-contract); font-weight: 700; }
+    .arrow::after { content: "──▶"; font-weight: 400; color: var(--muted); letter-spacing: -.1em; }
+    .diagram h4 { margin: .8rem 0 .2rem; font-size: .9rem; font-family: var(--font-mono); color: var(--muted); font-weight: 600; }
+
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); overflow: hidden; font-size: .9rem; }
+    th, td { text-align: left; padding: .6rem .85rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .72rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); white-space: nowrap; }
+    tr:last-child td { border-bottom: 0; }
+
+    .tools { display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 1rem; }
+    .tool { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; display: flex; flex-direction: column; gap: .3rem; }
+    .tool .nm { display: flex; justify-content: space-between; align-items: baseline; gap: .5rem; flex-wrap: wrap; }
+    .tool h3 { margin: 0; font-size: 1.05rem; font-family: var(--font-mono); }
+    .tool .ver { font-family: var(--font-mono); font-size: .75rem; color: var(--muted); }
+    .tool .role { font-size: .75rem; font-family: var(--font-mono); text-transform: uppercase; letter-spacing: .06em; color: var(--accent); }
+    .tool p { margin: 0; font-size: .92rem; }
+    .tool .where { margin-top: auto; padding-top: .5rem; border-top: 1px dashed var(--line); font-size: .8rem; color: var(--muted); }
+
+    ol.pipe { list-style: none; padding: 0; margin: 0; counter-reset: p; }
+    ol.pipe li { counter-increment: p; position: relative; padding: .75rem 1rem .75rem 3.2rem; background: var(--surface); border: 1px solid var(--line); margin-bottom: -1px; font-size: .93rem; }
+    ol.pipe li:first-child { border-radius: var(--radius) var(--radius) 0 0; }
+    ol.pipe li:last-child { border-radius: 0 0 var(--radius) var(--radius); }
+    ol.pipe li::before { content: counter(p); position: absolute; left: .8rem; top: .75rem; width: 1.6rem; height: 1.6rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-size: .8rem; font-weight: 700; }
+
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.25rem 0; font-size: .94rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+
+    @media (max-width: 720px) {
+      .totals { grid-template-columns: 1fr 1fr; }
+      .totals > div:nth-child(2) { border-right: 0; }
+      .totals > div:nth-child(-n+2) { border-bottom: 1px solid var(--line); }
+      .compare { grid-template-columns: 1fr; }
+      .layer { grid-template-columns: 4.2rem 1fr; }
+      .arrow { min-width: 100%; padding: .2rem 0; }
+      .arrow::after { content: "▼"; }
+      .node { min-width: 100%; }
+    }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="topbar">
+      <a class="pill" href="testing-structure.html" hreflang="th" lang="th">ภาษาไทย</a>
+      <button class="pill" id="theme" type="button" aria-label="Toggle light/dark theme">Theme</button>
+    </div>
+    <div class="eyebrow">testover · test system map</div>
+    <h1>How many layers of tests are there, and what does each one guard?</h1>
+    <p class="lead">This page walks through the whole automated test system: which kinds of tests exist, which tools run them, when they run, and how contract and characterization tests differ from ordinary ones. It is written for someone who has never done test automation before.</p>
+
+    <div class="totals" aria-label="Test totals">
+      <div><span class="n">127</span><span class="l">tests that drive a real browser (Playwright)</span></div>
+      <div><span class="n">42</span><span class="l">tests with no browser (node:test)</span></div>
+      <div><span class="n">3</span><span class="l">boundaries guarded by a contract</span></div>
+      <div><span class="n">2</span><span class="l">GitHub Actions workflows</span></div>
+    </div>
+    <nav class="toc" aria-label="Contents">
+      <a href="#layers">1 Test layers</a>
+      <a href="#contract">2 Contract</a>
+      <a href="#characterization">3 Characterization</a>
+      <a href="#tools">4 Tools</a>
+      <a href="#pipeline">5 When it runs</a>
+      <a href="#choose">6 What to run</a>
+      <a href="#gaps">7 Known gaps</a>
+    </nav>
+  </header>
+
+  <h2 class="sec" id="layers"><span class="no">1</span>Test layers</h2>
+  <p class="sub">The higher a test sits, the faster it runs and the more precisely it points at the broken spot. The lower it sits, the more it behaves like a real user, but the slower it is. The six layers complement each other; none replaces another.</p>
+  <div class="axis" aria-hidden="true"><span>▲ fast · pinpoints the fault</span><span>closest to a real user · slower ▼</span></div>
+
+  <div class="layers">
+    <div class="layer unit">
+      <div class="count"><b>42</b><span>tests</span></div>
+      <div class="body">
+        <h3>Unit tests <small>: small pieces of code, called directly</small></h3>
+        <p>Call a function or the server directly, with no browser, so they finish in a fraction of a second. Examples: the server answers 200/301/304/400/404/405/500 correctly, and the notification script builds the right PASS/FAIL message.</p>
+        <div class="meta"><code>unit/server.test.mjs</code> (15) · <code>unit/notify.test.mjs</code> (16) · <code>unit/contracts.test.mjs</code> (11) · run <code>npm run test:unit</code></div>
+      </div>
+    </div>
+
+    <div class="layer contract">
+      <div class="count"><b>6 + 11</b><span>tests</span></div>
+      <div class="body">
+        <h3>Contract tests <small>: agreements about the shape of data</small></h3>
+        <p>Define "the shape the data must have" once (a schema), then check every place where data crosses from one part to another. If one side changes shape without the other knowing, a test fails immediately. Details in section 2.</p>
+        <div class="meta"><code>contracts/schemas.mjs</code> · <code>tests/contracts/storage.spec.ts</code> (6) · the rest live in <code>unit/contracts.test.mjs</code> (11)</div>
+      </div>
+    </div>
+
+    <div class="layer char">
+      <div class="count"><b>37</b><span>tests</span></div>
+      <div class="body">
+        <h3>Characterization tests <small>: record what the app does today</small></h3>
+        <p>They don't ask what the app should do. They record what it actually does right now, odd behaviour included, so you notice the moment someone changes it by accident. Details in section 3.</p>
+        <div class="meta"><code>tests/characterization/validation.spec.ts</code> · <code>tests/characterization/resilience.spec.ts</code></div>
+      </div>
+    </div>
+
+    <div class="layer e2e">
+      <div class="count"><b>70</b><span>tests</span></div>
+      <div class="body">
+        <h3>E2E regression <small>: use the site like a real user</small></h3>
+        <p>Open a real browser, click, type, and check the result. Split by area of the app: sign-up/login 27, tasks 27, profile 10, and full multi-page journeys 6. Test data uses made-up users (<code>demo</code>, <code>alice</code>).</p>
+        <div class="meta"><code>login.spec.ts</code> · <code>tasks.spec.ts</code> · <code>profile.spec.ts</code> · <code>journey.spec.ts</code> · Page Objects in <code>tests/support/pages.ts</code></div>
+      </div>
+    </div>
+
+    <div class="layer a11y">
+      <div class="count"><b>14</b><span>tests</span></div>
+      <div class="body">
+        <h3>Accessibility tests <small>: can everyone use it?</small></h3>
+        <p>axe-core scans every page and every state (normal, with an error, mid-edit, dark mode) against WCAG 2.1 levels A and AA. One special test injects a known violation to prove the scanner really catches it, so a pass is never silent.</p>
+        <div class="meta"><code>tests/a11y.spec.ts</code> · 16 tests carry the <code>@a11y</code> tag in total (including keyboard and page-title cases in other files)</div>
+      </div>
+    </div>
+
+    <div class="layer smoke">
+      <div class="count"><b>5</b><span>tests</span></div>
+      <div class="body">
+        <h3>Smoke tests <small>: a fast "is it badly broken?" check</small></h3>
+        <p>Not a new kind of test but a selection: 5 E2E tests for the most important paths run first (tag <code>@smoke</code>). They run on every push and pull request.</p>
+        <div class="meta">run <code>npm run test:smoke</code> · workflow <code>smoke.yml</code></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="tablewrap" style="margin-top:1.2rem">
+    <table>
+      <thead><tr><th>Part of the project</th><th>What it is for</th></tr></thead>
+      <tbody>
+        <tr><td><code>app/index.html</code>, <code>app/server.mjs</code></td><td>The Task Board app and a static server: the target of all the tests</td></tr>
+        <tr><td><code>tests/support/pages.ts</code></td><td>Page Objects: "press this button, fill that field" written once, so tests read well and only one place changes when the UI does</td></tr>
+        <tr><td><code>tests/support/storage.ts</code></td><td>Helpers that read and write localStorage directly: <code>seedStorage</code> (inject data, then reload), <code>readJson</code>, <code>readRaw</code>, <code>dumpStorage</code></td></tr>
+        <tr><td><code>tests/fixtures/reports/</code></td><td>Three fake reports (<code>pass</code>, <code>fail-nested</code>, <code>empty</code>) so unit tests can exercise the notify script without a real Playwright run</td></tr>
+        <tr><td><code>contracts/schemas.mjs</code></td><td>The single place that defines the data shape for all 3 boundaries, imported by both Playwright and node:test</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <h2 class="sec" id="contract"><span class="no">2</span>Contract tests: agreements between two sides</h2>
+  <p class="sub">Think of a form two departments agree to fill in the same way. If one changes the form without telling the other, the second can't read it. A contract test is the person who checks the form every time it is handed over.</p>
+
+  <div class="diagram">
+    <h4>Where data crosses a boundary in this project</h4>
+    <div class="chain">
+      <div class="node">App<small>app/index.html</small></div>
+      <div class="arrow">C1</div>
+      <div class="node">localStorage<small>tb.users · tb.session · tb.theme · tb.tasks.&lt;user&gt;</small></div>
+    </div>
+    <div class="chain">
+      <div class="node">Playwright<small>run results</small></div>
+      <div class="arrow">C2</div>
+      <div class="node">results.json<small>test-results/</small></div>
+      <div class="arrow">read by</div>
+      <div class="node">notify.mjs<small>summarises</small></div>
+      <div class="arrow">C3</div>
+      <div class="node">webhook body<small>content + text</small></div>
+      <div class="arrow">sent to</div>
+      <div class="node">Discord / Slack</div>
+    </div>
+  </div>
+
+  <div class="tablewrap" style="margin-top:1rem">
+    <table>
+      <thead><tr><th>Name</th><th>What the agreement says</th><th>Checked by</th></tr></thead>
+      <tbody>
+        <tr>
+          <td><b>C1</b> localStorage</td>
+          <td>The app may only write the listed keys, and the data must have the right shape. For example every task must be <code>{ id: integer, title: string, priority: low|medium|high, done: boolean }</code>, ids must be unique, the session must name a user that exists, and tasks must belong to an existing user.</td>
+          <td><code>tests/contracts/storage.spec.ts</code> drives the real UI (register, add/edit/delete tasks, change profile, delete account, switch users) and checks storage after each step.</td>
+        </tr>
+        <tr>
+          <td><b>C2</b> Playwright report</td>
+          <td><code>results.json</code> must contain <code>stats</code> (expected, unexpected, flaky, skipped as non-negative integers) and <code>suites</code> with titles, because <code>notify.mjs</code> depends on only this part.</td>
+          <td><code>unit/contracts.test.mjs</code> checks the 3 fixtures and the report from the latest real run (if the file exists), plus cases that must be rejected.</td>
+        </tr>
+        <tr>
+          <td><b>C3</b> webhook body</td>
+          <td>Must have <code>content</code> (Discord) and <code>text</code> (Slack), both non-empty and identical, with no extra fields.</td>
+          <td><code>unit/contracts.test.mjs</code> starts a fake server, runs the real <code>notify.mjs</code> against it, and checks the body it receives against the schema.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+  <p>The key point is that the schema lives in one place (<code>contracts/schemas.mjs</code>, written with zod). Browser tests and node tests import the same file, so the two sides can never disagree about "the right shape". The state being checked comes from driving the real UI, not from hand-built data.</p>
+
+  <h2 class="sec" id="characterization"><span class="no">3</span>Characterization tests: write down what is</h2>
+  <p class="sub">It is like photographing a room before moving furniture. The photo doesn't say the room should look this way, but if something goes missing later you know at once. It suits code with no written spec, or old code you are about to change without knowing what depends on it.</p>
+
+  <div class="compare">
+    <div class="box contract">
+      <span class="tag">Contract</span>
+      <h3>"Data must look like this"</h3>
+      <dl>
+        <div><dt>Question it answers</dt><dd>Can the two sides still understand each other?</dd></div>
+        <div><dt>Example here</dt><dd>Every task's priority must be exactly low, medium or high</dd></div>
+        <div><dt>If it fails</dt><dd>Usually a bug, or someone changed the data shape on one side only. Make them match again, or if the change is intended, update the schema in one place.</dd></div>
+      </dl>
+    </div>
+    <div class="box char">
+      <span class="tag">Characterization</span>
+      <h3>"Today it behaves like this"</h3>
+      <dl>
+        <div><dt>Question it answers</dt><dd>Did the behaviour change since yesterday?</dd></div>
+        <div><dt>Example here</dt><dd>A 20-character username passes, 21 does not, and the error messages come out in a fixed order</dd></div>
+        <div><dt>If it fails</dt><dd>Don't panic yet. Ask "did we mean to change this?" If yes, update the expected value. If no, fix the code.</dd></div>
+      </dl>
+    </div>
+  </div>
+
+  <h3>What the project covers</h3>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>File</th><th>Records that</th></tr></thead>
+      <tbody>
+        <tr><td><code>validation.spec.ts</code></td><td>The limits of every form: username length (3 to 20 characters; letters, digits and underscore only), password minimum of 8, task title up to 80, the order of checks (username before password; current password, then length, then confirmation), usernames ignore case but passwords do not, and every failed login shows the same message.</td></tr>
+        <tr><td><code>resilience.spec.ts</code></td><td>How the app boots from odd storage (broken JSON, wrong types, good and bad tasks mixed, a strange theme) and the redirect rule of every route, including each page's title.</td></tr>
+        <tr><td><code>unit/contracts.test.mjs</code></td><td>The exact text <code>notify.mjs</code> builds from each kind of report, and that a run with zero tests counts as PASS.</td></tr>
+      </tbody>
+    </table>
+  </div>
+
+  <div class="quote">
+    <b>Tests whose names start with QUIRK</b> record behaviour that is probably unintended but is written down as it really is. There are 4 right now:
+    <ul>
+      <li>Names like <code>__proto__</code> and <code>constructor</code> can be registered.</li>
+      <li>If <code>tb.users</code> is stored as an array, the app does not repair it and nobody can log in.</li>
+      <li>Malformed tasks are merely hidden, then permanently dropped on the next change.</li>
+      <li>A new password is stored as plain text (deliberate, because this is a demo app).</li>
+    </ul>
+    When these bugs get fixed, the QUIRK tests will fail. That is a good sign: update the expected value to the new, correct behaviour.
+  </div>
+
+  <h2 class="sec" id="tools"><span class="no">4</span>Tools in use and what each one does</h2>
+  <p class="sub">Taken from <code>package.json</code>, <code>playwright.config.ts</code> and the workflow files actually in use.</p>
+
+  <div class="tools">
+    <div class="tool">
+      <div class="nm"><h3>Playwright Test</h3><span class="ver">@playwright/test 1.49.1</span></div>
+      <span class="role">main test runner</span>
+      <p>Launches a real Chromium, drives it to click and type, and provides assertions, retries and parallel runs. It starts the test site automatically before running.</p>
+      <div class="where">Config in <code>playwright.config.ts</code> · 2 retries and 2 workers on CI · screenshot, video and trace kept only for failures</div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>node:test</h3><span class="ver">built into Node.js</span></div>
+      <span class="role">unit test runner</span>
+      <p>The test runner that ships with Node, nothing to install. Used for tests that need no browser, so results come back fast. Has a built-in coverage mode.</p>
+      <div class="where"><code>npm run test:unit</code> · <code>npm run test:unit:coverage</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>zod</h3><span class="ver">zod 4.6.7</span></div>
+      <span class="role">defines the contracts</span>
+      <p>A library for writing a data schema and checking that real data matches it. It is the common language of all three contracts.</p>
+      <div class="where"><code>contracts/schemas.mjs</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>axe-core</h3><span class="ver">@axe-core/playwright 4.14.0</span></div>
+      <span class="role">accessibility checker</span>
+      <p>Scans a page for WCAG 2.1 A/AA violations, such as images without alt text, text with too little contrast, or form fields without labels.</p>
+      <div class="where"><code>tests/a11y.spec.ts</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>Node HTTP server</h3><span class="ver">app/server.mjs</span></div>
+      <span class="role">the site under test</span>
+      <p>A hand-written static server with nothing to install. Playwright starts it automatically (port 3000, changeable with <code>PORT</code>), or you can point at another site with <code>BASE_URL</code>.</p>
+      <div class="where">The server itself has unit tests (<code>unit/server.test.mjs</code>)</div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>Playwright reporters</h3><span class="ver">list · html · json</span></div>
+      <span class="role">run-time reporting</span>
+      <p><b>list</b> prints results in the terminal. <b>html</b> builds a report you open with <code>npm run report</code>. <b>json</b> writes <code>test-results/results.json</code>, which the notify script reads next.</p>
+      <div class="where">If you pass <code>--reporter</code> yourself there is no results.json and the notification wrongly says FAIL</div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>Allure</h3><span class="ver">allure-playwright 3.1.0 · allure-commandline 2.46.1</span></div>
+      <span class="role">in-depth reports</span>
+      <p>Collects raw results into <code>allure-results</code> and builds a report grouped by behaviour and suite, handy for looking back. It needs Java installed when generating the report.</p>
+      <div class="where"><code>npm run allure:generate</code> · <code>allure:open</code> · <code>allure:serve</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>GitHub Actions</h3><span class="ver">checkout / setup-node / upload-artifact v4</span></div>
+      <span class="role">runs everything automatically</span>
+      <p>Runs on ubuntu with Node 22. Two workflows: <b>Smoke</b> on every push to main and every PR, and <b>Weekend E2E</b> on the weekend schedule, which then uploads reports and keeps them for 14 days.</p>
+      <div class="where"><code>.github/workflows/smoke.yml</code> · <code>weekend-e2e.yml</code></div>
+    </div>
+    <div class="tool">
+      <div class="nm"><h3>notify.mjs + webhook</h3><span class="ver">Discord / Slack</span></div>
+      <span class="role">chat notification</span>
+      <p>The script reads results.json, writes a ✅/❌ summary and POSTs it to a webhook kept secret in GitHub Secrets (<code>WEBHOOK_URL</code>). It runs every time, even when tests fail.</p>
+      <div class="where"><code>scripts/notify.mjs</code></div>
+    </div>
+  </div>
+
+  <h2 class="sec" id="pipeline"><span class="no">5</span>When it runs and where the results go</h2>
+  <p class="sub">This is the full weekend workflow. Smoke uses only steps 1 to 4, with just the 5 smoke tests.</p>
+  <ol class="pipe">
+    <li>GitHub Actions wakes the workflow on schedule (Saturday and Sunday 09:00 Thailand time) or when someone starts it by hand.</li>
+    <li>Install: <code>npm ci</code> and <code>npx playwright install --with-deps chromium</code>.</li>
+    <li>Playwright opens the Task Board and runs 127 tests (a failure can be retried twice).</li>
+    <li>Upload <code>playwright-report</code> and <code>test-results</code> as artifacts.</li>
+    <li>Install Java, build the Allure report and upload it as an artifact.</li>
+    <li><code>notify.mjs</code> reads results.json and posts a summary to Discord or Slack with a link to the run.</li>
+  </ol>
+
+  <h2 class="sec" id="choose"><span class="no">6</span>What are you changing, and what should you run?</h2>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>Situation</th><th>Command</th></tr></thead>
+      <tbody>
+        <tr><td>A tiny change, want a quick check</td><td><code>npm run test:smoke</code></td></tr>
+        <tr><td>Changed the notify script or the server</td><td><code>npm run test:unit</code></td></tr>
+        <tr><td>Changed the shape of stored data</td><td><code>npx playwright test --grep @contract</code></td></tr>
+        <tr><td>Changed validation rules or error messages</td><td><code>npx playwright test --grep @characterization</code></td></tr>
+        <tr><td>Changed look, layout or colours</td><td><code>npx playwright test --grep @a11y</code></td></tr>
+        <tr><td>Before a release</td><td><code>npm run test:unit</code> then <code>npm test</code></td></tr>
+        <tr><td>See what a command would run, without running it</td><td><code>npx playwright test --list --grep @contract</code></td></tr>
+      </tbody>
+    </table>
+  </div>
+  <p>Kind tags in use: <code>@smoke</code> <code>@validation</code> <code>@security</code> <code>@persistence</code> <code>@resilience</code> <code>@destructive</code> <code>@a11y</code> <code>@responsive</code> <code>@contract</code> <code>@characterization</code>, plus area tags <code>@auth</code> <code>@tasks</code> <code>@profile</code> <code>@journey</code>. A test can carry several tags.</p>
+
+  <h2 class="sec" id="gaps"><span class="no">7</span>Good to know: current gaps</h2>
+  <div class="note"><b>Unit tests don't run in CI yet.</b> Both <code>smoke.yml</code> and <code>weekend-e2e.yml</code> run only Playwright. The 42 tests in <code>unit/</code> (including contracts C2 and C3) must be run by hand with <code>npm run test:unit</code>. To have them caught automatically, add that step to a workflow.</div>
+  <div class="note"><b>There is no heartbeat.</b> If GitHub's schedule is disabled or GitHub is down, no message arrives and nobody notices. The README suggests healthchecks.io but it is not wired up.</div>
+  <div class="note"><b>Chromium only.</b> Firefox and Safari are not covered.</div>
+
+  <section class="next">
+    <h2>Keep reading</h2>
+    <ul>
+      <li>Project overview for newcomers: <a href="overview.en.html">overview.en.html</a></li>
+      <li>Set up a webhook, secret and cron time: <a href="guide.html">guide.html</a> (Thai)</li>
+      <li>Tag guide: <a href="tags.md">tags.md</a> (Thai)</li>
+    </ul>
+  </section>
+
+  <footer>testover · numbers come from real runs of <code>playwright test --list</code> and <code>npm run test:unit</code> · <a href="testing-structure.html" hreflang="th" lang="th">อ่านเป็นภาษาไทย</a></footer>
+</div>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try { var saved = localStorage.getItem('theme'); if (saved) root.setAttribute('data-theme', saved); } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+</body>
+</html>
