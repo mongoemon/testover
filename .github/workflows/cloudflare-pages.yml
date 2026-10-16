@@ -1,8 +1,10 @@
 name: Publish site
 
-# Publishes docs/ plus the latest Allure and Playwright reports to GitHub Pages.
+# Publishes docs/ plus the latest Allure and Playwright reports to Cloudflare Pages.
 # Does not touch weekend-e2e.yml or smoke.yml: it only reads the artifacts that
 # Weekend E2E already uploads (allure-report, playwright-report).
+# Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; the project
+# name comes from the optional repo variable CLOUDFLARE_PROJECT_NAME (default: testover).
 on:
   workflow_run:
     workflows: ['Weekend E2E']
@@ -13,14 +15,12 @@ on:
     paths:
       - 'docs/**'
       - '.github/pages/**'
-      - '.github/workflows/pages.yml'
+      - '.github/workflows/cloudflare-pages.yml'
   workflow_dispatch:
 
 permissions:
   contents: read
   actions: read   # download artifacts from the Weekend E2E run
-  pages: write
-  id-token: write
 
 # One deploy at a time; never cancel a deploy that is mid-flight.
 concurrency:
@@ -92,18 +92,17 @@ jobs:
             fi
           done
 
-      - uses: actions/configure-pages@v5
-
-      - uses: actions/upload-pages-artifact@v3
+      - name: Create the Cloudflare Pages project if it does not exist yet
+        uses: cloudflare/wrangler-action@v3
         with:
-          path: _site
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages project create ${{ vars.CLOUDFLARE_PROJECT_NAME || 'testover' }} --production-branch=main
+        continue-on-error: true   # fails harmlessly when the project already exists
 
-  deploy:
-    needs: build
-    runs-on: ubuntu-latest
-    environment:
-      name: github-pages
-      url: ${{ steps.deployment.outputs.page_url }}
-    steps:
-      - id: deployment
-        uses: actions/deploy-pages@v4
+      - name: Deploy to Cloudflare Pages
+        uses: cloudflare/wrangler-action@v3
+        with:
+          apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+          command: pages deploy _site --project-name=${{ vars.CLOUDFLARE_PROJECT_NAME || 'testover' }} --branch=main
