@@ -213,7 +213,10 @@
           },
         }, field('Username', username), field('Password', password), h('button', { type: 'submit' }, 'Login'));
 
-        return h('section', {}, h('h1', {}, 'Sign in'), form, error,
+        return h('section', {}, h('h1', {}, 'Sign in'),
+          h('p', { class: 'muted' }, 'Demo account: username ', h('strong', {}, 'demo'),
+            ' / password ', h('strong', {}, 'demo1234')),
+          form, error,
           h('p', {}, h('a', { href: '#/register' }, 'Create an account')));
       }
 
