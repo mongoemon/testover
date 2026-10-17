@@ -35,22 +35,40 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
-      - name: Run smoke tests
-        run: npm run test:smoke
-
-      - name: Run characterization tests (incl. golden master)
-        run: npm run test:characterization
+      # One Playwright run (not two) so results.json, the HTML report and Allure results cover
+      # everything; a second run would overwrite the first run's report.
+      - name: Run smoke and characterization tests (incl. golden master)
+        run: npx playwright test --grep "@smoke|@characterization"
 
       - name: Test summary
         if: always()
         run: node scripts/summary.mjs
 
-      - name: Upload report on failure
-        if: failure()
+      # Always uploaded (not only on failure) so a green run can be inspected too.
+      - name: Upload Playwright report
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: smoke-report
           path: |
             playwright-report/
             test-results/
+          retention-days: 7
+
+      - uses: actions/setup-java@v4
+        if: always()
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Generate Allure report
+        if: always()
+        run: npm run allure:generate
+
+      - name: Upload Allure report
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: allure-report
+          path: allure-report/
           retention-days: 7
