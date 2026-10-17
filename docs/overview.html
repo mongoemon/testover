@@ -113,12 +113,23 @@
       html { scroll-behavior: auto; }
       .step-card, .step-card:hover { transition: none; transform: none; }
     }
+
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .topnav .in { max-width: 980px; margin: 0 auto; padding: .45rem 16px; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; }
+    .topnav .in::-webkit-scrollbar { display: none; }
+    .topnav .brand { font-family: var(--font-mono); font-weight: 700; color: var(--accent); text-decoration: none; margin-right: .6rem; white-space: nowrap; }
+    .topnav a.l { color: var(--ink); text-decoration: none; font-size: .88rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .topnav a.l:hover { border-color: var(--line); background: var(--surface); }
+    .topnav a.l[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+    .topnav .sep { flex: 1 0 .8rem; }
+    h2.sec, section.next { scroll-margin-top: 3.4rem; }
   </style>
 </head>
 <body>
+<nav class="topnav" aria-label="สารบัญ"><div class="in"><a class="brand" href="#top">testover</a><a class="l" href="#top">ภาพรวม</a><a class="l" href="#steps">6 ขั้น</a><a class="l" href="#summary">สรุป</a><a class="l" href="#files">ไฟล์สำคัญ</a><a class="l" href="#next">ไปต่อ</a><span class="sep"></span><a class="l" href="guide.html">คู่มือ</a><a class="l" href="testing-structure.html">โครงสร้างเทส</a><a class="l" href="automation-phases.html">ทีละ Phase</a><a class="l" href="characterization-why.html">Characterization</a></div></nav>
 <div class="wrap">
 
-  <header class="hero">
+  <header class="hero" id="top">
     <div class="toggle-group">
       <a class="toggle" href="overview.en.html" hreflang="en" lang="en">English</a>
       <button class="toggle" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">สลับธีม</button>
@@ -143,7 +154,7 @@
     </div>
   </header>
 
-  <h2 class="sec">เส้นทางของโปรเจกต์ใน 6 ขั้น</h2>
+  <h2 class="sec" id="steps">เส้นทางของโปรเจกต์ใน 6 ขั้น</h2>
   <p class="sub">ลองตามไปทีละขั้น จะเห็นว่าของแต่ละชิ้นในโปรเจกต์มีไว้ทำอะไร และต่อกันอย่างไร</p>
 
   <ol class="journey">
@@ -228,7 +239,7 @@ npm test                          # รันทั้ง 127 เคส</pre>
     </li>
   </ol>
 
-  <h2 class="sec">สรุปสิ่งที่โปรเจกต์ทำได้</h2>
+  <h2 class="sec" id="summary">สรุปสิ่งที่โปรเจกต์ทำได้</h2>
   <p class="sub">ตัวเลขด้านล่างอ้างจาก README ของโปรเจกต์</p>
   <div class="caps">
     <div class="cap"><span class="n">127</span><h3>เคสทดสอบ</h3><p>E2E, contract, characterization และ accessibility (ยังมี unit test อีก 42)</p></div>
@@ -237,7 +248,7 @@ npm test                          # รันทั้ง 127 เคส</pre>
     <div class="cap"><span class="n">2</span><h3>ช่องทางแจ้งผล</h3><p>Discord และ Slack ใช้ webhook เดียวกัน ไม่ต้องแก้โค้ด</p></div>
   </div>
 
-  <h2 class="sec">ไฟล์สำคัญที่ควรรู้จัก</h2>
+  <h2 class="sec" id="files">ไฟล์สำคัญที่ควรรู้จัก</h2>
   <p class="sub">ถ้าจะเริ่มแก้หรือเพิ่มอะไร ให้ดูตรงนี้ก่อน</p>
   <div class="tablewrap">
     <table>
@@ -255,7 +266,7 @@ npm test                          # รันทั้ง 127 เคส</pre>
 
   <div class="note"><strong>ข้อควรระวัง:</strong> แอปนี้เก็บรหัสผ่านเป็นข้อความธรรมดาใน localStorage โดยตั้งใจ เพื่อให้เทสได้โดยไม่ต้องมี backend ห้ามนำแบบนี้ไปใช้กับงานจริง และ Webhook URL คือรหัสลับ ให้เก็บใน GitHub Secrets เท่านั้น</div>
 
-  <section class="next">
+  <section class="next" id="next">
     <h2>ไปต่อที่ไหนดี</h2>
     <ul>
       <li>อยากตั้ง webhook, secret และเวลา cron: <a href="guide.html">guide.html</a> (มีเช็กลิสต์และตัวช่วยแปลงเวลา)</li>
@@ -284,6 +295,13 @@ npm test                          # รันทั้ง 127 เคส</pre>
       try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
     });
   })();
+</script>
+<script>
+(function(){var links=[].slice.call(document.querySelectorAll('.topnav a.l[href^="#"]'));
+if(!('IntersectionObserver' in window))return;
+var map={};links.forEach(function(a){var el=document.getElementById(a.getAttribute('href').slice(1));if(el)map[el.id]=a});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.removeAttribute('aria-current')});map[e.target.id].setAttribute('aria-current','true')}})},{rootMargin:'-20% 0px -70% 0px'});
+Object.keys(map).forEach(function(id){io.observe(document.getElementById(id))})})();
 </script>
 </body>
 </html>
