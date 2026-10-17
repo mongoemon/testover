@@ -219,7 +219,8 @@
             ' / password ', h('strong', {}, 'demo1234')),
           form, error,
           h('p', {}, h('a', { href: '#/register' }, 'Create an account')),
-          h('p', {}, h('a', { href: '/docs/overview.html' }, 'Read the docs')));
+          h('p', {}, h('a', { href: '/docs/overview.html' }, 'Read the docs')),
+          h('p', {}, h('a', { href: 'https://github.com/mongoemon/testover', rel: 'noopener' }, 'View on GitHub')));
       }
 
       function registerView() {
@@ -510,7 +511,7 @@
       // ---------- version badge + change log (press and hold the badge) ----------
       // Versions are dates (YYYY.MM.DD). Add new entries at the top; the badge shows the first one.
       const CHANGELOG = [
-        { version: '2026.10.17', changes: ['Docs: added the "why characterization" page and the automation phases page (Thai and English)', 'Tests: added golden master snapshots; characterization now runs on every push and pull request'] },
+        { version: '2026.10.17', changes: ['Docs: added the "why characterization" page and the automation phases page (Thai and English)', 'Tests: added golden master snapshots; characterization now runs on every push and pull request', 'Sign-in page: added a "View on GitHub" link to the repository'] },
         { version: '2026.10.16', changes: ['Added version badge; press and hold it to view this change log'] },
       ];
       const LONG_PRESS_MS = 600;
