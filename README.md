@@ -10,14 +10,35 @@
 
 | ที่ไหน | เว็บ Task Board | เอกสาร |
 |---|---|---|
-| ออนไลน์ (Cloudflare Pages) | https://testover.pages.dev | https://testover.pages.dev/docs/overview.html |
+| ออนไลน์ (Render) | https://testover-app.onrender.com (แอปและ API) | ไม่มี (อยู่ที่ Pages) |
+| ออนไลน์ (Cloudflare Pages) | https://testover.pages.dev (หน้าแรกพาไปแอปบน Render) | https://testover.pages.dev/docs/overview.html |
 | ในเครื่อง (`npm start`) | http://localhost:3000 | http://localhost:3000/docs/overview.html |
+
+> แอปบน Render เป็น free tier: หลับเมื่อไม่มีคนใช้ (คนแรกที่เข้ารอราวครึ่งนาที) และข้อมูลอยู่ใน memory จึงหายเมื่อหลับ/restart และถูกล้างทุกชั่วโมง ดู [Deploy บน Render](#deploy-บน-render)
 
 - ในเว็บกดได้ 2 ที่: ลิงก์ **Read the docs** ใต้ฟอร์ม Sign in หรือเมนู **Docs** ที่แถบด้านบน (หลัง login)
 - `/docs` จะพาไปหน้า overview ให้เอง (บนเว็บออนไลน์พาไปหน้า `/status/` ที่รวมเอกสารกับรายงานล่าสุด) จากหน้านั้นมีลิงก์ไป guide, โครงสร้างการเทส, tags.md และ README ครบ
 - ไฟล์ที่เปิดได้: `/docs/<ชื่อไฟล์>.html`, `/docs/<ชื่อไฟล์>.md` และ `/README.md` (ไฟล์ .md จะแสดงเป็นข้อความดิบ)
 - เพิ่มเอกสารใหม่: วางไฟล์ `.html` หรือ `.md` ไว้ใน `docs/` (ชื่อไฟล์ใช้ตัวพิมพ์เล็ก ตัวเลข `-` `.` เท่านั้น) แล้วเพิ่มลิงก์จาก `docs/overview.html`
-- Deploy: push เข้า `main` แล้ว Cloudflare Pages build ให้เอง (build command `npm run build:pages` → โฟลเดอร์ `dist/`) ส่วน branch อื่นจะได้ preview URL แยก
+- Deploy: push เข้า `main` แล้ว workflow `Publish site` ส่งขึ้น Cloudflare Pages ให้เอง (`npm run build:pages` → `dist/`) ซึ่ง `/` เป็น landing page ไม่ใช่ตัวแอป เพราะ Pages เป็น static และแอปต้องมี API ถ้าตั้ง repo variable `APP_URL` หน้านั้นจะมีปุ่มเปิดแอป (ตอนนี้ชี้ไป Render) ส่วนแอปกับ API deploy แยกบน Render
+
+## มีอะไรเปลี่ยนไปบ้าง (ชุดใหญ่ 2026-10-18)
+
+จากเดิมที่เป็นเว็บฝั่งเบราว์เซอร์ล้วน (เก็บทุกอย่างใน localStorage) ตอนนี้โปรเจกต์มี backend จริงที่ออนไลน์ และใช้เป็นสนามฝึกเครื่องมือทดสอบ API ได้
+
+| เรื่อง | ทำอะไรไป | อยู่ที่ไหน |
+|---|---|---|
+| **Backend** | API แบบ JSON เก็บใน memory ไม่มี dependency เพิ่ม: สมัคร/login/logout, โปรไฟล์, เปลี่ยนรหัสผ่าน, ลบบัญชี, CRUD ของงาน (13 route) รหัสผ่าน hash ด้วย scrypt | [app/api/](app/api/), [Backend (API)](#backend-api) |
+| **Frontend** | หน้าเว็บเรียก API แทน localStorage เบราว์เซอร์เก็บแค่ session token กับธีม | [app/index.html](app/index.html) |
+| **Spec ของ API** | OpenAPI 3 ที่ Prism/Mockoon อ่านได้ | [contracts/openapi.yaml](contracts/openapi.yaml) |
+| **แยกข้อมูลต่อเทส** | header `X-Tenant` ไม่ซ้ำต่อเทส server แยก "โลก" ให้ ชุดเทสจึงยังรันขนานกันได้ | [tests/support/evidence.ts](tests/support/evidence.ts) |
+| **เทสที่เขียนใหม่/แก้** | contract ของ localStorage เหลือแค่ token + theme, เพิ่ม contract ของ JSON (C4), unit ของ API และขีดจำกัดการใช้งาน, CSP, golden master เก็บทั้ง localStorage และข้อมูลฝั่ง server, traffic golden เห็นการเรียก `/api` | `tests/`, `unit/` |
+| **พฤติกรรมที่เปลี่ยน (ตั้งใจ)** | id ของงานไม่ถูกใช้ซ้ำ, รหัสผ่านไม่เป็น plain text แล้ว, QUIRK เก่าหายไปพร้อมการย้าย (เหลือเคสชื่อ GUARD) | [docs/characterization-why.html](docs/characterization-why.html) |
+| **ความปลอดภัย** | โหมด public (`HARDENED=1`): บัญชี `demo` แก้ไม่ได้, rate limit ต่อ IP, ล้างข้อมูลทุกชั่วโมง; ล็อก login ผิด 10 ครั้ง; เพดานจำนวน user/task/session; session หมดอายุ 12 ชม.; CSP แบบผูก hash + security headers | [โหมด public](#โหมด-public-ตอนเปิดให้คนทั่วไปใช้) |
+| **เครื่องมือ record & replay** | ลอง Prism (ตรวจ API จริงกับ spec), `routeFromHAR` ของ Playwright (replay ให้หน้าเว็บ), Mockoon (mock จาก spec) | [docs/traffic-recording.md](docs/traffic-recording.md) |
+| **Deploy** | แอปและ API ขึ้น Render; Pages เป็น landing page + เอกสาร + รายงาน | [Deploy บน Render](#deploy-บน-render), [render.yaml](render.yaml) |
+
+ผลทดสอบตอนปิดงานชุดนี้: Playwright 156 เคส (รวม `@visual` 5 เคสที่ยังไม่ได้รันซ้ำ) และ unit 116 เคส (ข้าม 1) ที่รันแล้วผ่านทั้งหมด
 
 ## สารบัญ
 1. [โครงสร้างโปรเจกต์](#1-โครงสร้างโปรเจกต์)
@@ -35,7 +56,8 @@
 app/
   index.html        เว็บที่ใช้เทส (สมัคร/login, task board, โปรไฟล์) เรียก API ที่ /api (เบราว์เซอร์เก็บแค่ session token กับธีมใน localStorage)
   server.mjs        เซิร์ฟเวอร์เล็กๆ (ไม่ต้องติดตั้งอะไรเพิ่ม) เสิร์ฟทั้งเว็บ, docs/ และ API ที่ /api
-  api/              backend JSON เก็บใน memory: router, handlers, store, validation (spec: contracts/openapi.yaml)
+  api/              backend JSON เก็บใน memory: router, handlers, store, validation, rate-limit, config (spec: contracts/openapi.yaml)
+  csp.mjs           สร้าง Content-Security-Policy แบบผูก hash กับ inline script ของแต่ละหน้า
 tests/
   support/pages.ts  Page Object (AuthPage, TasksPage, ProfilePage) + ข้อมูลผู้ใช้ทดสอบ
   support/evidence.ts  fixture: ส่ง header X-Tenant ไม่ซ้ำต่อเทส (server แยกข้อมูลให้) และแนบ localStorage จริงเข้า report ทุกเคสใน characterization/
@@ -75,8 +97,8 @@ npx playwright install chromium   # Linux ใช้ --with-deps chromium เพ�
 เช็กว่าเครื่องพร้อม:
 
 ```bash
-npm run test:unit   # ต้องเห็น pass 50, fail 0
-npm test            # ต้องเห็น 127 passed (เปิดเว็บให้เองอัตโนมัติ)
+npm run test:unit   # ต้องเห็น fail 0 (pass 115, skipped 1 ตอนเขียนนี้)
+npm test            # 156 เคส (เปิดเว็บให้เองอัตโนมัติ; @visual 5 เคสต้องรันใน Docker Linux ดู test:visual)
 npm start           # เปิด http://localhost:3000/docs/overview.html อ่านเอกสารได้
 ```
 
@@ -106,8 +128,8 @@ npm run notify
 
 ## 3. เคสที่เทส
 
-รวม **127 เคส** เป็น regression ที่เดินตาม user journey ของแอป Task Board
-(84 เคสในไฟล์หลัก 5 ไฟล์ข้างล่าง + 43 เคสใน `characterization/` และ `contracts/`)
+รวม **156 เคส** เป็น regression ที่เดินตาม user journey ของแอป Task Board
+(84 เคสในไฟล์หลัก 5 ไฟล์ข้างล่าง + 46 เคสใน `characterization/` + 15 ใน `contracts/` + 2 ใน `har/` + 4 ใน `csp.spec.ts` + 5 ใน `visual.spec.ts`)
 
 | ไฟล์ | ครอบคลุม |
 |---|---|
@@ -121,8 +143,8 @@ npm run notify
 
 | ไฟล์ | เมื่อไหร่ | รันอะไร | แจ้ง webhook |
 |---|---|---|---|
-| `smoke.yml` | push เข้า `main`, ทุก pull request, กดรันเอง | unit + `@smoke` + `@characterization` (50 เคส Playwright รอบเดียว ~ไม่กี่นาที) | ไม่ส่ง (ดูผลที่แท็บ Actions / ช่อง checks ของ PR) |
-| `weekend-e2e.yml` | เสาร์-อาทิตย์ 09:00 เวลาไทย, กดรันเอง | **ทั้ง 127 เคส** | ส่งทุกครั้ง ผ่านหรือพัง |
+| `smoke.yml` | push เข้า `main`, ทุก pull request, กดรันเอง | unit + `@smoke` + `@characterization` (51 เคส Playwright รอบเดียว ~ไม่กี่นาที) | ไม่ส่ง (ดูผลที่แท็บ Actions / ช่อง checks ของ PR) |
+| `weekend-e2e.yml` | เสาร์-อาทิตย์ 09:00 เวลาไทย, กดรันเอง | **ทั้ง 156 เคส** | ส่งทุกครั้ง ผ่านหรือพัง |
 
 `smoke.yml` ยกเลิกรอบเก่าให้อัตโนมัติถ้ามี push ใหม่เข้ามาที่ branch เดียวกัน (`concurrency`)
 และอัปโหลดรายงานทุกรอบ (artifact `smoke-report` = Playwright HTML, `allure-report` = Allure) พร้อมตารางสรุปผลในหน้า run และ annotation บน PR ถ้าอยากให้ PR ต้องผ่านก่อน merge ให้ตั้ง branch protection → Require status checks → เลือก `smoke`
@@ -148,12 +170,12 @@ axe ช่วยจับปัญหาได้ส่วนหนึ่ง ไ
 
 | Tag | ความหมาย | จำนวน |
 |---|---|---|
-| `@auth` `@tasks` `@profile` `@journey` | พื้นที่ของแอป | 36 / 31 / 12 / 6 |
+| `@auth` `@tasks` `@profile` `@journey` | พื้นที่ของแอป | 36 / 33 / 12 / 6 |
 | `@smoke` | ชุดเร็ว เช็กเส้นทางหลัก | 5 |
 | `@validation` | กรอกข้อมูลผิด/ว่าง แล้วต้องมี error | 39 |
-| `@security` | ข้อความ error ไม่บอกใบ้, route guard, ข้อมูลแยกต่อผู้ใช้, ไม่ render HTML | 12 |
+| `@security` | ข้อความ error ไม่บอกใบ้, route guard, ข้อมูลแยกต่อผู้ใช้, ไม่ render HTML, CSP | 16 |
 | `@persistence` | ข้อมูล/สถานะอยู่ต่อหลัง reload | 11 |
-| `@resilience` | ข้อมูลใน storage เสียหรือผิดรูป | 13 |
+| `@resilience` | ข้อมูลใน storage เสียหรือผิดรูป, server ติดต่อไม่ได้ | 12 |
 | `@destructive` | ลบบัญชี | 2 |
 | `@a11y` | axe (WCAG 2.1 A/AA), คีย์บอร์ด, title ของหน้า | 16 |
 | `@responsive` | จอมือถือ | 1 |
@@ -164,7 +186,7 @@ axe ช่วยจับปัญหาได้ส่วนหนึ่ง ไ
 | `@api` | JSON ที่ API ส่ง (สำเร็จและ error) ตรง schema และผู้ใช้แยกข้อมูลกัน (อยู่ใน `@contract`) | 9 |
 
 เคสหนึ่งมีได้หลาย tag (เช่น รหัสผ่านผิดเป็นทั้ง `@validation` และ `@security`)
-จึงตัวเลขรวมในตารางเกิน 127
+จึงตัวเลขรวมในตารางเกิน 156
 
 ```bash
 npm run test:smoke                                 # ชุดเร็ว 5 เคส
@@ -231,6 +253,22 @@ npm run report                               # เปิดรายงาน HT
 - จำกัดอัตราต่อ IP: 300 request/นาทีทั่วไป และ 20 request/นาทีสำหรับ route ที่ต้อง hash รหัสผ่าน (429 `rate_limited` พร้อม `Retry-After`)
 
 ทุกโหมดส่ง Content-Security-Policy แบบผูก hash กับ inline script ของแต่ละหน้า (ไม่ใช้ `unsafe-inline`) พร้อม `X-Frame-Options: DENY` และ `nosniff` ชุดเทสในเครื่องและ CI รันโหมดปกติ ไม่ใช่โหมด public
+
+#### Deploy บน Render
+
+แอปและ API รันเป็น web service ตัวเดียวบน Render จากไฟล์ [render.yaml](render.yaml) (Blueprint) ตอนนี้ออนไลน์ที่ https://testover-app.onrender.com
+
+| ตัวแปร | ค่า | ทำไม |
+|---|---|---|
+| `HARDENED` | `1` | โหมด public: `demo` แก้ไม่ได้, rate limit, ล้างข้อมูลทุกชั่วโมง |
+| `TRUST_PROXY` | `1` | อยู่หลัง proxy จึงเชื่อ header บอก IP ผู้เรียก |
+| `CLIENT_IP_HEADER` | `cf-connecting-ip` | Render อยู่หลัง Cloudflare ที่ IP ท้ายสุดของ `X-Forwarded-For` เปลี่ยนไปมา rate limit จึงต้องใช้ header ที่ Cloudflare ใส่เอง (ปลอมไม่ได้: ถ้า client ส่งมาเอง Cloudflare ตอบ 403) |
+| `NODE_VERSION` | `22` | ตรงกับ `engines` ของโปรเจกต์ |
+
+- เริ่มต้นใช้: Render > New > Blueprint > เลือก repo นี้ > ตั้งชื่อ Blueprint > Deploy Blueprint หลังจากนั้น push เข้า `main` แล้ว Render deploy ให้เอง (`autoDeploy`) และซิงก์การแก้ `render.yaml` ให้ด้วย
+- ตรวจหลัง deploy: `/api/health` ต้องได้ `{"status":"ok"}`, หน้าแรกต้อง login ด้วย `demo` / `demo1234` ได้, และเปลี่ยนรหัสผ่านของ `demo` ต้องถูกปฏิเสธ
+- ให้ปุ่ม "เปิดแอป" โผล่บนหน้าแรกของ Pages: ตั้ง repo variable `APP_URL` (GitHub > Settings > Secrets and variables > Actions > Variables) แล้วรัน workflow `Publish site` ใหม่ (ตั้งไว้แล้ว ชี้ไป Render)
+- ข้อจำกัดของ free tier: หลับเมื่อไม่มีคนใช้ ข้อมูลหายเมื่อหลับ/restart ไม่มีฐานข้อมูล และ HTTPS เป็นของ Render ถ้าจะใช้งานจริงต้องเพิ่มที่เก็บข้อมูลถาวร
 
 #### เครื่องมือ record & replay
 
@@ -352,7 +390,7 @@ on:
 
 ```
 ✅ PASS — weekend QA run
-passed: 127 | failed: 0 | flaky: 0 | skipped: 0
+passed: 156 | failed: 0 | flaky: 0 | skipped: 0
 https://github.com/<user>/<repo>/actions/runs/123456789
 ```
 
