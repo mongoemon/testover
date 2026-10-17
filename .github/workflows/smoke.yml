@@ -1,6 +1,6 @@
 name: Smoke
 
-# Fast check (the @smoke tag, ~5 tests) on every push to main and every pull request.
+# Fast check (unit + contract, @smoke, and @characterization incl. golden master) on every push to main and every pull request.
 # The full regression runs on a schedule in weekend-e2e.yml.
 on:
   push:
@@ -37,6 +37,13 @@ jobs:
 
       - name: Run smoke tests
         run: npm run test:smoke
+
+      - name: Run characterization tests (incl. golden master)
+        run: npm run test:characterization
+
+      - name: Test summary
+        if: always()
+        run: node scripts/summary.mjs
 
       - name: Upload report on failure
         if: failure()

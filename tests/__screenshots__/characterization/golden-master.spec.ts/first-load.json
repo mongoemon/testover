@@ -1,0 +1,8 @@
+{
+  "tb.users": {
+    "demo": {
+      "displayName": "Demo User",
+      "password": "demo1234"
+    }
+  }
+}

@@ -5,6 +5,12 @@ on:
     # Sat & Sun 02:00 UTC = 09:00 Thailand (cron is always UTC)
     - cron: '0 2 * * 6,0'
   workflow_dispatch:
+    inputs:
+      tag:
+        description: 'Run only tests with this tag (empty = everything)'
+        type: choice
+        default: ''
+        options: ['', '@smoke', '@security', '@contract', '@characterization']
 
 jobs:
   e2e:
@@ -22,8 +28,11 @@ jobs:
 
       - run: npx playwright install --with-deps chromium
 
+      # TAG comes through env, never interpolated into the script. Scheduled runs have no input, so they run everything.
       - name: Run tests
-        run: npx playwright test
+        run: npx playwright test ${TAG:+--grep "$TAG"}
+        env:
+          TAG: ${{ inputs.tag }}
 
       # After Playwright on purpose: a unit failure must not hide the E2E result, and the
       # report contract needs the real results.json (REQUIRE_REAL_REPORT makes a missing one fail).
@@ -32,6 +41,10 @@ jobs:
         run: npm run test:unit
         env:
           REQUIRE_REAL_REPORT: '1'
+
+      - name: Test summary
+        if: always()
+        run: node scripts/summary.mjs
 
       - name: Upload report
         if: always()

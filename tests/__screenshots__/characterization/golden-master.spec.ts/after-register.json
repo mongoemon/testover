@@ -1,0 +1,13 @@
+{
+  "tb.session": "alice",
+  "tb.users": {
+    "alice": {
+      "displayName": "Alice Tester",
+      "password": "s3cretpass"
+    },
+    "demo": {
+      "displayName": "Demo User",
+      "password": "demo1234"
+    }
+  }
+}

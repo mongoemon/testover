@@ -1,0 +1,10 @@
+{
+  "tb.session": "demo",
+  "tb.theme": "dark",
+  "tb.users": {
+    "demo": {
+      "displayName": "Demo Renamed",
+      "password": "brand-new-pw"
+    }
+  }
+}

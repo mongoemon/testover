@@ -1,0 +1,23 @@
+Tasks
+New task
+Priority
+Low
+Medium
+High
+Add task
+Search tasks
+All
+Active
+Completed
+Write release notes
+High
+Edit
+Delete
+Water the plants
+Low
+Edit
+Delete
+
+1 task left
+
+Clear completed

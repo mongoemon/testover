@@ -11,9 +11,16 @@ export default defineConfig({
   retries: isCI ? 2 : 0,
   workers: isCI ? 2 : undefined,
   timeout: 30_000,
-  expect: { timeout: 7_000 },
+  expect: {
+    timeout: 7_000,
+    toHaveScreenshot: { animations: 'disabled', maxDiffPixelRatio: 0.01 },
+  },
+  // One baseline per screen, no OS suffix: baselines are only ever generated on Linux.
+  snapshotPathTemplate: '{testDir}/__screenshots__/{testFilePath}/{arg}{ext}',
   reporter: [
     ['list'],
+    // On CI, also turn each failure into an inline annotation on the run/PR.
+    ...(isCI ? [['github'] as const] : []),
     ['html', { open: 'never' }],
     ['json', { outputFile: 'test-results/results.json' }],
     ['allure-playwright', { resultsDir: 'allure-results' }],

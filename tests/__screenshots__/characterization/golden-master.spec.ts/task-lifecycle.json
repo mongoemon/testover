@@ -1,0 +1,23 @@
+{
+  "tb.session": "demo",
+  "tb.tasks.demo": [
+    {
+      "done": true,
+      "id": 2,
+      "priority": "medium",
+      "title": "Review pull requests"
+    },
+    {
+      "done": false,
+      "id": 3,
+      "priority": "low",
+      "title": "Water the ferns"
+    }
+  ],
+  "tb.users": {
+    "demo": {
+      "displayName": "Demo User",
+      "password": "demo1234"
+    }
+  }
+}
