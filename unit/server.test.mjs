@@ -89,6 +89,39 @@ describe('app/server.mjs', () => {
     });
   });
 
+  describe('docs', () => {
+    test('GET /docs/overview.html serves the docs page as UTF-8 HTML', async () => {
+      const expected = await readFile(new URL('../docs/overview.html', import.meta.url), 'utf8');
+      const res = await send(server.port, { path: '/docs/overview.html' });
+      assert.equal(res.status, 200);
+      assert.equal(res.headers['content-type'], 'text/html; charset=utf-8');
+      assert.equal(res.body, expected);
+    });
+
+    for (const path of ['/docs/tags.md', '/README.md']) {
+      test(`GET ${path} serves Markdown as UTF-8 text`, async () => {
+        const res = await send(server.port, { path });
+        assert.equal(res.status, 200);
+        assert.equal(res.headers['content-type'], 'text/markdown; charset=utf-8');
+      });
+    }
+
+    for (const path of ['/docs', '/docs/']) {
+      test(`${path} redirects to the overview`, async () => {
+        const res = await send(server.port, { path });
+        assert.equal(res.status, 301);
+        assert.equal(res.headers.location, '/docs/overview.html');
+      });
+    }
+
+    for (const path of ['/docs/missing.html', '/docs/../package.json', '/docs/%2e%2e/package.json', '/docs/x.json']) {
+      test(`${path} returns 404`, async () => {
+        const res = await send(server.port, { path });
+        assert.equal(res.status, 404);
+      });
+    }
+  });
+
   describe('301 Moved Permanently', () => {
     test('/index.htm redirects to /', async () => {
       const res = await send(server.port, { path: '/index.htm' });

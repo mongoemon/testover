@@ -5,6 +5,8 @@
   "engines": { "node": ">=22" },
   "description": "Small Playwright QA suite, run automatically on weekends with pass/fail notification",
   "scripts": {
+    "start": "node app/server.mjs",
+    "build:pages": "node scripts/build-pages.mjs",
     "test": "playwright test",
     "test:unit": "node --test \"unit/*.test.mjs\"",
     "test:unit:coverage": "node --test --experimental-test-coverage \"unit/*.test.mjs\"",
