@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover คู่มือ release</title>
+  <meta name="description" content="ขั้นตอน release ของ testover: เปลี่ยน version และ change log, รันเทส, commit, push และ deploy ขึ้น Cloudflare Pages พร้อมชุดคำสั่ง">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --fail: #b3261e; --tint: #e6efe9;
+      --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.75; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3rem 0 2rem; border-bottom: 2px solid var(--ink); }
+    .topbar { display: flex; justify-content: flex-end; gap: .5rem; }
+    .pill { text-decoration: none; background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; margin-top: 1rem; }
+    h1 { font-size: clamp(2rem, 1.1rem + 4.2vw, 3.5rem); line-height: 1.15; margin: .4rem 0 1rem; letter-spacing: -.01em; }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 60ch; margin: 0 0 1.25rem; }
+    .try { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600; padding: .55rem 1.2rem; border-radius: 999px; }
+    .try:hover { filter: brightness(1.08); }
+    .try-note { color: var(--muted); font-size: .9rem; margin-left: .75rem; }
+
+    h2.sec { font-size: 1.55rem; margin: 3.75rem 0 .4rem; line-height: 1.3; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 64ch; }
+
+    .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .cap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; }
+    .cap:nth-child(3n+2) { margin-top: 1rem; }
+    .cap .n { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 700; color: var(--accent); line-height: 1.2; display: block; }
+    .cap h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
+    .cap p { margin: 0; font-size: .93rem; color: var(--muted); }
+
+    figure.chart { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1rem .75rem; }
+    figure.chart svg { display: block; width: 100%; max-width: 600px; height: auto; margin: 0 auto; }
+    figcaption { font-size: .88rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+    .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; justify-content: center; margin: .6rem 0 0; font-size: .82rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: .9rem; height: .9rem; vertical-align: -.15em; margin-right: .35rem; border: 1.5px solid var(--ink); border-radius: 3px; background: var(--surface); }
+    .legend .l-ok::before { background: var(--accent); border-color: var(--accent); }
+    .legend .l-bad::before { border-color: var(--fail); }
+    .legend .l-d::before { background: var(--tint); transform: rotate(45deg) scale(.8); border-radius: 1px; }
+
+    svg .n { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+    svg .n.ok { fill: var(--accent); stroke: var(--accent); }
+    svg .n.bad { stroke: var(--fail); }
+    svg .n.d { fill: var(--tint); }
+    svg text { fill: var(--ink); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+    svg text.ok { fill: var(--accent-ink); }
+    svg text.sub { font-size: 12px; font-weight: 400; fill: var(--muted); }
+    svg text.sub.ok { fill: var(--accent-ink); opacity: .9; }
+    svg text.lbl { font-size: 12px; font-weight: 700; fill: var(--accent); }
+    svg path.a { fill: none; stroke: var(--ink); stroke-width: 1.6; marker-end: url(#ah); }
+    svg path.a.plain { marker-end: none; }
+    svg path.a.both { marker-start: url(#ah); }
+    svg .ah { fill: var(--ink); }
+
+    details.alt { margin-top: .75rem; font-size: .95rem; }
+    details.alt summary { cursor: pointer; color: var(--accent); }
+    details.alt ol { margin: .5rem 0 0; padding-left: 1.3rem; }
+
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); font-size: .92rem; }
+    th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+    tr:last-child td { border-bottom: 0; }
+    td code { display: inline-block; margin: .05rem 0; }
+
+    ul.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
+    ul.rules li { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: .7rem 1rem; font-size: .96rem; }
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.5rem 0; font-size: .95rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .topnav .in { max-width: 980px; margin: 0 auto; padding: .45rem 16px; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; }
+    .topnav .in::-webkit-scrollbar { display: none; }
+    .topnav .brand { font-family: var(--font-mono); font-weight: 700; color: var(--accent); text-decoration: none; margin-right: .6rem; white-space: nowrap; }
+    .topnav a.l { color: var(--ink); text-decoration: none; font-size: .88rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .topnav a.l:hover { border-color: var(--line); background: var(--surface); }
+    .topnav a.l[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+    .topnav .sep { flex: 1 0 .8rem; }
+    h2.sec, section.next { scroll-margin-top: 3.4rem; }
+    @media print { .topnav { display: none; } }
+    @media (max-width: 680px) { .cap:nth-child(n) { margin-top: 0; } .try-note { display: block; margin: .6rem 0 0; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  
+    pre { background: #1d2320; color: #e9f1ec; padding: .9rem 1.1rem; border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.6; margin: .75rem 0; }
+    pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    pre .c { color: #8fa89b; }
+    .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: .9rem; }
+    .steps > li { min-width: 0; }
+    .steps > li { counter-increment: s; position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1.2rem .9rem 4rem; }
+    .steps > li::before { content: counter(s); position: absolute; left: 1rem; top: .8rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; }
+    .steps h3 { margin: 0 0 .25rem; font-size: 1.08rem; }
+    .steps p { margin: .3rem 0; }
+    .warn { border-left: 4px solid var(--fail); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    .ok-note { border-left: 4px solid var(--accent); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    h3.mini { font-size: 1.1rem; margin: 1.6rem 0 .3rem; }
+    ul.plain { margin: .4rem 0; padding-left: 1.3rem; }
+    @media (max-width: 680px) { .steps > li { padding-left: 3.4rem; } }
+  </style>
+</head>
+<body>
+<nav class="topnav" aria-label="สารบัญ"><div class="in"><a class="brand" href="#top">testover</a><a class="l" href="#top">คู่มือ release</a><a class="l" href="#flow">ภาพรวม</a><a class="l" href="#version">Version</a><a class="l" href="#checks">เทส</a><a class="l" href="#ship">Push</a><a class="l" href="#deploy">Deploy</a><a class="l" href="#docs-rules">เอกสาร</a><a class="l" href="#fix">แก้ปัญหา</a><span class="sep"></span><a class="l" href="overview.html">ภาพรวมโปรเจกต์</a><a class="l" href="user-journey.html">เส้นทางผู้ใช้</a><a class="l" href="guide.html">Guide</a></div></nav>
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <div class="topbar">
+      <a class="pill" href="release-guide.en.html" hreflang="en" lang="en">English</a>
+      <button class="pill" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">สลับธีม</button>
+    </div>
+    <div class="eyebrow">testover · release</div>
+    <h1>ปล่อยของขึ้นเว็บให้ครบทุกขั้น</h1>
+    <p class="lead">จากแก้โค้ดจนเว็บอัปเดตที่ testover.pages.dev: เปลี่ยน version และ change log, รันเทส, commit, push และดู deploy พร้อมชุดคำสั่งที่คัดลอกไปรันได้ทันที</p>
+    <div class="ok-note" style="margin:0"><b>จำสั้นๆ:</b> push เข้า <code>main</code> = deploy ถ้าไฟล์ที่แก้อยู่ใน <code>docs/</code>, <code>app/</code>, <code>.github/pages/</code>, <code>scripts/build-pages.mjs</code> หรือ <code>README.md</code> ระบบจะ publish ให้เอง</div>
+  </header>
+
+  <h2 class="sec" id="flow">ภาพรวมขั้นตอน</h2>
+  <p class="sub">ขั้นตอนเรียงตามลำดับ ถ้าเทสไม่ผ่านให้วนกลับไปแก้ ห้ามข้ามไป push</p>
+  <figure class="chart"><svg viewBox="0 0 560 548" role="img" aria-labelledby="r-t r-d" xmlns="http://www.w3.org/2000/svg"><title id="r-t">ขั้นตอน release</title><desc id="r-d">แก้โค้ด เปลี่ยน version และ change log รันเทสในเครื่อง ถ้าผ่านก็ commit และ push เข้า main จากนั้น Smoke CI และ Publish site ทำงานคู่กัน แล้วเว็บอัปเดต</desc><g><rect class="n " x="190" y="9" width="180" height="34" rx="17"/><text class="" x="280" y="26">แก้โค้ด / เอกสาร</text></g><path class="a" d="M280 43 V62"/><g><rect class="n " x="120" y="65" width="320" height="50" rx="8"/><text class="" x="280" y="81">เปลี่ยน version + เขียน change log</text><text class="sub " x="280" y="99">app/index.html</text></g><path class="a" d="M280 115 V125"/><g><rect class="n " x="120" y="125" width="320" height="50" rx="8"/><text class="" x="280" y="141">รันเทสในเครื่อง</text><text class="sub " x="280" y="159">unit · smoke · characterization · visual</text></g><path class="a" d="M280 175 V187"/><g><polygon class="n d" points="280,187 390,225 280,263 170,225"/><text class="" x="280" y="225">ผ่านทั้งหมด?</text></g><path class="a" d="M390 225 H440"/><text class="lbl" x="415" y="215" text-anchor="middle">ไม่</text><g><rect class="n bad" x="440" y="197" width="120" height="56" rx="8"/><text class="bad" x="500" y="216">อ่าน error</text><text class="sub bad" x="500" y="234">แก้แล้วรันใหม่</text></g><path class="a" d="M500 197 V150 H440"/><path class="a" d="M280 263 V282"/><text class="lbl" x="293" y="274" text-anchor="start">ใช่</text><g><rect class="n " x="120" y="282" width="320" height="46" rx="8"/><text class="" x="280" y="296">git commit</text><text class="sub " x="280" y="314">git push origin main</text></g><path class="a plain" d="M280 328 V350 M150 350 H410"/><path class="a" d="M150 350 V374"/><path class="a" d="M410 350 V374"/><g><rect class="n " x="40" y="374" width="220" height="56" rx="8"/><text class="" x="150" y="393">Smoke (CI)</text><text class="sub " x="150" y="411">unit + smoke + characterization</text></g><g><rect class="n " x="300" y="374" width="220" height="56" rx="8"/><text class="" x="410" y="393">Publish site</text><text class="sub " x="410" y="411">เมื่อแก้ docs/ app/ ฯลฯ</text></g><path class="a plain" d="M150 430 V462 M410 430 V462 M150 462 H410"/><path class="a" d="M280 462 V480"/><g><rect class="n ok" x="120" y="483" width="320" height="50" rx="8"/><text class="ok" x="280" y="499">เว็บอัปเดตที่ testover.pages.dev</text><text class="sub ok" x="280" y="517">ตรวจ version badge และหน้า /status/</text></g></svg>
+    <div class="legend" aria-hidden="true"><span class="l-d">จุดตัดสินใจ</span><span class="l-ok">ผลสุดท้าย</span><span class="l-bad">ต้องแก้</span></div>
+  </figure>
+
+  <h2 class="sec" id="version">1 · เปลี่ยน version และ change log</h2>
+  <p class="sub">เลข version ที่ป้ายมุมขวาล่างของเว็บมาจากรายการบนสุดของ <code>CHANGELOG</code> ใน <code>app/index.html</code> ที่เดียว ไม่มีไฟล์อื่นต้องแก้</p>
+  <ol class="steps">
+    <li><h3>ตั้งเลข version เป็นวันที่ (YYYY.MM.DD)</h3>
+      <p>รูปแบบเดียวกับที่มีอยู่ เช่น <code>2026.10.17</code> ใช้วันที่ที่ release จริง</p><pre><code><span class="c"># วันที่วันนี้ = เลข version</span>
+date +%Y.%m.%d                          <span class="c"># bash / Git Bash</span>
+Get-Date -Format yyyy.MM.dd             <span class="c"># PowerShell</span>
+
+<span class="c"># ดูรายการบนสุดของ CHANGELOG</span>
+grep -n "version: '" app/index.html | head -3                          <span class="c"># bash</span>
+Select-String "version: '" app/index.html | Select-Object -First 3     <span class="c"># PowerShell</span></code></pre></li>
+    <li><h3>เพิ่มรายการใหม่ไว้บนสุดของ CHANGELOG</h3>
+      <p>รายการใหม่อยู่ <b>บนสุด</b> ป้ายจะอ่านจากรายการแรก แต่ละข้อเป็นประโยคสั้นภาษาอังกฤษ (UI เป็นภาษาอังกฤษ) ขึ้นต้นด้วยหมวด เช่น <code>Docs:</code>, <code>Tests:</code>, <code>Sign-in page:</code></p><pre><code>const CHANGELOG = [
+  { version: '2026.10.18', changes: [
+    'Docs: added the user journey page (Thai and English)',
+    'Docs: added the release guide (Thai and English)',
+  ] },
+  { version: '2026.10.17', changes: [ /* ... */ ] },
+];</code></pre></li>
+    <li><h3>ถ้า release ซ้ำวันเดิม</h3>
+      <p>เวอร์ชันเป็นวันที่ จึงซ้ำกันไม่ได้ ให้ <b>เพิ่มข้อ</b> ในรายการของวันนั้นแทนการสร้างรายการใหม่</p></li>
+    <li><h3>เปิดดูผลในเว็บ</h3>
+      <p><code>npm start</code> แล้วเปิด <code>http://localhost:3000</code> ป้ายมุมขวาล่างต้องขึ้นเลขใหม่ กดค้างราว 0.6 วินาที (หรือโฟกัสแล้วกด Enter/Space) เพื่อเปิด change log ดูว่ารายการใหม่อยู่บนสุด</p></li>
+  </ol>
+  <div class="ok-note">ไม่ต้องกังวลเรื่องเทสภาพ: เทส visual ปิดบังป้าย version ไว้ (<code>MASK_VERSION_BADGE</code>) และไม่มีเทสไหนเช็กข้อความ version ส่วน <code>package.json</code> ยังเป็น <code>1.0.0</code> ตามเดิม เลข version ของเว็บไม่เกี่ยวกับมัน</div>
+
+  <h2 class="sec" id="checks">2 · รันเทสก่อน push</h2>
+  <p class="sub">CI จะรันซ้ำให้อยู่แล้ว แต่รันในเครื่องก่อนจะรู้เร็วกว่าและไม่ทำให้ main แดง</p>
+  <pre><code><span class="c"># ดูสถานะและดึงของใหม่ก่อน</span>
+git status -sb
+git pull --rebase origin main</code></pre><pre><code>npm ci                              <span class="c"># ครั้งแรก / เมื่อ package-lock เปลี่ยน</span>
+npm run test:unit                   <span class="c"># unit + contract</span>
+npm run test:smoke                  <span class="c"># เส้นทางหลัก</span>
+npm run test:characterization       <span class="c"># พฤติกรรมที่จดไว้ + golden master</span>
+npm run test:visual                 <span class="c"># เทียบภาพ (ต้องมี Docker รันอยู่)</span>
+npm test                            <span class="c"># ทั้งชุด (ทางเลือก ก่อน release ใหญ่)</span>
+npm run build:pages                 <span class="c"># ลองสร้าง dist/ เหมือนที่ขึ้น Pages</span></code></pre>
+  <h3 class="mini">ถ้าเทสภาพ (visual) ไม่ผ่านเพราะ UI เปลี่ยนจริง</h3>
+  <p>ภาพอ้างอิงต้องสร้างใน Docker เพื่อให้เป็น Linux เหมือน CI เท่านั้น (ภาพจาก Windows จะไม่ตรง) สร้างใหม่แล้วเปิดดูภาพก่อน commit</p>
+  <pre><code>npm run test:visual:update          <span class="c"># สร้างภาพอ้างอิงใหม่ใน Docker (Linux เหมือน CI)</span>
+git status -sb tests/__screenshots__    <span class="c"># เปิดดูภาพที่เปลี่ยนก่อน commit</span></code></pre>
+  <h3 class="mini">ถ้าแก้เอกสาร</h3>
+  <p>ตัวเลขจำนวนเทสเปลี่ยนบ่อย นับใหม่ก่อนอ้างตัวเลขในเอกสาร: <code>npx playwright test --list</code> · <code>npm run test:unit</code></p>
+
+  <h2 class="sec" id="ship">3 · commit และ push</h2>
+  <p class="sub">ข้อความ commit ใช้รูปแบบ <code>&lt;type&gt;: &lt;description&gt;</code> โดย type คือ feat, fix, refactor, docs, test, chore, perf, ci</p>
+  <pre><code>git status -sb                                 <span class="c"># ดูว่ามีไฟล์อะไรบ้าง</span>
+git add app/index.html docs/ .github/pages/    <span class="c"># ระบุชื่อไฟล์ ไม่ใช้ git add -A</span>
+git diff --cached --stat                       <span class="c"># ตรวจอีกรอบ</span>
+git commit -m "feat: add the user journey and release guide pages (th/en)"
+git push origin main</code></pre>
+  <div class="warn"><b>ระวัง:</b> ระบุไฟล์ตอน <code>git add</code> เสมอ เพื่อไม่ลากไฟล์ของงานอื่นหรือไฟล์ลับเข้าไป อย่า commit Webhook URL, <code>CLOUDFLARE_API_TOKEN</code> หรือ <code>.env</code> ค่าเหล่านี้อยู่ใน GitHub Secrets เท่านั้น และห้าม <code>git push --force</code> เข้า main</div>
+
+  <h2 class="sec" id="deploy">4 · Deploy ขึ้น Cloudflare Pages</h2>
+  <p class="sub">หลัง push มี 2 workflow เริ่มเอง</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Workflow</th><th>เริ่มเมื่อ</th><th>ทำอะไร</th></tr></thead>
+    <tbody>
+      <tr><td><code>Smoke</code></td><td>ทุก push เข้า main และทุก PR</td><td>unit + contract, smoke, characterization แล้วอัปโหลดรายงาน</td></tr>
+      <tr><td><code>Publish site</code></td><td>push เข้า main ที่แตะ <code>docs/**</code>, <code>app/**</code>, <code>.github/pages/**</code>, <code>scripts/build-pages.mjs</code>, <code>README.md</code> หรือไฟล์ workflow นี้ · หลัง Weekend E2E จบ · กดเอง</td><td>สร้างเว็บ (<code>npm run build:pages</code>), ใส่รายงานล่าสุดที่ <code>/status/</code>, ประทับ commit บนหน้า hub แล้ว <code>wrangler pages deploy</code></td></tr>
+    </tbody>
+  </table></div>
+  <pre><code>gh run list --limit 5                   <span class="c"># ดูรอบที่เพิ่งเริ่ม</span>
+gh run watch                            <span class="c"># เลือกรอบแล้วดูสดจนจบ</span>
+gh run list --workflow "Publish site" --limit 3</code></pre>
+  <h3 class="mini">แก้เฉพาะ tests/ หรือ unit/ แล้วเว็บไม่ขึ้นใหม่?</h3>
+  <p>เป็นเรื่องปกติ เพราะ path ไม่เข้าเงื่อนไขของ Publish site ถ้าต้องการ deploy ก็สั่งเอง:</p>
+  <pre><code>gh workflow run cloudflare-pages.yml --ref main    <span class="c"># สั่ง deploy เอง (ไม่ต้องมี commit ใหม่)</span>
+gh run watch</code></pre>
+  <h3 class="mini">ตรวจว่าเว็บใหม่ขึ้นจริง</h3>
+  <pre><code>curl -sI https://testover.pages.dev/docs/release-guide.html | head -1   <span class="c"># ต้องได้ 200</span>
+git rev-parse --short HEAD                                              <span class="c"># เทียบกับ commit บนหน้า /status/</span></code></pre>
+  <ul class="plain">
+    <li>เว็บ: <a href="https://testover.pages.dev">testover.pages.dev</a> → ป้ายมุมขวาล่างต้องเป็น version ใหม่ (ถ้ายังเก่า ให้ hard refresh)</li>
+    <li>หน้า hub <code>/status/</code> แสดง commit ที่ deploy และ commit ที่เป็นต้นทางของรายงาน</li>
+    <li>เอกสารใหม่: <code>/docs/&lt;ชื่อไฟล์&gt;.html</code> ต้องตอบ 200 ทั้งไทยและอังกฤษ</li>
+  </ul>
+  <p>ต้องมี secret <code>CLOUDFLARE_API_TOKEN</code> และ <code>CLOUDFLARE_ACCOUNT_ID</code> ใน repo (ชื่อโปรเจกต์มาจากตัวแปร <code>CLOUDFLARE_PROJECT_NAME</code> ค่าเริ่มต้น <code>testover</code>)</p>
+  <h3 class="mini">ย้อนกลับเมื่อ deploy แล้วพัง</h3>
+  <pre><code>git revert &lt;sha&gt;                        <span class="c"># ย้อนทีละ commit โดยไม่เขียนประวัติทับ</span>
+git push origin main                    <span class="c"># Publish site รันให้เองอีกรอบ</span></code></pre>
+
+  <h2 class="sec" id="all-in-one">ชุดคำสั่งเดียวจบ</h2>
+  <p class="sub">รวมขั้น 2–4 (ทำขั้น 1 ด้วยมือก่อน) หยุดทันทีถ้าคำสั่งใดล้มเหลว</p>
+  <pre><code><span class="c"># ชุดเต็มสำหรับ release (Git Bash) แก้ข้อความ commit ให้ตรงงานก่อนรัน</span>
+set -e
+git pull --rebase origin main
+npm run test:unit &amp;&amp; npm run test:smoke &amp;&amp; npm run test:characterization
+npm run build:pages
+git add app/index.html docs/ .github/pages/
+git commit -m "feat: &lt;สรุปสิ่งที่เปลี่ยน&gt;"
+git push origin main
+gh run watch</code></pre>
+
+  <h2 class="sec" id="docs-rules">กติกาตอนเพิ่ม/แก้เอกสาร</h2>
+  <ul class="rules">
+    <li><b>ทุกหน้ามี 2 ภาษา</b>: <code>name.html</code> (ไทย) และ <code>name.en.html</code> (อังกฤษ) มีปุ่มสลับภาษาทั้งหัวและท้ายหน้า ตัวเลขต้องตรงกัน</li>
+    <li><b>ชื่อไฟล์</b>ใช้ตัวพิมพ์เล็ก ตัวเลข <code>-</code> และ <code>.</code> เท่านั้น ไม่เช่นนั้นเซิร์ฟเวอร์จะตอบ 404</li>
+    <li><b>ใส่แถบ topnav</b> เหมือนหน้าอื่น (หัวข้อในหน้าอยู่ซ้าย ลิงก์ไปหน้าอื่นอยู่ขวา) และรองรับธีมสว่าง/มืดกับจอมือถือ</li>
+    <li><b>ผูกลิงก์เข้าระบบ</b>: เพิ่มในรายการ “อ่านต่อ” ของ <code>overview.html</code> / <code>overview.en.html</code> และใน <code>.github/pages/index.html</code></li>
+    <li><b>บันทึกใน change log</b> ด้วยบรรทัดที่ขึ้นต้นด้วย <code>Docs:</code> (ดูหัวข้อ 1)</li>
+    <li>เอกสารใหม่แตะ <code>docs/**</code> จึงเข้าเงื่อนไข deploy อัตโนมัติ</li>
+  </ul>
+
+  <h2 class="sec" id="fix">แก้ปัญหาที่พบบ่อย</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>อาการ</th><th>สาเหตุที่น่าจะเป็น</th><th>ทางแก้</th></tr></thead>
+    <tbody>
+      <tr><td>push ถูกปฏิเสธ (rejected)</td><td>มี commit ใหม่บน main</td><td><code>git pull --rebase origin main</code> แล้ว push ใหม่</td></tr>
+      <tr><td>เทสภาพ (visual) แดงใน CI แต่เขียวในเครื่อง</td><td>ภาพอ้างอิงสร้างบน Windows/Mac</td><td><code>npm run test:visual:update</code> (Docker)</td></tr>
+      <tr><td>Publish site ไม่ถูกเรียก</td><td>ไฟล์ที่แก้ไม่อยู่ใน path filter</td><td><code>gh workflow run cloudflare-pages.yml --ref main</code></td></tr>
+      <tr><td>ขั้น Deploy ล้มด้วย error เรื่อง token/account</td><td>secret หายหรือหมดอายุ</td><td>ตั้ง <code>CLOUDFLARE_API_TOKEN</code> / <code>CLOUDFLARE_ACCOUNT_ID</code> ใหม่ใน Settings → Secrets</td></tr>
+      <tr><td>ป้าย version ยังเป็นเลขเก่า</td><td>แคชเบราว์เซอร์ หรือรายการใหม่ไม่ได้อยู่บนสุด</td><td>hard refresh แล้วเช็กลำดับใน <code>CHANGELOG</code></td></tr>
+      <tr><td>รายงานบน /status/ เป็นของเก่า</td><td>รายงานมาจากรอบ Weekend E2E ล่าสุด ไม่ใช่ commit นี้</td><td>ปกติ ดู commit ต้นทางรายงานบนหน้า hub</td></tr>
+      <tr><td>หน้าเอกสารใหม่ 404</td><td>ชื่อไฟล์มีตัวพิมพ์ใหญ่ หรือยังไม่ได้ deploy</td><td>เปลี่ยนชื่อเป็นตัวพิมพ์เล็ก และดู run ของ Publish site</td></tr>
+    </tbody>
+  </table></div>
+
+  <section class="next" id="next">
+    <h2>อ่านต่อ</h2>
+    <ul>
+      <li>ตั้ง webhook, secret และ cron: <a href="guide.html">guide.html</a></li>
+      <li>โครงสร้างเทส: <a href="testing-structure.html">testing-structure.html</a></li>
+      <li>ผู้ใช้ทำอะไรบนเว็บได้บ้าง: <a href="user-journey.html">user-journey.html</a></li>
+    </ul>
+  </section>
+
+  <footer>testover · อ้างอิงจาก workflow และสคริปต์ในโปรเจกต์ · <a href="release-guide.en.html" hreflang="en" lang="en">Read in English</a></footer>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+</svg>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+<script>
+(function(){var links=[].slice.call(document.querySelectorAll('.topnav a.l[href^="#"]'));
+if(!('IntersectionObserver' in window))return;
+var map={};links.forEach(function(a){var el=document.getElementById(a.getAttribute('href').slice(1));if(el)map[el.id]=a});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.removeAttribute('aria-current')});map[e.target.id].setAttribute('aria-current','true')}})},{rootMargin:'-20% 0px -70% 0px'});
+Object.keys(map).forEach(function(id){io.observe(document.getElementById(id))})})();
+</script>
+</body>
+</html>

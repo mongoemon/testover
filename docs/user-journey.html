@@ -1,0 +1,219 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover เส้นทางผู้ใช้</title>
+  <meta name="description" content="ผู้ใช้ทำอะไรบนเว็บ Task Board ได้บ้าง พร้อม flowchart ทีละขั้น: สมัคร login จัดการงาน และโปรไฟล์">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --fail: #b3261e; --tint: #e6efe9;
+      --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.75; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3rem 0 2rem; border-bottom: 2px solid var(--ink); }
+    .topbar { display: flex; justify-content: flex-end; gap: .5rem; }
+    .pill { text-decoration: none; background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; margin-top: 1rem; }
+    h1 { font-size: clamp(2rem, 1.1rem + 4.2vw, 3.5rem); line-height: 1.15; margin: .4rem 0 1rem; letter-spacing: -.01em; }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 60ch; margin: 0 0 1.25rem; }
+    .try { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600; padding: .55rem 1.2rem; border-radius: 999px; }
+    .try:hover { filter: brightness(1.08); }
+    .try-note { color: var(--muted); font-size: .9rem; margin-left: .75rem; }
+
+    h2.sec { font-size: 1.55rem; margin: 3.75rem 0 .4rem; line-height: 1.3; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 64ch; }
+
+    .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .cap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; }
+    .cap:nth-child(3n+2) { margin-top: 1rem; }
+    .cap .n { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 700; color: var(--accent); line-height: 1.2; display: block; }
+    .cap h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
+    .cap p { margin: 0; font-size: .93rem; color: var(--muted); }
+
+    figure.chart { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1rem .75rem; }
+    figure.chart svg { display: block; width: 100%; max-width: 600px; height: auto; margin: 0 auto; }
+    figcaption { font-size: .88rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+    .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; justify-content: center; margin: .6rem 0 0; font-size: .82rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: .9rem; height: .9rem; vertical-align: -.15em; margin-right: .35rem; border: 1.5px solid var(--ink); border-radius: 3px; background: var(--surface); }
+    .legend .l-ok::before { background: var(--accent); border-color: var(--accent); }
+    .legend .l-bad::before { border-color: var(--fail); }
+    .legend .l-d::before { background: var(--tint); transform: rotate(45deg) scale(.8); border-radius: 1px; }
+
+    svg .n { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+    svg .n.ok { fill: var(--accent); stroke: var(--accent); }
+    svg .n.bad { stroke: var(--fail); }
+    svg .n.d { fill: var(--tint); }
+    svg text { fill: var(--ink); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+    svg text.ok { fill: var(--accent-ink); }
+    svg text.sub { font-size: 12px; font-weight: 400; fill: var(--muted); }
+    svg text.sub.ok { fill: var(--accent-ink); opacity: .9; }
+    svg text.lbl { font-size: 12px; font-weight: 700; fill: var(--accent); }
+    svg path.a { fill: none; stroke: var(--ink); stroke-width: 1.6; marker-end: url(#ah); }
+    svg path.a.plain { marker-end: none; }
+    svg path.a.both { marker-start: url(#ah); }
+    svg .ah { fill: var(--ink); }
+
+    details.alt { margin-top: .75rem; font-size: .95rem; }
+    details.alt summary { cursor: pointer; color: var(--accent); }
+    details.alt ol { margin: .5rem 0 0; padding-left: 1.3rem; }
+
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); font-size: .92rem; }
+    th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+    tr:last-child td { border-bottom: 0; }
+    td code { display: inline-block; margin: .05rem 0; }
+
+    ul.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
+    ul.rules li { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: .7rem 1rem; font-size: .96rem; }
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.5rem 0; font-size: .95rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .topnav .in { max-width: 980px; margin: 0 auto; padding: .45rem 16px; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; }
+    .topnav .in::-webkit-scrollbar { display: none; }
+    .topnav .brand { font-family: var(--font-mono); font-weight: 700; color: var(--accent); text-decoration: none; margin-right: .6rem; white-space: nowrap; }
+    .topnav a.l { color: var(--ink); text-decoration: none; font-size: .88rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .topnav a.l:hover { border-color: var(--line); background: var(--surface); }
+    .topnav a.l[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+    .topnav .sep { flex: 1 0 .8rem; }
+    h2.sec, section.next { scroll-margin-top: 3.4rem; }
+    @media print { .topnav { display: none; } }
+    @media (max-width: 680px) { .cap:nth-child(n) { margin-top: 0; } .try-note { display: block; margin: .6rem 0 0; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  </style>
+</head>
+<body>
+<nav class="topnav" aria-label="สารบัญ"><div class="in"><a class="brand" href="#top">testover</a><a class="l" href="#top">เส้นทางผู้ใช้</a><a class="l" href="#can-do">ทำอะไรได้</a><a class="l" href="#map">แผนที่</a><a class="l" href="#signin">1 เข้าเว็บ</a><a class="l" href="#tasks">2 งาน</a><a class="l" href="#profile">3 โปรไฟล์</a><a class="l" href="#messages">ข้อความ</a><span class="sep"></span><a class="l" href="overview.html">ภาพรวม</a><a class="l" href="testing-structure.html">โครงสร้างเทส</a><a class="l" href="guide.html">Guide</a></div></nav>
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <div class="topbar">
+      <a class="pill" href="user-journey.en.html" hreflang="en" lang="en">English</a>
+      <button class="pill" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">สลับธีม</button>
+    </div>
+    <div class="eyebrow">testover · เส้นทางผู้ใช้</div>
+    <h1>ผู้ใช้ทำอะไรบนเว็บได้บ้าง</h1>
+    <p class="lead">Task Board คือเว็บจดงานเล็กๆ หน้านี้พาตามดูทีละขั้นว่าผู้ใช้เข้ามาแล้วทำอะไรได้ จะไปหน้าไหนต่อ และเจออะไรเมื่อกรอกผิด พร้อมผังที่ไล่ตามด้วยตาได้ทันที</p>
+    <a class="try" href="../">ลองใช้เว็บจริง</a>
+    <span class="try-note">ลอง login ด้วย demo / demo1234</span>
+  </header>
+
+  <h2 class="sec" id="can-do">ผู้ใช้ทำอะไรได้บ้าง</h2>
+  <p class="sub">6 อย่างหลักที่เว็บเปิดให้ทำ ส่วนหัวข้อถัดไปอธิบายแต่ละอย่างเป็นผังและข้อความ</p>
+  <div class="caps"><div class="cap"><span class="n">1</span><h3>สมัครสมาชิก</h3><p>ตั้ง username 3–20 ตัว, ชื่อที่แสดง และรหัสผ่านอย่างน้อย 8 ตัว</p></div><div class="cap"><span class="n">2</span><h3>เข้า/ออกจากระบบ</h3><p>ลองเร็วๆ ด้วยบัญชี demo / demo1234 กด Logout ได้จากแถบบนทุกหน้า</p></div><div class="cap"><span class="n">3</span><h3>จัดการงาน</h3><p>เพิ่ม ติ๊กเสร็จ แก้ชื่อ ลบ พร้อมระดับ Low / Medium / High</p></div><div class="cap"><span class="n">4</span><h3>ค้นหาและกรอง</h3><p>พิมพ์เพื่อค้นหา, กรอง All / Active / Completed และดูว่าเหลือกี่งาน</p></div><div class="cap"><span class="n">5</span><h3>ดูแลโปรไฟล์</h3><p>เปลี่ยนชื่อที่แสดงและเปลี่ยนรหัสผ่าน</p></div><div class="cap"><span class="n">6</span><h3>ปรับแต่งและลบบัญชี</h3><p>เปิด dark mode หรือลบบัญชีพร้อมงานทั้งหมด (มีกล่องยืนยัน)</p></div></div>
+
+  <h2 class="sec" id="map">แผนที่หน้าเว็บ</h2>
+  <p class="sub">เว็บมี 4 หน้า ผู้ใช้เดินไปมาระหว่างกันตามลูกศร หน้าที่ต้อง login ก่อนคือ Tasks และ Profile</p>
+  <figure class="chart"><svg viewBox="0 0 560 290" role="img" aria-labelledby="c0-t c0-d" xmlns="http://www.w3.org/2000/svg"><title id="c0-t">แผนที่หน้าเว็บ</title><desc id="c0-d">Login กับ Register ไปมาหากันได้ ทั้งคู่พาไปหน้า Tasks, Tasks กับ Profile ไปมาหากันได้ และ Logout หรือลบบัญชีพากลับ Login</desc><path class="a plain" d="M290 122 V22"/><path class="a " d="M490 122 V22 H85 V65"/><text class="lbl" x="390" y="13" text-anchor="middle">Logout (ทุกหน้า) · ลบบัญชี</text><g><rect class="n " x="20" y="65" width="130" height="50" rx="8"/><text class="" x="85" y="81">Login</text><text class="sub " x="85" y="99">#/login</text></g><g><rect class="n " x="20" y="190" width="130" height="50" rx="8"/><text class="" x="85" y="206">สมัครสมาชิก</text><text class="sub " x="85" y="224">#/register</text></g><path class="a both" d="M85 115 V190"/><text class="lbl" x="95" y="156" text-anchor="start">สมัคร / กลับ login</text><g><rect class="n ok" x="225" y="122" width="130" height="56" rx="8"/><text class="ok" x="290" y="141">Tasks</text><text class="sub ok" x="290" y="159">#/tasks</text></g><g><rect class="n " x="430" y="122" width="120" height="56" rx="8"/><text class="" x="490" y="141">Profile</text><text class="sub " x="490" y="159">#/profile</text></g><path class="a " d="M150 90 C190 90 190 140 225 140"/><path class="a " d="M150 215 C190 215 190 162 225 162"/><path class="a " d="M355 140 H430"/><path class="a " d="M430 162 H355"/><text class="lbl" x="392" y="132" text-anchor="middle">โปรไฟล์</text><text class="lbl" x="392" y="178" text-anchor="middle">กลับ</text></svg>
+    <figcaption>ลูกศรคือทางที่ผู้ใช้ไปได้ · ทุกหน้าหลัง login มีปุ่ม Logout บนแถบบน</figcaption>
+  </figure>
+
+  <h2 class="sec" id="signin">1 · เข้าเว็บและยืนยันตัวตน</h2>
+  <p class="sub">ทุกคนเริ่มที่นี่ ระบบตัดสินใจให้ว่าจะไป Tasks หรือ Sign in ตามว่ายังมี session ค้างอยู่ไหม</p>
+  <figure class="chart"><svg viewBox="0 0 560 432" role="img" aria-labelledby="c1-t c1-d" xmlns="http://www.w3.org/2000/svg"><title id="c1-t">เข้าเว็บและยืนยันตัวตน</title><desc id="c1-d">เปิดเว็บ ถ้ายังมี session ไปหน้า Tasks เลย ไม่งั้นไปหน้า Sign in กรอกถูกเข้า Tasks กรอกผิดเห็นข้อความแดงแล้วลองใหม่ หรือกดสมัครสมาชิก กรอกถูกกติกาเข้า Tasks</desc><g><rect class="n " x="200" y="9" width="160" height="34" rx="17"/><text class="" x="280" y="26">เปิดเว็บ</text></g><path class="a " d="M280 43 V69"/><g><polygon class="n d" points="280,69 380,105 280,141 180,105"/><text class="" x="280" y="105">เคย login ค้างไว้?</text></g><path class="a " d="M380 105 H420"/><text class="lbl" x="400" y="96" text-anchor="middle">ใช่</text><g><rect class="n ok" x="420" y="85" width="120" height="40" rx="20"/><text class="ok" x="480" y="105">Tasks</text></g><path class="a " d="M280 141 V170"/><text class="lbl" x="292" y="158" text-anchor="start">ไม่</text><g><rect class="n " x="190" y="170" width="180" height="50" rx="8"/><text class="" x="280" y="186">หน้า Sign in</text><text class="sub " x="280" y="204">demo / demo1234</text></g><path class="a " d="M370 195 H430"/><text class="lbl" x="400" y="186" text-anchor="middle">สมัคร</text><g><rect class="n " x="430" y="170" width="120" height="50" rx="8"/><text class="" x="490" y="186">สมัครสมาชิก</text><text class="sub " x="490" y="204">กรอก 4 ช่อง</text></g><path class="a " d="M280 220 V254"/><g><polygon class="n d" points="280,254 370,290 280,326 190,290"/><text class="" x="280" y="281">username และ</text><text class="sub " x="280" y="299">password ตรงกัน?</text></g><path class="a " d="M190 290 H145"/><text class="lbl" x="167" y="281" text-anchor="middle">ไม่</text><g><rect class="n bad" x="15" y="262" width="130" height="56" rx="8"/><text class="bad" x="80" y="281">ขึ้นข้อความสีแดง</text><text class="sub bad" x="80" y="299">แล้วลองใหม่</text></g><path class="a " d="M80 262 V195 H190"/><path class="a " d="M280 326 V375"/><text class="lbl" x="293" y="352" text-anchor="start">ใช่</text><g><rect class="n ok" x="200" y="375" width="160" height="40" rx="20"/><text class="ok" x="280" y="395">เข้าหน้า Tasks</text></g><path class="a " d="M490 220 V250"/><g><polygon class="n d" points="490,250 555,290 490,330 425,290"/><text class="" x="490" y="281">กรอกถูก</text><text class="sub " x="490" y="299">กติกา?</text></g><path class="a " d="M425 290 H400 V395 H360"/><text class="lbl" x="412" y="281" text-anchor="middle">ใช่</text><path class="a " d="M490 330 V362"/><text class="lbl" x="502" y="350" text-anchor="start">ไม่</text><g><rect class="n bad" x="425" y="362" width="130" height="56" rx="8"/><text class="bad" x="490" y="381">รายการข้อผิดพลาด</text><text class="sub bad" x="490" y="399">แก้แล้วส่งใหม่</text></g></svg>
+    <div class="legend" aria-hidden="true"><span class="l-d">จุดตัดสินใจ</span><span class="l-ok">ปลายทางที่สำเร็จ</span><span class="l-bad">เจอข้อผิดพลาด</span></div>
+  </figure>
+  <details class="alt"><summary>อ่านเป็นข้อความ</summary><ol><li>เปิดเว็บ: ถ้ามี session ค้างอยู่ จะเข้า <b>Tasks</b> ทันที ไม่มีก็ไปหน้า <b>Sign in</b></li><li>กรอก username + password แล้วกด Login: ถูกต้อง → Tasks, ผิด → ข้อความสีแดง แล้วลองใหม่</li><li>ยังไม่มีบัญชี: กด <b>Create account</b> → กรอก 4 ช่อง → ถ้าผ่านกติกาจะเข้า Tasks พร้อมข้อความต้อนรับ ถ้าไม่ผ่านจะเห็นรายการข้อผิดพลาดทั้งหมดพร้อมกัน</li></ol></details>
+
+  <h2 class="sec" id="tasks">2 · จัดการงาน</h2>
+  <p class="sub">หน้าหลักของเว็บ อยู่ที่ Tasks ผังนี้ตามชีวิตของงาน 1 ชิ้น ตั้งแต่พิมพ์ชื่อจนถูกลบ</p>
+  <figure class="chart"><svg viewBox="0 0 560 612" role="img" aria-labelledby="c2-t c2-d" xmlns="http://www.w3.org/2000/svg"><title id="c2-t">ชีวิตของงาน 1 ชิ้น</title><desc id="c2-d">พิมพ์ชื่องานและเลือก priority ถ้าชื่อถูกต้องงานเข้ารายการ จากนั้นติ๊กเสร็จ แก้ชื่อ ลบ หรือล้างงานที่เสร็จแล้วได้ ทุกอย่างบันทึกลงเบราว์เซอร์ทันที</desc><g><rect class="n ok" x="200" y="9" width="160" height="34" rx="17"/><text class="ok" x="280" y="26">หน้า Tasks</text></g><path class="a " d="M280 43 V65"/><g><rect class="n " x="130" y="65" width="300" height="50" rx="8"/><text class="" x="280" y="81">พิมพ์ชื่องาน + เลือก Priority</text><text class="sub " x="280" y="99">แล้วกด Add task</text></g><path class="a " d="M280 115 V137"/><g><polygon class="n d" points="280,137 405,175 280,213 155,175"/><text class="" x="280" y="175">ชื่อยาว 1–80 ตัวอักษร?</text></g><path class="a " d="M405 175 H440"/><text class="lbl" x="418" y="164" text-anchor="middle">ไม่</text><g><rect class="n bad" x="440" y="147" width="120" height="56" rx="8"/><text class="bad" x="500" y="166">ขึ้นข้อความแดง</text><text class="sub bad" x="500" y="184">แก้แล้วลองใหม่</text></g><path class="a " d="M500 147 V90 H430"/><path class="a " d="M280 213 V257"/><text class="lbl" x="293" y="240" text-anchor="start">ใช่</text><g><rect class="n ok" x="170" y="257" width="220" height="46" rx="8"/><text class="ok" x="280" y="271">งานขึ้นในรายการ</text><text class="sub ok" x="280" y="289">บันทึกอัตโนมัติ</text></g><path class="a " d="M280 303 V335"/><g><rect class="n " x="160" y="335" width="240" height="46" rx="8"/><text class="" x="280" y="358">จัดการงานได้ 4 แบบ</text></g><path class="a plain" d="M280 381 V405 M75 405 H495"/><path class="a " d="M75 405 V430"/><path class="a " d="M215 405 V430"/><path class="a " d="M355 405 V430"/><path class="a " d="M495 405 V430"/><g><rect class="n " x="12.5" y="430" width="125" height="64" rx="8"/><text class="" x="75" y="453">ติ๊กเสร็จ</text><text class="sub " x="75" y="471">ขีดฆ่า · left ลดลง</text></g><g><rect class="n " x="152.5" y="430" width="125" height="64" rx="8"/><text class="" x="215" y="453">Edit</text><text class="sub " x="215" y="471">แก้ชื่อ → Save</text></g><g><rect class="n bad" x="292.5" y="430" width="125" height="64" rx="8"/><text class="bad" x="355" y="453">Delete</text><text class="sub bad" x="355" y="471">ลบแถวนั้นทันที</text></g><g><rect class="n " x="432.5" y="430" width="125" height="64" rx="8"/><text class="" x="495" y="453">Clear completed</text><text class="sub " x="495" y="471">ลบที่เสร็จทั้งหมด</text></g><path class="a plain" d="M75 494 V525 M215 494 V525 M355 494 V525 M495 494 V525 M75 525 H495"/><path class="a " d="M280 525 V547"/><g><rect class="n ok" x="120" y="550" width="320" height="50" rx="8"/><text class="ok" x="280" y="566">บันทึกลงเบราว์เซอร์ทันที</text><text class="sub ok" x="280" y="584">reload หน้าแล้วงานยังอยู่</text></g></svg>
+    <div class="legend" aria-hidden="true"><span class="l-d">จุดตัดสินใจ</span><span class="l-ok">ผลที่สำเร็จ</span><span class="l-bad">ข้อผิดพลาด / ลบ</span></div>
+  </figure>
+  <details class="alt"><summary>อ่านเป็นข้อความ</summary><ol><li>พิมพ์ชื่องาน เลือก Priority (Low / Medium / High ค่าเริ่มต้น Medium) แล้วกด Add task</li><li>ชื่อว่างหรือเกิน 80 ตัว → ข้อความสีแดง งานยังไม่ถูกเพิ่ม</li><li>ผ่าน → งานขึ้นท้ายรายการและบันทึกทันที</li><li>แต่ละแถว: ติ๊กเสร็จ / Edit / Delete และปุ่ม Clear completed ลบทุกงานที่เสร็จแล้ว (ปุ่มกดไม่ได้ถ้ายังไม่มีงานที่เสร็จ)</li></ol></details>
+  <div class="caps" style="margin-top:1.25rem">
+    <div class="cap"><h3>ค้นหา</h3><p>พิมพ์ในช่อง Search tasks รายการกรองตามไปทีละตัวอักษร ไม่สนตัวพิมพ์ใหญ่เล็ก ไม่เจอจะขึ้น No matching tasks</p></div>
+    <div class="cap"><h3>กรอง</h3><p>ปุ่ม All / Active / Completed สลับมุมมอง ปุ่มที่เลือกอยู่จะถูกเน้น และใช้ร่วมกับการค้นหาได้</p></div>
+    <div class="cap"><h3>นับงานที่เหลือ</h3><p>ท้ายรายการบอกว่า “N tasks left” คือจำนวนงานที่ยังไม่ติ๊กเสร็จ</p></div>
+  </div>
+
+  <h2 class="sec" id="profile">3 · ดูแลโปรไฟล์</h2>
+  <p class="sub">หน้า Profile แบ่งเป็นการ์ด 4 ใบ แต่ละใบทำงานแยกกัน ผิดที่ใบไหนก็แจ้งเตือนเฉพาะใบนั้น</p>
+  <figure class="chart"><svg viewBox="0 0 560 396" role="img" aria-labelledby="c3-t c3-d" xmlns="http://www.w3.org/2000/svg"><title id="c3-t">สิ่งที่ทำได้ในหน้า Profile</title><desc id="c3-d">จากหน้า Profile แก้ชื่อที่แสดง เปลี่ยนรหัสผ่าน สลับ dark mode หรือลบบัญชี การลบบัญชีต้องกดยืนยัน ถ้ายืนยันจะกลับ Login และข้อมูลถูกลบ</desc><g><rect class="n " x="200" y="9" width="160" height="34" rx="17"/><text class="" x="280" y="26">หน้า Profile</text></g><path class="a plain" d="M280 43 V62 M75 62 H495"/><path class="a " d="M75 62 V92"/><path class="a " d="M215 62 V92"/><path class="a " d="M355 62 V92"/><path class="a " d="M495 62 V92"/><g><rect class="n " x="12.5" y="92" width="125" height="76" rx="8"/><text class="" x="75" y="112">แก้ชื่อที่แสดง</text><text class="sub " x="75" y="130">ห้ามว่าง</text><text class="sub " x="75" y="148">Profile updated</text></g><g><rect class="n " x="152.5" y="92" width="125" height="76" rx="8"/><text class="" x="215" y="112">เปลี่ยนรหัสผ่าน</text><text class="sub " x="215" y="130">ต้องรู้รหัสเดิม</text><text class="sub " x="215" y="148">ใหม่ ≥ 8 ตัว ตรงกัน</text></g><g><rect class="n " x="292.5" y="92" width="125" height="76" rx="8"/><text class="" x="355" y="112">Dark mode</text><text class="sub " x="355" y="130">สลับธีมทันที</text><text class="sub " x="355" y="148">จำไว้ครั้งหน้า</text></g><g><rect class="n bad" x="432.5" y="92" width="125" height="76" rx="8"/><text class="bad" x="495" y="121">ลบบัญชี</text><text class="sub bad" x="495" y="139">ข้อมูลหายถาวร</text></g><path class="a " d="M495 168 V210"/><g><polygon class="n d" points="495,210 557,248 495,286 433,248"/><text class="" x="495" y="239">กด OK</text><text class="sub " x="495" y="257">ในกล่องยืนยัน?</text></g><path class="a " d="M433 248 H395"/><text class="lbl" x="414" y="239" text-anchor="middle">ไม่</text><g><rect class="n " x="285" y="226" width="110" height="44" rx="8"/><text class="" x="340" y="239">อยู่หน้าเดิม</text><text class="sub " x="340" y="257">ไม่มีอะไรเปลี่ยน</text></g><path class="a " d="M495 286 V325"/><text class="lbl" x="508" y="308" text-anchor="start">ใช่</text><g><rect class="n ok" x="430" y="325" width="130" height="54" rx="8"/><text class="ok" x="495" y="343">กลับหน้า Login</text><text class="sub ok" x="495" y="361">Account deleted</text></g></svg>
+    <div class="legend" aria-hidden="true"><span class="l-d">จุดตัดสินใจ</span><span class="l-ok">ผลที่สำเร็จ</span><span class="l-bad">ลบข้อมูล</span></div>
+  </figure>
+  <details class="alt"><summary>อ่านเป็นข้อความ</summary><ol><li><b>Details</b>: แก้ชื่อที่แสดง ห้ามว่าง สำเร็จจะขึ้น Profile updated และชื่อบนแถบบนเปลี่ยนทันที</li><li><b>Password</b>: ต้องใส่รหัสเดิมให้ถูก รหัสใหม่อย่างน้อย 8 ตัวและยืนยันให้ตรงกัน สำเร็จจะขึ้น Password changed</li><li><b>Appearance</b>: ติ๊ก Dark mode สลับธีมทันทีและจำไว้</li><li><b>Danger zone</b>: Delete account ถามยืนยันก่อน ถ้ายืนยันจะลบบัญชีกับงานทั้งหมดแล้วกลับ Login</li></ol></details>
+
+  <h2 class="sec" id="messages">ข้อความที่ผู้ใช้จะเห็น</h2>
+  <p class="sub">ตัวอย่างข้อความที่ผู้ใช้เห็นจริงในหน้าเว็บ (UI เป็นภาษาอังกฤษ)</p>
+  <div class="tablewrap">
+    <table>
+      <thead><tr><th>ที่ไหน</th><th>เกิดเมื่อ</th><th>ข้อความ</th></tr></thead>
+      <tbody><tr><td>Sign in</td><td>ช่องว่าง / ข้อมูลไม่ตรง</td><td><code>Username is required</code><br><code>Password is required</code><br><code>Username and password do not match</code></td></tr><tr><td>Create account</td><td>กรอกไม่ถูกกติกา (แสดงพร้อมกันทุกข้อ)</td><td><code>Username must be 3-20 characters (letters, numbers, underscore)</code><br><code>Display name is required</code><br><code>Password must be at least 8 characters</code><br><code>Passwords do not match</code><br><code>Username is already taken</code></td></tr><tr><td>Tasks</td><td>ชื่องานว่าง / ยาวเกิน</td><td><code>Task title is required</code><br><code>Task title must be 80 characters or fewer</code></td></tr><tr><td>Tasks</td><td>รายการว่าง</td><td><code>No tasks yet. Add your first task above.</code><br><code>No matching tasks</code></td></tr><tr><td>Profile</td><td>กรอกไม่ถูก</td><td><code>Display name is required</code><br><code>Current password is incorrect</code><br><code>New password must be at least 8 characters</code><br><code>Passwords do not match</code></td></tr><tr><td>Profile</td><td>สำเร็จ</td><td><code>Profile updated</code><br><code>Password changed</code></td></tr><tr><td>ทุกหน้า</td><td>ข้อความแจ้งสั้นๆ ตอนเปลี่ยนหน้า</td><td><code>Welcome, &lt;name&gt;!</code><br><code>You have been signed out</code><br><code>Please sign in to continue</code><br><code>Account deleted</code></td></tr></tbody>
+    </table>
+  </div>
+
+  <h2 class="sec">ข้อควรรู้</h2>
+  <ul class="rules"><li><b>ข้อมูลอยู่ในเบราว์เซอร์นี้เท่านั้น</b> เก็บใน localStorage ไม่มี backend เปลี่ยนเบราว์เซอร์หรือล้างข้อมูลเว็บแล้วจะหาย แต่ละบัญชีมีรายการงานของตัวเอง ไม่ปนกัน</li><li><b>username ไม่สนตัวพิมพ์ใหญ่เล็ก</b> ระบบแปลงเป็นตัวพิมพ์เล็กให้ และใช้ได้เฉพาะ a–z, 0–9 และ _</li><li><b>ต้อง login ก่อนเข้า Tasks และ Profile</b> ถ้าพิมพ์ URL ตรงๆ จะถูกส่งไป Sign in พร้อมข้อความ ส่วนคน login แล้วที่เปิดหน้า Sign in หรือ Register จะถูกส่งไป Tasks</li><li><b>URL ที่ไม่มีอยู่</b> จะเห็น Page not found พร้อมลิงก์กลับหน้าแรก</li><li><b>ป้ายเวอร์ชันมุมขวาล่าง</b> กดค้างประมาณ 0.6 วินาทีเพื่อเปิด change log (ใช้คีย์บอร์ดกด Enter หรือ Space ได้)</li><li><b>ลิงก์ Docs</b> บนแถบเมนูและหน้า Sign in พามาที่เอกสารชุดนี้</li></ul>
+
+  <div class="note"><strong>ข้อควรระวัง:</strong> นี่คือแอปตัวอย่างสำหรับฝึกทดสอบ รหัสผ่านถูกเก็บเป็นข้อความธรรมดาใน localStorage โดยตั้งใจ ห้ามใช้รหัสผ่านจริงของคุณ</div>
+
+  <section class="next">
+    <h2>อ่านต่อ</h2>
+    <ul>
+      <li>ภาพรวมโปรเจกต์และการทดสอบอัตโนมัติ: <a href="overview.html">overview.html</a></li>
+      <li>เส้นทางเหล่านี้ถูกทดสอบอย่างไร: <a href="testing-structure.html">testing-structure.html</a></li>
+    </ul>
+  </section>
+
+  <footer>testover · ข้อความและกติกาในหน้านี้อ้างจากโค้ดของแอปโดยตรง · <a href="user-journey.en.html" hreflang="en" lang="en">Read in English</a></footer>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+</svg>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+<script>
+(function(){var links=[].slice.call(document.querySelectorAll('.topnav a.l[href^="#"]'));
+if(!('IntersectionObserver' in window))return;
+var map={};links.forEach(function(a){var el=document.getElementById(a.getAttribute('href').slice(1));if(el)map[el.id]=a});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.removeAttribute('aria-current')});map[e.target.id].setAttribute('aria-current','true')}})},{rootMargin:'-20% 0px -70% 0px'});
+Object.keys(map).forEach(function(id){io.observe(document.getElementById(id))})})();
+</script>
+</body>
+</html>

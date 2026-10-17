@@ -1,0 +1,308 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover release guide</title>
+  <meta name="description" content="The testover release routine: bump the version and change log, run the tests, commit, push and deploy to Cloudflare Pages, with copy-paste commands.">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --fail: #b3261e; --tint: #e6efe9;
+      --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.75; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3rem 0 2rem; border-bottom: 2px solid var(--ink); }
+    .topbar { display: flex; justify-content: flex-end; gap: .5rem; }
+    .pill { text-decoration: none; background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; margin-top: 1rem; }
+    h1 { font-size: clamp(2rem, 1.1rem + 4.2vw, 3.5rem); line-height: 1.15; margin: .4rem 0 1rem; letter-spacing: -.01em; }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 60ch; margin: 0 0 1.25rem; }
+    .try { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600; padding: .55rem 1.2rem; border-radius: 999px; }
+    .try:hover { filter: brightness(1.08); }
+    .try-note { color: var(--muted); font-size: .9rem; margin-left: .75rem; }
+
+    h2.sec { font-size: 1.55rem; margin: 3.75rem 0 .4rem; line-height: 1.3; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 64ch; }
+
+    .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .cap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; }
+    .cap:nth-child(3n+2) { margin-top: 1rem; }
+    .cap .n { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 700; color: var(--accent); line-height: 1.2; display: block; }
+    .cap h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
+    .cap p { margin: 0; font-size: .93rem; color: var(--muted); }
+
+    figure.chart { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1rem .75rem; }
+    figure.chart svg { display: block; width: 100%; max-width: 600px; height: auto; margin: 0 auto; }
+    figcaption { font-size: .88rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+    .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; justify-content: center; margin: .6rem 0 0; font-size: .82rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: .9rem; height: .9rem; vertical-align: -.15em; margin-right: .35rem; border: 1.5px solid var(--ink); border-radius: 3px; background: var(--surface); }
+    .legend .l-ok::before { background: var(--accent); border-color: var(--accent); }
+    .legend .l-bad::before { border-color: var(--fail); }
+    .legend .l-d::before { background: var(--tint); transform: rotate(45deg) scale(.8); border-radius: 1px; }
+
+    svg .n { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+    svg .n.ok { fill: var(--accent); stroke: var(--accent); }
+    svg .n.bad { stroke: var(--fail); }
+    svg .n.d { fill: var(--tint); }
+    svg text { fill: var(--ink); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+    svg text.ok { fill: var(--accent-ink); }
+    svg text.sub { font-size: 12px; font-weight: 400; fill: var(--muted); }
+    svg text.sub.ok { fill: var(--accent-ink); opacity: .9; }
+    svg text.lbl { font-size: 12px; font-weight: 700; fill: var(--accent); }
+    svg path.a { fill: none; stroke: var(--ink); stroke-width: 1.6; marker-end: url(#ah); }
+    svg path.a.plain { marker-end: none; }
+    svg path.a.both { marker-start: url(#ah); }
+    svg .ah { fill: var(--ink); }
+
+    details.alt { margin-top: .75rem; font-size: .95rem; }
+    details.alt summary { cursor: pointer; color: var(--accent); }
+    details.alt ol { margin: .5rem 0 0; padding-left: 1.3rem; }
+
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); font-size: .92rem; }
+    th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+    tr:last-child td { border-bottom: 0; }
+    td code { display: inline-block; margin: .05rem 0; }
+
+    ul.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
+    ul.rules li { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: .7rem 1rem; font-size: .96rem; }
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.5rem 0; font-size: .95rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .topnav .in { max-width: 980px; margin: 0 auto; padding: .45rem 16px; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; }
+    .topnav .in::-webkit-scrollbar { display: none; }
+    .topnav .brand { font-family: var(--font-mono); font-weight: 700; color: var(--accent); text-decoration: none; margin-right: .6rem; white-space: nowrap; }
+    .topnav a.l { color: var(--ink); text-decoration: none; font-size: .88rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .topnav a.l:hover { border-color: var(--line); background: var(--surface); }
+    .topnav a.l[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+    .topnav .sep { flex: 1 0 .8rem; }
+    h2.sec, section.next { scroll-margin-top: 3.4rem; }
+    @media print { .topnav { display: none; } }
+    @media (max-width: 680px) { .cap:nth-child(n) { margin-top: 0; } .try-note { display: block; margin: .6rem 0 0; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  
+    pre { background: #1d2320; color: #e9f1ec; padding: .9rem 1.1rem; border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.6; margin: .75rem 0; }
+    pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    pre .c { color: #8fa89b; }
+    .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: .9rem; }
+    .steps > li { min-width: 0; }
+    .steps > li { counter-increment: s; position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1.2rem .9rem 4rem; }
+    .steps > li::before { content: counter(s); position: absolute; left: 1rem; top: .8rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; }
+    .steps h3 { margin: 0 0 .25rem; font-size: 1.08rem; }
+    .steps p { margin: .3rem 0; }
+    .warn { border-left: 4px solid var(--fail); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    .ok-note { border-left: 4px solid var(--accent); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    h3.mini { font-size: 1.1rem; margin: 1.6rem 0 .3rem; }
+    ul.plain { margin: .4rem 0; padding-left: 1.3rem; }
+    @media (max-width: 680px) { .steps > li { padding-left: 3.4rem; } }
+  </style>
+</head>
+<body>
+<nav class="topnav" aria-label="Contents"><div class="in"><a class="brand" href="#top">testover</a><a class="l" href="#top">Release guide</a><a class="l" href="#flow">Flow</a><a class="l" href="#version">Version</a><a class="l" href="#checks">Tests</a><a class="l" href="#ship">Push</a><a class="l" href="#deploy">Deploy</a><a class="l" href="#docs-rules">Docs</a><a class="l" href="#fix">Fixes</a><span class="sep"></span><a class="l" href="overview.en.html">Overview</a><a class="l" href="user-journey.en.html">User journey</a><a class="l" href="guide.html">Guide</a></div></nav>
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <div class="topbar">
+      <a class="pill" href="release-guide.html" hreflang="th" lang="th">ภาษาไทย</a>
+      <button class="pill" id="theme" type="button" aria-label="Toggle light/dark mode">Theme</button>
+    </div>
+    <div class="eyebrow">testover · release</div>
+    <h1>Ship a change, step by step</h1>
+    <p class="lead">From an edit to a live update at testover.pages.dev: bump the version and change log, run the tests, commit, push and watch the deploy, with commands you can copy straight into a terminal.</p>
+    <div class="ok-note" style="margin:0"><b>In one line:</b> pushing to <code>main</code> = deploying. If the change touches <code>docs/</code>, <code>app/</code>, <code>.github/pages/</code>, <code>scripts/build-pages.mjs</code> or <code>README.md</code>, the site is published automatically.</div>
+  </header>
+
+  <h2 class="sec" id="flow">The flow at a glance</h2>
+  <p class="sub">The steps in order. If a test fails, loop back and fix it; never push past a red run.</p>
+  <figure class="chart"><svg viewBox="0 0 560 548" role="img" aria-labelledby="r-t r-d" xmlns="http://www.w3.org/2000/svg"><title id="r-t">The release flow</title><desc id="r-d">Edit, bump the version and change log, run the tests locally; if they pass, commit and push to main. Smoke CI and Publish site then run side by side and the site updates.</desc><g><rect class="n " x="190" y="9" width="180" height="34" rx="17"/><text class="" x="280" y="26">Edit code / docs</text></g><path class="a" d="M280 43 V62"/><g><rect class="n " x="120" y="65" width="320" height="50" rx="8"/><text class="" x="280" y="81">Bump version + write change log</text><text class="sub " x="280" y="99">app/index.html</text></g><path class="a" d="M280 115 V125"/><g><rect class="n " x="120" y="125" width="320" height="50" rx="8"/><text class="" x="280" y="141">Run the tests locally</text><text class="sub " x="280" y="159">unit · smoke · characterization · visual</text></g><path class="a" d="M280 175 V187"/><g><polygon class="n d" points="280,187 390,225 280,263 170,225"/><text class="" x="280" y="225">All green?</text></g><path class="a" d="M390 225 H440"/><text class="lbl" x="415" y="215" text-anchor="middle">no</text><g><rect class="n bad" x="440" y="197" width="120" height="56" rx="8"/><text class="bad" x="500" y="216">Read the error</text><text class="sub bad" x="500" y="234">fix and rerun</text></g><path class="a" d="M500 197 V150 H440"/><path class="a" d="M280 263 V282"/><text class="lbl" x="293" y="274" text-anchor="start">yes</text><g><rect class="n " x="120" y="282" width="320" height="46" rx="8"/><text class="" x="280" y="296">git commit</text><text class="sub " x="280" y="314">git push origin main</text></g><path class="a plain" d="M280 328 V350 M150 350 H410"/><path class="a" d="M150 350 V374"/><path class="a" d="M410 350 V374"/><g><rect class="n " x="40" y="374" width="220" height="56" rx="8"/><text class="" x="150" y="393">Smoke (CI)</text><text class="sub " x="150" y="411">unit + smoke + characterization</text></g><g><rect class="n " x="300" y="374" width="220" height="56" rx="8"/><text class="" x="410" y="393">Publish site</text><text class="sub " x="410" y="411">when docs/ app/ … changed</text></g><path class="a plain" d="M150 430 V462 M410 430 V462 M150 462 H410"/><path class="a" d="M280 462 V480"/><g><rect class="n ok" x="120" y="483" width="320" height="50" rx="8"/><text class="ok" x="280" y="499">Site updated at testover.pages.dev</text><text class="sub ok" x="280" y="517">check the version badge and /status/</text></g></svg>
+    <div class="legend" aria-hidden="true"><span class="l-d">decision</span><span class="l-ok">result</span><span class="l-bad">fix needed</span></div>
+  </figure>
+
+  <h2 class="sec" id="version">1 · Version and change log</h2>
+  <p class="sub">The number on the badge in the bottom-right corner of the site comes from the top entry of <code>CHANGELOG</code> in <code>app/index.html</code> and nowhere else; no other file needs editing.</p>
+  <ol class="steps">
+    <li><h3>Use the date as the version (YYYY.MM.DD)</h3>
+      <p>Same shape as the existing ones, such as <code>2026.10.17</code>. Use the real release date.</p><pre><code><span class="c"># Today's date = the version</span>
+date +%Y.%m.%d                          <span class="c"># bash / Git Bash</span>
+Get-Date -Format yyyy.MM.dd             <span class="c"># PowerShell</span>
+
+<span class="c"># See the top entry of CHANGELOG</span>
+grep -n "version: '" app/index.html | head -3                          <span class="c"># bash</span>
+Select-String "version: '" app/index.html | Select-Object -First 3     <span class="c"># PowerShell</span></code></pre></li>
+    <li><h3>Add a new entry at the top of CHANGELOG</h3>
+      <p>The new entry goes at the <b>top</b>; the badge reads the first one. Write each item as a short English sentence (the UI is English), starting with an area such as <code>Docs:</code>, <code>Tests:</code> or <code>Sign-in page:</code>.</p><pre><code>const CHANGELOG = [
+  { version: '2026.10.18', changes: [
+    'Docs: added the user journey page (Thai and English)',
+    'Docs: added the release guide (Thai and English)',
+  ] },
+  { version: '2026.10.17', changes: [ /* ... */ ] },
+];</code></pre></li>
+    <li><h3>Releasing twice on the same day</h3>
+      <p>A version is a date, so it cannot repeat. <b>Add items</b> to that day's entry instead of creating a new one.</p></li>
+    <li><h3>Check it in the app</h3>
+      <p>Run <code>npm start</code> and open <code>http://localhost:3000</code>. The bottom-right badge must show the new number. Press and hold for about 0.6 seconds (or focus it and press Enter/Space) to open the change log and confirm the new entry is on top.</p></li>
+  </ol>
+  <div class="ok-note">No need to worry about screenshots: the visual tests mask the version badge (<code>MASK_VERSION_BADGE</code>) and no test checks the version text. <code>package.json</code> stays at <code>1.0.0</code>; it is unrelated to the site version.</div>
+
+  <h2 class="sec" id="checks">2 · Run the tests before pushing</h2>
+  <p class="sub">CI repeats these anyway, but running them locally is faster feedback and keeps main green.</p>
+  <pre><code><span class="c"># Check state and pull first</span>
+git status -sb
+git pull --rebase origin main</code></pre><pre><code>npm ci                              <span class="c"># first time / when package-lock changed</span>
+npm run test:unit                   <span class="c"># unit + contract</span>
+npm run test:smoke                  <span class="c"># main paths</span>
+npm run test:characterization       <span class="c"># recorded behaviour + golden master</span>
+npm run test:visual                 <span class="c"># screenshot compare (needs Docker running)</span>
+npm test                            <span class="c"># the whole suite (optional, before a big release)</span>
+npm run build:pages                 <span class="c"># try building dist/ as Pages does</span></code></pre>
+  <h3 class="mini">If the visual test fails because the UI really changed</h3>
+  <p>Baselines must be generated in Docker so they are Linux like CI (Windows images will not match). Regenerate them and look at the images before committing.</p>
+  <pre><code>npm run test:visual:update          <span class="c"># regenerate baselines in Docker (Linux, same as CI)</span>
+git status -sb tests/__screenshots__    <span class="c"># look at the changed images before committing</span></code></pre>
+  <h3 class="mini">If you edited docs</h3>
+  <p>Test counts change often. Recount before quoting numbers in docs: <code>npx playwright test --list</code> · <code>npm run test:unit</code></p>
+
+  <h2 class="sec" id="ship">3 · Commit and push</h2>
+  <p class="sub">Write commit messages as <code>&lt;type&gt;: &lt;description&gt;</code>, where type is feat, fix, refactor, docs, test, chore, perf or ci.</p>
+  <pre><code>git status -sb                                 <span class="c"># what changed?</span>
+git add app/index.html docs/ .github/pages/    <span class="c"># name the files, no git add -A</span>
+git diff --cached --stat                       <span class="c"># one more look</span>
+git commit -m "feat: add the user journey and release guide pages (th/en)"
+git push origin main</code></pre>
+  <div class="warn"><b>Careful:</b> Always name files in <code>git add</code> so another task's files or secrets are not swept in. Never commit a webhook URL, <code>CLOUDFLARE_API_TOKEN</code> or <code>.env</code>; those live in GitHub Secrets only. Never <code>git push --force</code> to main.</div>
+
+  <h2 class="sec" id="deploy">4 · Deploy to Cloudflare Pages</h2>
+  <p class="sub">Two workflows start by themselves after a push.</p>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Workflow</th><th>Starts when</th><th>What it does</th></tr></thead>
+    <tbody>
+      <tr><td><code>Smoke</code></td><td>every push to main and every PR</td><td>unit + contract, smoke, characterization, then uploads the reports</td></tr>
+      <tr><td><code>Publish site</code></td><td>a push to main touching <code>docs/**</code>, <code>app/**</code>, <code>.github/pages/**</code>, <code>scripts/build-pages.mjs</code>, <code>README.md</code> or this workflow file · after Weekend E2E finishes · by hand</td><td>builds the site (<code>npm run build:pages</code>), adds the latest reports under <code>/status/</code>, stamps the commit on the hub page and runs <code>wrangler pages deploy</code></td></tr>
+    </tbody>
+  </table></div>
+  <pre><code>gh run list --limit 5                   <span class="c"># see the runs that just started</span>
+gh run watch                            <span class="c"># pick one and follow it live</span>
+gh run list --workflow "Publish site" --limit 3</code></pre>
+  <h3 class="mini">Only changed tests/ or unit/ and the site did not update?</h3>
+  <p>That is expected: the paths do not match Publish site. Trigger it yourself if you want a deploy:</p>
+  <pre><code>gh workflow run cloudflare-pages.yml --ref main    <span class="c"># deploy by hand (no new commit needed)</span>
+gh run watch</code></pre>
+  <h3 class="mini">Confirm the new site is live</h3>
+  <pre><code>curl -sI https://testover.pages.dev/docs/release-guide.html | head -1   <span class="c"># expect 200</span>
+git rev-parse --short HEAD                                              <span class="c"># compare with the commit on /status/</span></code></pre>
+  <ul class="plain">
+    <li>App: <a href="https://testover.pages.dev">testover.pages.dev</a> → the bottom-right badge must show the new version (hard refresh if it is stale).</li>
+    <li>The <code>/status/</code> hub shows the deployed commit and the commit the reports came from.</li>
+    <li>New docs: <code>/docs/&lt;name&gt;.html</code> must return 200 in both Thai and English.</li>
+  </ul>
+  <p>The repo needs the secrets <code>CLOUDFLARE_API_TOKEN</code> and <code>CLOUDFLARE_ACCOUNT_ID</code> (the project name comes from the variable <code>CLOUDFLARE_PROJECT_NAME</code>, default <code>testover</code>).</p>
+  <h3 class="mini">Rolling back a bad deploy</h3>
+  <pre><code>git revert &lt;sha&gt;                        <span class="c"># undo one commit without rewriting history</span>
+git push origin main                    <span class="c"># Publish site runs again by itself</span></code></pre>
+
+  <h2 class="sec" id="all-in-one">The whole thing in one block</h2>
+  <p class="sub">Steps 2–4 together (do step 1 by hand first). It stops at the first failing command.</p>
+  <pre><code><span class="c"># The full set for a release (Git Bash); edit the commit message first</span>
+set -e
+git pull --rebase origin main
+npm run test:unit &amp;&amp; npm run test:smoke &amp;&amp; npm run test:characterization
+npm run build:pages
+git add app/index.html docs/ .github/pages/
+git commit -m "feat: &lt;what changed&gt;"
+git push origin main
+gh run watch</code></pre>
+
+  <h2 class="sec" id="docs-rules">Rules when adding or editing docs</h2>
+  <ul class="rules">
+    <li><b>Every page ships in two languages</b>: <code>name.html</code> (Thai) and <code>name.en.html</code> (English), with a language switch in the header and footer. Numbers must match.</li>
+    <li><b>File names</b> use lowercase letters, digits, <code>-</code> and <code>.</code> only, otherwise the server answers 404.</li>
+    <li><b>Include the topnav</b> like the other pages (in-page sections on the left, links to other pages on the right) and support light/dark and phone widths.</li>
+    <li><b>Link it in</b>: add it to the “Read next” list of <code>overview.html</code> / <code>overview.en.html</code> and to <code>.github/pages/index.html</code>.</li>
+    <li><b>Record it in the change log</b> with a line starting <code>Docs:</code> (see section 1).</li>
+    <li>A new doc touches <code>docs/**</code>, so it triggers the automatic deploy.</li>
+  </ul>
+
+  <h2 class="sec" id="fix">Common problems</h2>
+  <div class="tablewrap"><table>
+    <thead><tr><th>Symptom</th><th>Likely cause</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td>push rejected</td><td>main has new commits</td><td><code>git pull --rebase origin main</code> then push again</td></tr>
+      <tr><td>visual test red in CI, green locally</td><td>baselines made on Windows/Mac</td><td><code>npm run test:visual:update</code> (Docker)</td></tr>
+      <tr><td>Publish site did not run</td><td>changed files are outside the path filter</td><td><code>gh workflow run cloudflare-pages.yml --ref main</code></td></tr>
+      <tr><td>Deploy step fails with a token/account error</td><td>secret missing or expired</td><td>reset <code>CLOUDFLARE_API_TOKEN</code> / <code>CLOUDFLARE_ACCOUNT_ID</code> in Settings → Secrets</td></tr>
+      <tr><td>badge still shows the old version</td><td>browser cache, or the new entry is not first</td><td>hard refresh and check the order in <code>CHANGELOG</code></td></tr>
+      <tr><td>reports on /status/ look old</td><td>reports come from the latest Weekend E2E run, not this commit</td><td>normal; see the report commit on the hub page</td></tr>
+      <tr><td>new doc page 404s</td><td>uppercase in the file name, or not deployed yet</td><td>rename to lowercase and check the Publish site run</td></tr>
+    </tbody>
+  </table></div>
+
+  <section class="next" id="next">
+    <h2>Read next</h2>
+    <ul>
+      <li>Setting up webhook, secrets and cron: <a href="guide.html">guide.html</a></li>
+      <li>The test structure: <a href="testing-structure.en.html">testing-structure.en.html</a></li>
+      <li>What a user can do on the site: <a href="user-journey.en.html">user-journey.en.html</a></li>
+    </ul>
+  </section>
+
+  <footer>testover · based on the workflows and scripts in the project · <a href="release-guide.html" hreflang="th" lang="th">อ่านเป็นภาษาไทย</a></footer>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+</svg>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+<script>
+(function(){var links=[].slice.call(document.querySelectorAll('.topnav a.l[href^="#"]'));
+if(!('IntersectionObserver' in window))return;
+var map={};links.forEach(function(a){var el=document.getElementById(a.getAttribute('href').slice(1));if(el)map[el.id]=a});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.removeAttribute('aria-current')});map[e.target.id].setAttribute('aria-current','true')}})},{rootMargin:'-20% 0px -70% 0px'});
+Object.keys(map).forEach(function(id){io.observe(document.getElementById(id))})})();
+</script>
+</body>
+</html>
