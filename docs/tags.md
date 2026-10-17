@@ -34,7 +34,8 @@ Tag คือป้ายที่แปะไว้กับเคสเทส 
 | `@destructive` | 2 | เคสที่ลบข้อมูลจริง (ลบบัญชี) | ข้ามด้วย `npm run test:safe` |
 | `@a11y` | 16 | ตรวจ accessibility ด้วย axe ทุกหน้า/สถานะ + คีย์บอร์ด + title | `npx playwright test --grep @a11y` |
 | `@responsive` | 1 | หน้าจอมือถือ | `npx playwright test --grep @responsive` |
-| `@characterization` | 37 | บันทึกพฤติกรรม *ปัจจุบัน* ที่ขอบเขตของข้อมูล | `npx playwright test --grep @characterization` |
+| `@characterization` | 42 | บันทึกพฤติกรรม *ปัจจุบัน* ที่ขอบเขตของข้อมูล | `npx playwright test --grep @characterization` |
+| `@golden` | 5 | Golden Master: เทียบ localStorage ทั้งก้อนกับ snapshot (เป็นส่วนหนึ่งของ `@characterization`) | `npx playwright test --grep @golden` |
 | `@contract` | 6 | ข้อมูลใน localStorage ต้องตรง schema | `npx playwright test --grep @contract` |
 | `@auth` | 36 | สมัคร, login/logout, route guard, session | `npx playwright test --grep @auth` |
 | `@tasks` | 31 | task board ทั้งหมด | `npx playwright test --grep @tasks` |

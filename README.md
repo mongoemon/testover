@@ -153,7 +153,8 @@ axe ช่วยจับปัญหาได้ส่วนหนึ่ง ไ
 | `@destructive` | ลบบัญชี | 2 |
 | `@a11y` | axe (WCAG 2.1 A/AA), คีย์บอร์ด, title ของหน้า | 16 |
 | `@responsive` | จอมือถือ | 1 |
-| `@characterization` | บันทึกพฤติกรรมปัจจุบันที่ขอบเขตของข้อมูล | 37 |
+| `@characterization` | บันทึกพฤติกรรมปัจจุบันที่ขอบเขตของข้อมูล | 42 |
+| `@golden` | Golden Master: localStorage ทั้งก้อนเทียบ snapshot (อยู่ใน `@characterization`) | 5 |
 | `@contract` | ข้อมูลใน localStorage ตรง schema | 6 |
 
 เคสหนึ่งมีได้หลาย tag (เช่น รหัสผ่านผิดเป็นทั้ง `@validation` และ `@security`)

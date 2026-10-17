@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Test Automation, Phase by Phase</title>
+<meta name="description" content="A phase-by-phase map of testover's test automation: where contract and characterization testing fit, and how Dev and QA work together.">
+<style>
+:root{--bg:#f6f3ec;--surface:#fffdf8;--ink:#1d2320;--muted:#5d6a63;--line:#ddd6c6;--accent:#0b6e4f;--fail:#b3261e;
+--c-contract:#b7791f;--c-char:#8a4fa0;--c-qa:#3b6ea5;--c-dev:#b3541e;--code-bg:#1d2320;--code-ink:#e9f1ec;--radius:12px;
+--font-body:"Segoe UI","Noto Sans Thai",system-ui,sans-serif;--font-mono:"Cascadia Mono",Consolas,monospace}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--fail:#ff8a80;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273;--code-bg:#0c110f}}
+:root[data-theme="dark"]{--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--fail:#ff8a80;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273;--code-bg:#0c110f}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.7}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 5rem}a{color:var(--accent)}
+code{font-family:var(--font-mono);font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.1em .35em;border-radius:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header.hero{padding:3rem 0 2rem;border-bottom:2px solid var(--ink)}
+.topbar{float:right;margin-top:.6rem;display:flex;gap:.5rem}
+.pill{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:.3rem .9rem;cursor:pointer;font:inherit;font-size:.85rem;text-decoration:none}
+.pill:hover{border-color:var(--accent);color:var(--accent)}
+.eyebrow{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(2rem,1.1rem + 4vw,3.3rem);line-height:1.15;margin:.4rem 0 1rem;letter-spacing:-.02em}
+.lead{font-size:1.1rem;color:var(--muted);max-width:64ch;margin:0 0 1rem}
+nav.toc{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.2rem}
+nav.toc a{font-size:.85rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:.15rem .75rem;color:var(--ink);background:var(--surface)}
+nav.toc a:hover{border-color:var(--accent);color:var(--accent)}
+h2.sec{font-size:1.6rem;margin:3.6rem 0 .4rem;line-height:1.25;scroll-margin-top:1rem}
+h2.sec .no{font-family:var(--font-mono);color:var(--accent);font-size:1rem;margin-right:.5rem}
+.sub{color:var(--muted);margin:0 0 1.4rem;max-width:68ch}
+h3{margin:1.4rem 0 .3rem;font-size:1.1rem}
+.road{display:grid;grid-template-columns:repeat(7,1fr);margin:1.5rem 0;border:1px solid var(--ink);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.road a{padding:.8rem .6rem;border-right:1px solid var(--line);text-decoration:none;color:var(--ink);display:block}
+.road a:last-child{border-right:0}
+.road a:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.road .n{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--accent);display:block;line-height:1.1}
+.road .t{font-size:.82rem;line-height:1.35;display:block;margin-top:.2rem}
+.road .tag{display:inline-block;margin-top:.4rem;font-family:var(--font-mono);font-size:.68rem;padding:0 .4rem;border-radius:4px;color:#fff}
+.tag.contract{background:var(--c-contract)}.tag.char{background:var(--c-char)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag{color:#111}}
+:root[data-theme="dark"] .tag{color:#111}
+.phase{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:var(--radius);padding:1.2rem 1.4rem;margin:1.4rem 0;scroll-margin-top:1rem}
+.phase.contract{border-left-color:var(--c-contract)}.phase.char{border-left-color:var(--c-char)}
+.phase h3{margin:0 0 .2rem;font-size:1.3rem}
+.phase h3 .no{font-family:var(--font-mono);color:var(--accent);margin-right:.4rem}
+.phase .goal{color:var(--muted);margin:0 0 .8rem}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:.6rem 0}
+.who{border:1px solid var(--line);border-radius:8px;padding:.6rem .9rem}
+.who h4{margin:0 0 .2rem;font-size:.82rem;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+.who.qa h4{color:var(--c-qa)}.who.qa{border-top:3px solid var(--c-qa)}
+.who.dev h4{color:var(--c-dev)}.who.dev{border-top:3px solid var(--c-dev)}
+.who ul,.vs ul{margin:.2rem 0;padding-left:1.2rem}
+.exit{margin-top:.7rem;padding:.5rem .8rem;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,transparent);font-size:.93rem}
+.exit b{color:var(--accent)}
+.here{margin:.6rem 0;font-size:.93rem}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);font-size:.93rem}
+th,td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:color-mix(in srgb,var(--ink) 6%,transparent);font-size:.8rem;font-family:var(--font-mono);letter-spacing:.04em}
+tr:last-child td{border-bottom:0}
+.tw{overflow-x:auto}
+td.c{font-weight:600}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.vs>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem}
+.vs .k{border-top:5px solid var(--c-contract)}.vs .z{border-top:5px solid var(--c-char)}
+.vs h3{margin-top:0}
+pre{background:var(--code-bg);color:var(--code-ink);padding:1rem 1.2rem;border-radius:var(--radius);overflow-x:auto;font-family:var(--font-mono);font-size:.83rem;line-height:1.55}
+.flow{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}
+.flow>div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.6rem .9rem}
+.flow .arrow{border:0;background:none;padding:0;text-align:center;color:var(--muted);margin:-.2rem 0}
+.flow .q{border-color:var(--c-char)}
+.note{border-left:4px solid var(--c-contract);background:color-mix(in srgb,var(--c-contract) 8%,transparent);padding:.6rem 1rem;border-radius:0 8px 8px 0;margin:1rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+@media(max-width:760px){.road{grid-template-columns:1fr 1fr}.road a{border-bottom:1px solid var(--line)}.cols,.vs{grid-template-columns:1fr}.topbar{float:none;margin:0 0 1rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="topbar"><a class="pill" href="automation-phases.html" hreflang="th">ไทย</a><button class="pill" id="theme" type="button">Theme</button></div>
+  <div class="eyebrow">testover · Automation Roadmap</div>
+  <h1>Automation, Phase by Phase<br>and What Dev × QA Do Together</h1>
+  <p class="lead">This page walks through how the testover automation system is built, from choosing what to test to long-term upkeep. It shows <b>where contract and characterization testing happen</b> and what Dev and QA each do at every step.</p>
+  <nav class="toc" aria-label="Contents"><a href="#road">Overview</a><a href="#phases">Phase details</a><a href="#compare">Contract vs Characterization</a><a href="#collab">Dev × QA by phase</a><a href="#handshake">Handoffs</a><a href="#visual">Visual testing</a><a href="#cmd">Commands</a></nav>
+</header>
+<main>
+<h2 class="sec" id="road"><span class="no">01</span>The 7 phases at a glance</h2><p class="sub">Read left to right. Each phase has an exit condition before the next starts. The amber and purple labels mark where contract and characterization testing happen.</p>
+<nav class="road" aria-label="Phases"><a href="#p0"><span class="n">0</span><span class="t">Choose what to automate</span></a><a href="#p1"><span class="n">1</span><span class="t">Build the foundation</span></a><a href="#p2"><span class="n">2</span><span class="t">Agree the contracts at the boundaries</span><span class="tag contract">Contract</span></a><a href="#p3"><span class="n">3</span><span class="t">Record current behaviour</span><span class="tag char">Characterization</span></a><a href="#p4"><span class="n">4</span><span class="t">Feature-level tests</span></a><a href="#p5"><span class="n">5</span><span class="t">Wire into CI</span></a><a href="#p6"><span class="n">6</span><span class="t">Keep it healthy</span></a></nav>
+<h2 class="sec" id="phases"><span class="no">02</span>Phase details</h2><p class="sub">Every "In testover" line was checked against the files in the repo.</p>
+
+<article class="phase " id="p0">
+  <h3><span class="no">0</span>Choose what to automate (Discover & Risk)</h3>
+  <p class="goal">Decide which tests are worth writing as code, and which are not.</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>Walk the key user journeys (register → sign in → manage tasks → edit profile)</li><li>Rank by risk and how often regression is needed</li><li>Leave look-and-feel style checks to manual testing</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>Point out fragile or frequently changed areas</li><li>Describe the data boundaries (localStorage, APIs) and who owns them</li><li>Confirm the test environment is repeatable (<code>npm start</code>)</li></ul></div>
+  </div>
+  <p class="here"><b>In testover:</b> The main journeys became <code>tests/journey.spec.ts</code>, <code>login</code>, <code>tasks</code>, <code>profile</code></p>
+  <div class="exit"><b>Exit condition:</b> A risk-ranked list of journeys, and an agreed list of what is <i>not</i> automated.</div>
+</article>
+<article class="phase " id="p1">
+  <h3><span class="no">1</span>Build the foundation (Foundation)</h3>
+  <p class="goal">Make the next test fast to write and resilient when the UI changes.</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>Set up Playwright, config and Page Objects (<code>tests/support/pages.ts</code>)</li><li>Add storage helpers (<code>tests/support/storage.ts</code>)</li><li>Define tags: <code>@smoke</code> <code>@contract</code> <code>@characterization</code> <code>@security</code> <code>@destructive</code></li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>Provide stable selectors (role, label, test id), not CSS coupling</li><li>Make the app start from a known state (seed data / demo account)</li><li>Announce DOM restructures before merging</li></ul></div>
+  </div>
+  <p class="here"><b>In testover:</b> <code>playwright.config.ts</code>, <code>tests/support/</code>, <code>docs/tags.md</code></p>
+  <div class="exit"><b>Exit condition:</b> A new test can be written with Page Objects without copying selectors.</div>
+</article>
+<article class="phase contract" id="p2">
+  <h3><span class="no">2</span>Agree the contracts at the boundaries (Contract)</h3>
+  <p class="goal">Turn the agreements between parts of the system into runnable code before many tests depend on them.</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>Express each agreement as a zod schema in <code>contracts/schemas.mjs</code></li><li>Write tests proving the app and scripts really honour the schema</li><li>Build fixtures for pass / fail / empty cases</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>State what valid data looks like (lengths, types, required fields)</li><li>Review schemas against intent, not just current code</li><li>Change the schema in the same PR when adding a field</li></ul></div>
+  </div>
+  <p class="here"><b>In testover:</b> C1 localStorage → <code>tests/contracts/storage.spec.ts</code> · C2 Playwright report and C3 webhook body → <code>unit/contracts.test.mjs</code>. Schemas are <code>.strict()</code> on purpose, so a new field is a conscious contract change.</p>
+  <div class="exit"><b>Exit condition:</b> Every boundary the system crosses has one schema, imported by both unit tests and Playwright.</div>
+</article>
+<article class="phase char" id="p3">
+  <h3><span class="no">3</span>Record current behaviour (Characterization)</h3>
+  <p class="goal">Pin what the app actually does today before changing or refactoring it, so any drift is visible at once.</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>Walk the boundaries: username 2/3/20/21 chars, forbidden characters, trim/lowercase</li><li>Walk abnormal states: corrupt or wrong-typed storage data</li><li>Name odd behaviours <code>QUIRK:</code> so they are easy to find</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>Decide case by case whether the behaviour is intended or a bug</li><li>Bug → open a ticket, then change the test with the fix</li><li>Intended → keep it and note the reason in a comment</li></ul></div>
+  </div>
+  <p class="here"><b>In testover:</b> <code>tests/characterization/validation.spec.ts</code> and <code>resilience.spec.ts</code> and <code>golden-master.spec.ts</code> (5 whole-localStorage snapshots in <code>tests/__screenshots__/characterization/</code>), 42 tests, 3 named QUIRK, e.g. a new password stored as plain text, or an array in <code>tb.users</code> locking everyone out. (The unit suite also characterizes the exact notify messages.)</p>
+  <div class="exit"><b>Exit condition:</b> Every boundary you will touch has a passing test of today's behaviour, and each QUIRK has an owner decision.</div>
+</article>
+<article class="phase " id="p4">
+  <h3><span class="no">4</span>Feature-level tests (Unit · E2E · A11y)</h3>
+  <p class="goal">Cover the behaviour that is meant to exist, following the pyramid: unit is fast, E2E covers journeys.</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>Write E2E per the journeys ranked in phase 0</li><li>Add axe accessibility and <code>@security</code> tests</li><li>Watch for flakiness and weak assertions</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>Write unit tests for logic that needs no browser (<code>unit/*.test.mjs</code>)</li><li>Review QA tests against requirements</li><li>Add tests in the same PR as a new feature</li></ul></div>
+  </div>
+  <p class="here"><b>In testover:</b> E2E in <code>tests/*.spec.ts</code>, a11y in <code>tests/a11y.spec.ts</code>. 137 Playwright tests in 10 files (5 smoke, 12 security, 5 visual).</p>
+  <div class="exit"><b>Exit condition:</b> Every new feature has at least one layer of tests before merge.</div>
+</article>
+<article class="phase " id="p5">
+  <h3><span class="no">5</span>Wire into CI (Gate & Report)</h3>
+  <p class="goal">Run tests automatically and tell the people who need to know.</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>Choose the PR gate (<code>@smoke</code>) and the scheduled full suite</li><li>Set up reporting (Allure) and notification (<code>scripts/notify.mjs</code>)</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>Own workflows, secrets and environments</li><li>Own a red build on their own PR</li></ul></div>
+  </div>
+  <p class="here"><b>In testover:</b> <code>smoke.yml</code> runs unit + smoke on every push/PR · <code>weekend-e2e.yml</code> runs everything Sat–Sun 09:00 Thailand time with unit, Allure and notification · <code>cloudflare-pages.yml</code> publishes docs and reports</p>
+  <div class="exit"><b>Exit condition:</b> A PR that turns smoke/unit/contract red cannot merge, and the full result reaches the team unprompted.</div>
+</article>
+<article class="phase " id="p6">
+  <h3><span class="no">6</span>Keep it healthy (Maintain)</h3>
+  <p class="goal">Stop tests rotting and turn what they reveal into decisions.</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>Triage weekly results: real bug / flaky / outdated test</li><li>Quarantine unstable tests and chase them</li><li>Keep tag docs and counts current</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>When a characterization or contract test fails, decide "fix the app" or "fix the expectation"</li><li>Fix QUIRKs that are bugs, then rename the test to describe the correct behaviour</li></ul></div>
+  </div>
+  <p class="here"><b>In testover:</b> The header of the characterization files says it directly: if one fails, decide deliberately, then update the expectation.</p>
+  <div class="exit"><b>Exit condition:</b> No red test without an owner.</div>
+</article>
+<h2 class="sec" id="compare"><span class="no">03</span>Contract vs Characterization</h2><p class="sub">They are often confused. The difference is what you treat as the truth.</p>
+<div class="vs"><div class="k"><h3>Contract testing</h3><ul><li>Treats <b>the agreement of what should be</b> as truth</li><li>Written before or with the design, agreed by Dev and QA</li><li>Red = one side broke the agreement; fix that side</li><li>Checked at the edges: storage data, report, webhook</li><li>Markers: <code>@contract</code>, <code>contracts/schemas.mjs</code></li></ul></div><div class="z"><h3>Characterization testing</h3><ul><li>Treats <b>what the app does today</b> as truth</li><li>Written afterwards by observing, without judging right or wrong</li><li>Red = behaviour changed; decide if that was intended</li><li>Checked at input boundaries: length, characters, corrupt data</li><li>Markers: <code>@characterization</code>, names starting <code>QUIRK:</code></li></ul></div></div>
+<h3>When one of these goes red, who does what</h3>
+<div class="flow"><div class="">Test goes red</div><div class="arrow" aria-hidden="true">↓</div><div class="q">Contract or Characterization?</div><div class="arrow" aria-hidden="true">↓</div><div class="">Contract → find who broke the agreement and fix that side, or open a PR changing the schema with reasons (Dev + QA sign off)</div><div class="arrow" aria-hidden="true">↓</div><div class="">Characterization → Dev decides: intended change? update the expectation / bug? fix the app</div><div class="arrow" aria-hidden="true">↓</div><div class="">Update docs and the test name (a former QUIRK gets renamed)</div></div>
+<p class="note"><b>Order:</b> on existing (legacy) code, characterization usually comes before contracts, because you must see reality before agreeing what it should be. testover places Contract at phase 2 because later tests import the shared schemas. The two steps can be swapped without affecting the others.</p>
+<h2 class="sec" id="collab"><span class="no">04</span>Dev × QA at each step</h2><p class="sub">R = does the main work · joint = work together · review = check and sign off</p>
+<div class="tw"><table><thead><tr><th>Phase</th><th>QA</th><th>Dev</th><th>Handed over</th></tr></thead><tbody><tr><td class="c">0 Choose what to automate</td><td>R ranks journeys</td><td>Supplies risk knowledge</td><td>Journey list</td></tr><tr><td class="c">1 Foundation</td><td>R builds the framework</td><td>Stable selectors + seed</td><td>Selector convention</td></tr><tr><td class="c">2 Contract</td><td>R writes schemas/tests</td><td>Joint: defines valid data · review</td><td>Agreed schemas</td></tr><tr><td class="c">3 Characterization</td><td>R writes behaviour-recording tests</td><td>Joint: decides each QUIRK</td><td>QUIRK list + tickets</td></tr><tr><td class="c">4 Feature tests</td><td>R E2E / a11y</td><td>R unit · reviews E2E</td><td>Tests in the feature PR</td></tr><tr><td class="c">5 CI</td><td>R picks suites + report</td><td>R workflows/secrets</td><td>PR gate + report</td></tr><tr><td class="c">6 Maintain</td><td>R triage</td><td>R fixes per decision</td><td>App fix or expectation fix</td></tr></tbody></table></div>
+<h2 class="sec" id="handshake"><span class="no">05</span>Handoffs to agree explicitly</h2><p class="sub">This is where automation usually breaks, when the two sides understand things differently.</p>
+<div class="tw"><table><tbody><tr><td class="c">Selectors</td><td>Dev announces DOM changes; QA uses role/label first, test id when needed</td></tr><tr><td class="c">Seed data</td><td>Dev guarantees the demo account and start state; QA never relies on data another test created</td></tr><tr><td class="c">Contract changes</td><td>Edit <code>contracts/schemas.mjs</code> in the same PR as the code, with QA review</td></tr><tr><td class="c">QUIRK</td><td>QA finds → Dev decides "intended/bug" → a ticket or reason is recorded</td></tr><tr><td class="c">Definition of Done</td><td>A feature has at least one test layer before merge; smoke must be green</td></tr><tr><td class="c">Full-suite results</td><td>QA triages weekly; Dev takes the tickets that are real bugs</td></tr></tbody></table></div>
+<h2 class="sec" id="visual"><span class="no">06</span>Visual snapshot testing</h2><p class="sub">Compare real screenshots with reference images (baselines) to catch UI drift while other tests still pass. It sits in phase 4, after E2E.</p>
+<div class="tw"><table><tbody><tr><td class="c">What it is</td><td>A test opens a page, sets up state, then calls <code>toHaveScreenshot()</code> to compare pixels with a committed image. A difference above the threshold (1%) fails it. This differs from <code>screenshot: only-on-failure</code>, which only keeps an image to look at after a failure.</td></tr><tr><td class="c">In testover</td><td><code>tests/visual.spec.ts</code>, 5 screens tagged <code>@visual</code>: login, register with an error, task board, task board in dark theme, profile. Baselines live in <code>tests/__screenshots__/</code></td></tr><tr><td class="c">Where baselines are made</td><td>Inside the Playwright Docker image (Linux) via <code>npm run test:visual:update</code>, not on Windows or Mac, because fonts and anti-aliasing differ and would turn CI red.</td></tr><tr><td class="c">QA does</td><td>Choose screens worth covering, make state stable (fixed data, animations off), and look at every image before committing a baseline.</td></tr><tr><td class="c">Dev does</td><td>Say when a look change is intended, approve the new baseline in the same PR as the UI change, and flag self-changing values such as version numbers or dates so they get masked.</td></tr><tr><td class="c">Watch out</td><td>A red image is not always a bug. Read the diff and decide as with characterization: intended → update the baseline, unintended → fix the UI. The version badge at the bottom right may change every release.</td></tr></tbody></table></div>
+<h2 class="sec" id="cmd"><span class="no">07</span>Commands</h2><p class="sub">Run a single layer by tag.</p>
+<pre>npm run test:unit             # unit + C2/C3 contracts (node:test)
+npm run test:contract         # all contracts (unit + @contract)
+npm run test:characterization # 42 characterization tests
+npm run test:smoke            # 5 fast tests for PRs
+npm run test:safe             # everything except @destructive
+npm run test:visual           # compare 5 screens (in Docker)
+npm run test:visual:update    # create/update baselines (in Docker)
+npm test                      # full suite, 137 tests</pre>
+</main>
+<footer>Read next: <a href="characterization-why.en.html">Why characterization</a> · <a href="testing-structure.en.html">Test structure</a> · <a href="overview.en.html">Project overview</a> · <a href="tags.md">tags</a> · <a href="automation-phases.html">ไทย</a></footer>
+</div>
+<script>
+(function(){var b=document.getElementById('theme'),r=document.documentElement;
+try{var s=localStorage.getItem('docs.theme');if(s)r.setAttribute('data-theme',s)}catch(e){}
+b.addEventListener('click',function(){var cur=r.getAttribute('data-theme');var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+var n=dark?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('docs.theme',n)}catch(e){}})})();
+</script>
+</body>
+</html>

@@ -1,0 +1,171 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Why Characterization Testing</title>
+<meta name="description" content="Why characterization tests are worth writing next to E2E regression, who does them and when (Dev and QA), and which tools to pair them with. Drawn from a Q&A discussion and checked against testover.">
+<style>
+:root{--bg:#f6f3ec;--surface:#fffdf8;--ink:#1d2320;--muted:#5d6a63;--line:#ddd6c6;--accent:#0b6e4f;
+--c-contract:#b7791f;--c-char:#8a4fa0;--c-qa:#3b6ea5;--c-dev:#b3541e;--radius:12px;
+--font-body:"Segoe UI","Noto Sans Thai",system-ui,sans-serif;--font-mono:"Cascadia Mono",Consolas,monospace}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273}}
+:root[data-theme="dark"]{--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.7}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 5rem}a{color:var(--accent)}
+code{font-family:var(--font-mono);font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.1em .35em;border-radius:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header.hero{padding:3rem 0 2rem;border-bottom:2px solid var(--ink)}
+.topbar{float:right;margin-top:.6rem;display:flex;gap:.5rem}
+.pill{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:.3rem .9rem;cursor:pointer;font:inherit;font-size:.85rem;text-decoration:none}
+.pill:hover{border-color:var(--accent);color:var(--accent)}
+.eyebrow{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(2rem,1.1rem + 4vw,3.3rem);line-height:1.15;margin:.4rem 0 1rem;letter-spacing:-.02em}
+.lead{font-size:1.1rem;color:var(--muted);max-width:64ch;margin:0 0 1rem}
+nav.toc{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.2rem}
+nav.toc a{font-size:.85rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:.15rem .75rem;color:var(--ink);background:var(--surface)}
+nav.toc a:hover{border-color:var(--accent);color:var(--accent)}
+h2.sec{font-size:1.6rem;margin:3.4rem 0 .4rem;line-height:1.25;scroll-margin-top:1rem}
+h2.sec .no{font-family:var(--font-mono);color:var(--accent);font-size:1rem;margin-right:.5rem}
+.sub{color:var(--muted);margin:0 0 1.4rem;max-width:68ch}
+h3{margin:1.4rem 0 .3rem;font-size:1.1rem}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem}
+.grid{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.card.char{border-top:5px solid var(--c-char)}.card.e2e{border-top:5px solid var(--c-qa)}
+.card h3{margin-top:0}.card ul{margin:.3rem 0;padding-left:1.2rem}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);font-size:.93rem}
+th,td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:color-mix(in srgb,var(--ink) 6%,transparent);font-size:.8rem;font-family:var(--font-mono);letter-spacing:.04em}
+tr:last-child td{border-bottom:0}.tw{overflow-x:auto}td.c{font-weight:600}
+.dev{color:var(--c-dev);font-weight:600}.qa{color:var(--c-qa);font-weight:600}
+.steps{counter-reset:s;list-style:none;padding:0;margin:1rem 0}
+.steps li{counter-increment:s;background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--c-char);border-radius:var(--radius);padding:.8rem 1.1rem .8rem 3.4rem;margin:.7rem 0;position:relative}
+.steps li::before{content:counter(s);position:absolute;left:1rem;top:.6rem;font-family:var(--font-mono);font-weight:700;font-size:1.5rem;color:var(--c-char)}
+.steps li b.t{display:block}
+.layers{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}
+.layers>div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.6rem .9rem}
+.layers .o{border-left:6px solid var(--c-qa)}.layers .i{border-left:6px solid var(--c-char)}.layers .k{border-left:6px solid var(--c-contract)}
+.note{border-left:4px solid var(--c-contract);background:color-mix(in srgb,var(--c-contract) 8%,transparent);padding:.6rem 1rem;border-radius:0 8px 8px 0;margin:1rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+@media(max-width:760px){.grid{grid-template-columns:1fr}.topbar{float:none;margin:0 0 1rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="topbar"><a class="pill" href="characterization-why.html" hreflang="th">ไทย</a><button class="pill" id="theme" type="button">Theme</button></div>
+  <div class="eyebrow">testover · Characterization Testing</div>
+  <h1>Why Characterization Testing<br>Who does it, when, and what to pair it with</h1>
+  <p class="lead">Written up from a discussion about managing legacy systems, which ran from “is E2E regression enough?” to “is this a QA or a Dev job?”. Each point is checked against testover to show how we use the idea and where we differ from the textbook.</p>
+  <nav class="toc" aria-label="Contents"><a href="#why">Why do it</a><a href="#vs">Versus other tests</a><a href="#who">Who and when</a><a href="#flow">Workflow</a><a href="#tools">Tools to pair</a><a href="#caution">Cautions</a><a href="#refs">References</a></nav>
+</header>
+<main>
+
+<h2 class="sec" id="why"><span class="no">01</span>Why do characterization testing</h2>
+<p class="sub">A characterization test records what the system actually does today, not what it should do, and locks it so any change in behaviour shows up immediately.</p>
+<div class="grid">
+<div class="card char"><h3>The principle</h3><ul>
+<li><b>No trustworthy spec.</b> Long-lived systems have stale documentation, and you cannot wait for a complete spec before touching the code. The running system acts as the test oracle.</li>
+<li><b>Restructuring without knowing what broke.</b> E2E checks only what its author thought of. Small side effects, such as one field with a drifted value, slip through.</li>
+<li><b>Some bugs already have dependants.</b> Customers or other systems may rely on the behaviour. Fixing it must be a decision, not a side effect of a refactor.</li>
+<li><b>Low cost.</b> Treat the system as a black box: feed inputs, record outputs, compare. No need to decode the business logic line by line first.</li>
+</ul></div>
+<div class="card e2e"><h3>Why E2E regression alone is not enough</h3><ul>
+<li><b>Coarse.</b> It tells you a screen broke, not which field drifted.</li>
+<li><b>Slow.</b> Minutes to hours, so it cannot serve as the feedback loop while refactoring.</li>
+<li><b>Flaky.</b> Network blips and selector changes get mixed up with real logic failures, so causes are hard to separate.</li>
+<li><b>Combinations do not scale through a UI.</b> Deeply nested conditions are impractical to drive from the screen, while a function-level test can run hundreds of inputs in seconds.</li>
+</ul></div>
+</div>
+<p class="note"><b>In short:</b> E2E is the coarse outer net that checks the main user flows still work. Characterization is the fine inner net fitted tightly around the code you are about to restructure. They complement each other; neither replaces the other.</p>
+
+<h3>What it does in testover</h3>
+<p>testover has no written spec; the real behaviour lives in the code and <code>localStorage</code>. So <code>tests/characterization/</code> holds <b>42 tests</b> in 3 files: <code>validation.spec.ts</code> and <code>resilience.spec.ts</code> lock input boundaries and how the app boots from damaged storage, and <code>golden-master.spec.ts</code> compares the whole localStorage with a committed snapshot. <b>3 of them are named <code>QUIRK:</code></b>, odd behaviours recorded as they are: a new password is stored in plain text, a <code>tb.users</code> value stored as an array locks everyone out, and the first change after loading invalid tasks permanently drops them.</p>
+
+<h2 class="sec" id="vs"><span class="no">02</span>Versus other kinds of test</h2>
+<p class="sub">They differ in who the oracle is and how finely they check.</p>
+<div class="tw"><table><thead><tr><th>Kind</th><th>Oracle</th><th>Checks</th><th>Level / speed</th><th>If red, it means</th></tr></thead><tbody>
+<tr><td class="c">E2E / Full regression</td><td>Human-defined requirements</td><td>Only the values you chose to assert</td><td>Whole system · minutes to hours</td><td>The system differs from what it should be</td></tr>
+<tr><td class="c">Characterization</td><td>The system’s behaviour today</td><td>Whole output or state, or observable boundaries</td><td>Function to API · seconds (in testover, driven through a browser)</td><td>Behaviour changed; decide whether on purpose</td></tr>
+<tr><td class="c">Contract</td><td>An agreed interface</td><td>Structure and types at the boundary</td><td>System edge · seconds</td><td>One side broke the agreement</td></tr>
+<tr><td class="c">Visual snapshot</td><td>An approved baseline image</td><td>Screen pixels</td><td>Screen · seconds to minutes</td><td>The look changed; review the diff</td></tr>
+</tbody></table></div>
+<p style="margin-top:1rem">Two points that are easy to mix up:</p>
+<ul>
+<li><b>Characterization is dynamic testing.</b> The code must run to produce the output, even though the result is stored as a static file. It is not static testing.</li>
+<li><b>E2E can act as characterization</b> if it asserts on a whole page (visual) or a whole payload. In practice the two overlap rather than one being a subset of the other.</li>
+</ul>
+
+<h2 class="sec" id="who"><span class="no">03</span>Who does it, and when</h2>
+<p class="sub">In the textbook, characterization is mainly a developer task because it touches code and needs seams. QA contributes inputs and judges results. In testover the tests drive the UI and need no code surgery, so QA can write them directly.</p>
+<div class="tw"><table><thead><tr><th>When</th><th>Activity</th><th>Dev</th><th>QA</th></tr></thead><tbody>
+<tr><td class="c">Before touching code</td><td>Set up E2E smoke over the main flows as the outer net</td><td>Provide stable selectors and seed data</td><td class="qa">Write and run the E2E set</td></tr>
+<tr><td class="c">Before touching code</td><td>Design inputs and edge cases (boundaries, damaged data, odd business cases)</td><td>Point out known fragile spots</td><td class="qa">Design with equivalence partitioning and boundary value analysis</td></tr>
+<tr><td class="c">Before touching code</td><td>Write characterization tests and record outputs</td><td class="dev">Function or class level (cut seams with DI or mocks); mostly Dev work</td><td class="qa">API, UI and visual level (in testover QA writes them)</td></tr>
+<tr><td class="c">Before touching code</td><td>Judge the odd results: intended or bug</td><td class="dev">Decide case by case. Intended: write the reason. Bug: open a ticket</td><td class="qa">Review whether users really depend on it; name it QUIRK</td></tr>
+<tr><td class="c">During refactor</td><td>Re-run on every change (second-scale feedback)</td><td class="dev">Run locally</td><td>—</td></tr>
+<tr><td class="c">After refactor</td><td>Run the full E2E set in CI as the final gate</td><td>Maintain the workflow</td><td class="qa">Choose the set and triage results</td></tr>
+<tr><td class="c">When red</td><td>Decide: fix the app or fix the expectation</td><td class="dev">Fix the app if unintended</td><td class="qa">Update the master or expectation if intended, and update docs</td></tr>
+<tr><td class="c">When done</td><td>Turn scaffolding characterization tests into readable unit tests</td><td class="dev">Do it</td><td>Review</td></tr>
+</tbody></table></div>
+<p class="note"><b>Read with:</b> <a href="automation-phases.en.html#p3">Phase 3 on the Automation Phases page</a>, which places characterization in the 7-phase plan.</p>
+
+<h2 class="sec" id="flow"><span class="no">04</span>Workflow when you must refactor</h2>
+<ol class="steps">
+<li><b class="t">Lay the outer net with E2E</b>Cover the critical flows before touching code (in testover: the 5 <code>@smoke</code> tests plus journey, login, tasks and profile).</li>
+<li><b class="t">Lay the inner net with characterization</b>Lock the module you will restructure using varied inputs. Record outputs as they are, odd parts included.</li>
+<li><b class="t">Judge the odd parts</b>Dev decides intended or bug. Name them <code>QUIRK:</code> so they are easy to find.</li>
+<li><b class="t">Refactor, running characterization often</b>It must stay 100% green. Red means behaviour changed, so decide before moving on.</li>
+<li><b class="t">Finish with full E2E and visual</b>Confirm the restructured piece still fits with the rest before release.</li>
+</ol>
+
+<h2 class="sec" id="tools"><span class="no">05</span>Tools to pair</h2>
+<p class="sub">Each layer covers the gaps of the others. Shown with generic tools and what testover actually uses.</p>
+<div class="layers">
+<div class="o"><b>Outer · E2E regression</b> checks main user flows still work → generic: Playwright, Cypress, WebdriverIO · testover: Playwright with a Page Object (<code>tests/support/pages.ts</code>)</div>
+<div class="i"><b>Inner · Characterization</b> locks behaviour of the code you will restructure → generic: ApprovalTests, Verify, Jest/Vitest snapshots, Syrupy · testover: plain assertions in <code>validation</code>/<code>resilience</code> plus a Golden Master using <code>toMatchSnapshot()</code> in <code>golden-master.spec.ts</code> (masking helper in <code>tests/support/golden.ts</code>)</div>
+<div class="k"><b>At the edge · Contract</b> locks the minimum agreement consumers need → generic: Pact, schema validation · testover: zod in <code>contracts/schemas.mjs</code></div>
+<div class="o"><b>Appearance · Visual snapshot</b> catches UI drift while other tests stay green → Playwright <code>toHaveScreenshot()</code> in Docker (Linux) · testover: <code>tests/visual.spec.ts</code>, 5 screens</div>
+<div class="i"><b>Fast · Unit</b> logic that needs no browser, and where characterization tests are later converted to → node:test · testover: <code>unit/*.test.mjs</code></div>
+<div class="o"><b>Orchestration · CI</b> ordered fast to slow to save resources → GitHub Actions / GitLab CI · testover: <code>smoke.yml</code> (unit + smoke on every PR), <code>weekend-e2e.yml</code> (full suite)</div>
+</div>
+<h3>Practices that make it workable</h3>
+<div class="tw"><table><tbody>
+<tr><td class="c">Mask unstable values</td><td>Replace timestamps, UUIDs and tokens with constants before comparing, or the test is red on every run. For visual tests, mask regions and disable animation.</td></tr>
+<tr><td class="c">Seams and mocks</td><td>Cut out real DBs, external APIs and the clock with DI or fakes so runs are repeatable (testover starts from seedable storage).</td></tr>
+<tr><td class="c">Tags and per-layer commands</td><td><code>npm run test:characterization</code>, <code>test:contract</code>, <code>test:smoke</code>, <code>test:visual</code></td></tr>
+<tr><td class="c">Fail-fast CI order</td><td>Stage 1: lint, unit, characterization (fast) → Stage 2: E2E smoke → Stage 3: full suite and visual on a schedule</td></tr>
+</tbody></table></div>
+<h3>Characterization and contract together when splitting a system</h3>
+<p>When carving a new service out of an old one (Strangler Fig), send identical input to both and require identical output (characterization), while the new API must not break the agreement with frontend or mobile clients (contract).</p>
+
+<h2 class="sec" id="caution"><span class="no">06</span>Cautions</h2>
+<ul>
+<li><b>Green does not mean correct.</b> A passing characterization test means “unchanged”, not “right”. Bugs need an owner’s decision, not a permanent QUIRK label.</li>
+<li><b>Locking too much is brittle.</b> Whole-output comparison goes red when a new field appears, unlike a consumer-driven contract where an extra field usually does not break anyone. (In testover the schemas are deliberately <code>.strict()</code>, so a new field is a conscious contract change.)</li>
+<li><b>A red image is not always a bug.</b> Decide the same way: intended means update the baseline, unintended means fix the UI.</li>
+<li><b>Updating the master is a decision.</b> Do not run <code>--update-snapshots</code> just to get green.</li>
+<li><b>It is scaffolding.</b> Once the module is clean, replace it with unit tests that state intent.</li>
+</ul>
+<p class="note"><b>testover uses both styles:</b> explicit per-behaviour assertions (<code>validation</code>, <code>resilience</code>), which state intent clearly, and a Golden Master (<code>golden-master.spec.ts</code>) that compares the whole localStorage with a snapshot to catch fields nobody thought of. It uses Playwright’s <code>toMatchSnapshot()</code> with masked timestamps/UUIDs and sorted keys. Snapshots are plain text, so they can be generated on any OS (unlike visual baselines, which need Docker on Linux). Update with <code>npm run test:characterization -- --update-snapshots</code> and always read the diff before committing. Caveat: the snapshots record the plain-text password because that is the real behaviour today; fixing that QUIRK means updating the snapshots in the same change.</p>
+
+<h2 class="sec" id="refs"><span class="no">07</span>References</h2>
+<ul>
+<li>Michael Feathers, <i>Working Effectively with Legacy Code</i> (2004), chapter 13, “I Need to Make a Change, but I Don’t Know What Tests to Write”: the origin of characterization tests.</li>
+<li>Martin Fowler, “The Practical Test Pyramid” and the article on Consumer-Driven Contracts.</li>
+<li>ApprovalTests and Verify documentation on handling non-deterministic values.</li>
+</ul>
+<p class="note"><b>Note:</b> The source discussion states that ISTQB has no dedicated topic for this term. The ISTQB chapter numbers quoted there were approximate, so check the current syllabus before citing them in formal documents.</p>
+</main>
+<footer>Read next: <a href="automation-phases.en.html">Automation Phases</a> · <a href="testing-structure.en.html">Testing structure</a> · <a href="overview.en.html">Project overview</a> · <a href="characterization-why.html">ไทย</a></footer>
+</div>
+<script>
+(function(){var b=document.getElementById('theme'),r=document.documentElement;
+try{var s=localStorage.getItem('docs.theme');if(s)r.setAttribute('data-theme',s)}catch(e){}
+b.addEventListener('click',function(){var cur=r.getAttribute('data-theme');var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+var n=dark?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('docs.theme',n)}catch(e){}})})();
+</script>
+</body>
+</html>

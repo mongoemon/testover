@@ -1,0 +1,192 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>ขั้นตอนการทำ Automation ทีละ Phase</title>
+<meta name="description" content="แผนที่การทำ test automation ของ testover ทีละ phase: Contract และ Characterization testing อยู่ตรงไหน และ Dev กับ QA ทำงานร่วมกันอย่างไร">
+<style>
+:root{--bg:#f6f3ec;--surface:#fffdf8;--ink:#1d2320;--muted:#5d6a63;--line:#ddd6c6;--accent:#0b6e4f;--fail:#b3261e;
+--c-contract:#b7791f;--c-char:#8a4fa0;--c-qa:#3b6ea5;--c-dev:#b3541e;--code-bg:#1d2320;--code-ink:#e9f1ec;--radius:12px;
+--font-body:"Segoe UI","Noto Sans Thai",system-ui,sans-serif;--font-mono:"Cascadia Mono",Consolas,monospace}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--fail:#ff8a80;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273;--code-bg:#0c110f}}
+:root[data-theme="dark"]{--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--fail:#ff8a80;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273;--code-bg:#0c110f}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.7}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 5rem}a{color:var(--accent)}
+code{font-family:var(--font-mono);font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.1em .35em;border-radius:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header.hero{padding:3rem 0 2rem;border-bottom:2px solid var(--ink)}
+.topbar{float:right;margin-top:.6rem;display:flex;gap:.5rem}
+.pill{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:.3rem .9rem;cursor:pointer;font:inherit;font-size:.85rem;text-decoration:none}
+.pill:hover{border-color:var(--accent);color:var(--accent)}
+.eyebrow{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(2rem,1.1rem + 4vw,3.3rem);line-height:1.15;margin:.4rem 0 1rem;letter-spacing:-.02em}
+.lead{font-size:1.1rem;color:var(--muted);max-width:64ch;margin:0 0 1rem}
+nav.toc{display:flex;flex-wrap:wrap;gap:.4rem;margin-top:1.2rem}
+nav.toc a{font-size:.85rem;text-decoration:none;border:1px solid var(--line);border-radius:999px;padding:.15rem .75rem;color:var(--ink);background:var(--surface)}
+nav.toc a:hover{border-color:var(--accent);color:var(--accent)}
+h2.sec{font-size:1.6rem;margin:3.6rem 0 .4rem;line-height:1.25;scroll-margin-top:1rem}
+h2.sec .no{font-family:var(--font-mono);color:var(--accent);font-size:1rem;margin-right:.5rem}
+.sub{color:var(--muted);margin:0 0 1.4rem;max-width:68ch}
+h3{margin:1.4rem 0 .3rem;font-size:1.1rem}
+.road{display:grid;grid-template-columns:repeat(7,1fr);margin:1.5rem 0;border:1px solid var(--ink);border-radius:var(--radius);overflow:hidden;background:var(--surface)}
+.road a{padding:.8rem .6rem;border-right:1px solid var(--line);text-decoration:none;color:var(--ink);display:block}
+.road a:last-child{border-right:0}
+.road a:hover{background:color-mix(in srgb,var(--accent) 10%,transparent)}
+.road .n{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;color:var(--accent);display:block;line-height:1.1}
+.road .t{font-size:.82rem;line-height:1.35;display:block;margin-top:.2rem}
+.road .tag{display:inline-block;margin-top:.4rem;font-family:var(--font-mono);font-size:.68rem;padding:0 .4rem;border-radius:4px;color:#fff}
+.tag.contract{background:var(--c-contract)}.tag.char{background:var(--c-char)}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]) .tag{color:#111}}
+:root[data-theme="dark"] .tag{color:#111}
+.phase{background:var(--surface);border:1px solid var(--line);border-left:6px solid var(--accent);border-radius:var(--radius);padding:1.2rem 1.4rem;margin:1.4rem 0;scroll-margin-top:1rem}
+.phase.contract{border-left-color:var(--c-contract)}.phase.char{border-left-color:var(--c-char)}
+.phase h3{margin:0 0 .2rem;font-size:1.3rem}
+.phase h3 .no{font-family:var(--font-mono);color:var(--accent);margin-right:.4rem}
+.phase .goal{color:var(--muted);margin:0 0 .8rem}
+.cols{display:grid;grid-template-columns:1fr 1fr;gap:.8rem;margin:.6rem 0}
+.who{border:1px solid var(--line);border-radius:8px;padding:.6rem .9rem}
+.who h4{margin:0 0 .2rem;font-size:.82rem;font-family:var(--font-mono);letter-spacing:.06em;text-transform:uppercase}
+.who.qa h4{color:var(--c-qa)}.who.qa{border-top:3px solid var(--c-qa)}
+.who.dev h4{color:var(--c-dev)}.who.dev{border-top:3px solid var(--c-dev)}
+.who ul,.vs ul{margin:.2rem 0;padding-left:1.2rem}
+.exit{margin-top:.7rem;padding:.5rem .8rem;border-radius:8px;background:color-mix(in srgb,var(--accent) 10%,transparent);font-size:.93rem}
+.exit b{color:var(--accent)}
+.here{margin:.6rem 0;font-size:.93rem}
+table{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);font-size:.93rem}
+th,td{text-align:left;padding:.55rem .8rem;border-bottom:1px solid var(--line);vertical-align:top}
+th{background:color-mix(in srgb,var(--ink) 6%,transparent);font-size:.8rem;font-family:var(--font-mono);letter-spacing:.04em}
+tr:last-child td{border-bottom:0}
+.tw{overflow-x:auto}
+td.c{font-weight:600}
+.vs{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.vs>div{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem}
+.vs .k{border-top:5px solid var(--c-contract)}.vs .z{border-top:5px solid var(--c-char)}
+.vs h3{margin-top:0}
+pre{background:var(--code-bg);color:var(--code-ink);padding:1rem 1.2rem;border-radius:var(--radius);overflow-x:auto;font-family:var(--font-mono);font-size:.83rem;line-height:1.55}
+.flow{display:flex;flex-direction:column;gap:.5rem;margin:1rem 0}
+.flow>div{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:.6rem .9rem}
+.flow .arrow{border:0;background:none;padding:0;text-align:center;color:var(--muted);margin:-.2rem 0}
+.flow .q{border-color:var(--c-char)}
+.note{border-left:4px solid var(--c-contract);background:color-mix(in srgb,var(--c-contract) 8%,transparent);padding:.6rem 1rem;border-radius:0 8px 8px 0;margin:1rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+@media(max-width:760px){.road{grid-template-columns:1fr 1fr}.road a{border-bottom:1px solid var(--line)}.cols,.vs{grid-template-columns:1fr}.topbar{float:none;margin:0 0 1rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="hero">
+  <div class="topbar"><a class="pill" href="automation-phases.en.html" hreflang="en">English</a><button class="pill" id="theme" type="button">ธีม</button></div>
+  <div class="eyebrow">testover · Automation Roadmap</div>
+  <h1>ทำ Automation ทีละ Phase<br>และ Dev × QA ทำอะไรร่วมกัน</h1>
+  <p class="lead">หน้านี้เล่าลำดับการสร้างระบบ test automation ของ testover ตั้งแต่เลือกว่าจะ test อะไร จนถึงดูแลระยะยาว พร้อมชี้ว่า <b>Contract</b> และ <b>Characterization</b> testing เกิดขึ้นในขั้นไหน และแต่ละขั้น Dev กับ QA ต้องทำอะไร</p>
+  <nav class="toc" aria-label="Contents"><a href="#road">ภาพรวม</a><a href="#phases">รายละเอียดแต่ละ Phase</a><a href="#compare">Contract vs Characterization</a><a href="#collab">Dev × QA ตามขั้น</a><a href="#handshake">จุดส่งต่องาน</a><a href="#visual">Visual testing</a><a href="#cmd">คำสั่งที่ใช้</a></nav>
+</header>
+<main>
+<h2 class="sec" id="road"><span class="no">01</span>ภาพรวม 7 Phase</h2><p class="sub">อ่านจากซ้ายไปขวา แต่ละ phase มีเงื่อนไขทางออกก่อนไปต่อ ป้ายเหลืองและม่วงคือจุดที่ Contract และ Characterization เกิดขึ้น</p>
+<nav class="road" aria-label="Phases"><a href="#p0"><span class="n">0</span><span class="t">เลือกสิ่งที่จะ automate</span></a><a href="#p1"><span class="n">1</span><span class="t">วางฐานเครื่องมือ</span></a><a href="#p2"><span class="n">2</span><span class="t">ตกลง Contract ที่ขอบระบบ</span><span class="tag contract">Contract</span></a><a href="#p3"><span class="n">3</span><span class="t">บันทึกพฤติกรรมปัจจุบัน</span><span class="tag char">Characterization</span></a><a href="#p4"><span class="n">4</span><span class="t">test ระดับ feature</span></a><a href="#p5"><span class="n">5</span><span class="t">ต่อเข้า CI</span></a><a href="#p6"><span class="n">6</span><span class="t">ดูแลต่อเนื่อง</span></a></nav>
+<h2 class="sec" id="phases"><span class="no">02</span>รายละเอียดแต่ละ Phase</h2><p class="sub">ทุกข้อใน “ใน testover” ตรวจกับไฟล์จริงในรีโปแล้ว</p>
+
+<article class="phase " id="p0">
+  <h3><span class="no">0</span>เลือกสิ่งที่จะ automate (Discover & Risk)</h3>
+  <p class="goal">ตัดสินใจว่า test อะไรคุ้มที่จะเขียนเป็นโค้ด และอะไรไม่ควร</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>ไล่ user journey สำคัญ (สมัคร → login → จัดการ task → แก้โปรไฟล์)</li><li>จัดลำดับตามความเสี่ยงและความถี่ที่ต้อง regression</li><li>แยกสิ่งที่ควร test มือ เช่น look-and-feel ออก</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>บอกจุดที่เปราะหรือเพิ่งแก้บ่อย</li><li>บอกขอบเขตข้อมูลที่ app เก็บ (localStorage, API) และใครเป็นเจ้าของ</li><li>ยืนยันว่า env ที่ใช้ test รันซ้ำได้ (<code>npm start</code>)</li></ul></div>
+  </div>
+  <p class="here"><b>ใน testover:</b> journey หลักกลายเป็น <code>tests/journey.spec.ts</code>, <code>login</code>, <code>tasks</code>, <code>profile</code></p>
+  <div class="exit"><b>เงื่อนไขทางออก:</b> มีรายการ journey เรียงตามความเสี่ยง และตกลงกันแล้วว่า “ไม่ automate” อะไร</div>
+</article>
+<article class="phase " id="p1">
+  <h3><span class="no">1</span>วางฐานเครื่องมือ (Foundation)</h3>
+  <p class="goal">ทำให้การเขียน test ครั้งต่อไปเร็ว และไม่พังเมื่อ UI เปลี่ยน</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>ตั้ง Playwright, config, Page Object (<code>tests/support/pages.ts</code>)</li><li>ทำ helper อ่าน/เขียน storage (<code>tests/support/storage.ts</code>)</li><li>กำหนด tag: <code>@smoke</code> <code>@contract</code> <code>@characterization</code> <code>@security</code> <code>@destructive</code></li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>ให้ selector ที่เสถียร (role, label, test id) ไม่ผูกกับ CSS</li><li>ทำให้ app เริ่มจากสถานะที่รู้ได้ (seed data / บัญชี demo)</li><li>แจ้งเมื่อเปลี่ยนโครง DOM ก่อน merge</li></ul></div>
+  </div>
+  <p class="here"><b>ใน testover:</b> <code>playwright.config.ts</code>, <code>tests/support/</code>, <code>docs/tags.md</code></p>
+  <div class="exit"><b>เงื่อนไขทางออก:</b> เขียน test ใหม่ด้วย Page Object ได้โดยไม่ต้อง copy selector</div>
+</article>
+<article class="phase contract" id="p2">
+  <h3><span class="no">2</span>ตกลง Contract ที่ขอบระบบ (Contract)</h3>
+  <p class="goal">เขียน “ข้อตกลง” ระหว่างส่วนต่าง ๆ ให้เป็นโค้ดที่รันได้ ก่อนที่ test จำนวนมากจะพึ่งมัน</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>แปลงข้อตกลงเป็น zod schema ใน <code>contracts/schemas.mjs</code></li><li>เขียน test ที่ตรวจว่า app และสคริปต์ “เคารพ” schema จริง</li><li>ทำ fixture ตัวอย่างทั้งกรณี pass / fail / ว่าง</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>เป็นคนบอกว่าข้อมูลที่ถูกต้องหน้าตาเป็นอย่างไร (ความยาว ชนิด field บังคับ)</li><li>review schema ว่าตรงเจตนา ไม่ใช่แค่ตรงโค้ดปัจจุบัน</li><li>ถ้าจะเพิ่ม field ใหม่ ต้องแก้ schema ใน PR เดียวกัน</li></ul></div>
+  </div>
+  <p class="here"><b>ใน testover:</b> C1 localStorage → <code>tests/contracts/storage.spec.ts</code> · C2 รายงาน Playwright และ C3 body ของ webhook → <code>unit/contracts.test.mjs</code> Schema เป็น <code>.strict()</code> โดยตั้งใจ field ใหม่จึงเป็นการเปลี่ยน contract อย่างรู้ตัว</p>
+  <div class="exit"><b>เงื่อนไขทางออก:</b> ทุกขอบเขตที่ข้ามระบบมี schema เดียว ที่ทั้ง unit และ Playwright import ใช้ร่วมกัน</div>
+</article>
+<article class="phase char" id="p3">
+  <h3><span class="no">3</span>บันทึกพฤติกรรมปัจจุบัน (Characterization)</h3>
+  <p class="goal">ล็อก “สิ่งที่ app ทำจริงตอนนี้” ก่อนแก้หรือ refactor เพื่อให้เห็นทันทีว่าอะไรเปลี่ยน</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>ไล่ boundary: username 2/3/20/21 ตัวอักษร, อักขระต้องห้าม, trim/lowercase</li><li>ไล่สถานะผิดปกติ: ข้อมูลใน storage เสียหรือผิดชนิด</li><li>ตั้งชื่อ test ที่เป็นพฤติกรรมแปลก ๆ ว่า <code>QUIRK:</code> เพื่อค้นง่าย</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>ตัดสินใจเป็นรายข้อว่าพฤติกรรมนี้ “ตั้งใจ” หรือ “บั๊ก”</li><li>บั๊ก → เปิด ticket แล้วแก้ test พร้อมโค้ด</li><li>ตั้งใจ → ปล่อยไว้ และเขียนเหตุผลเป็นคอมเมนต์</li></ul></div>
+  </div>
+  <p class="here"><b>ใน testover:</b> <code>tests/characterization/validation.spec.ts</code> และ <code>resilience.spec.ts</code> และ <code>golden-master.spec.ts</code> (snapshot ของ localStorage ทั้งก้อน 5 ชุดใน <code>tests/__screenshots__/characterization/</code>) รวม 42 test มี 3 ตัวชื่อ QUIRK เช่น รหัสผ่านใหม่ถูกเก็บเป็น plain text, หรือ array ใน <code>tb.users</code> ทำให้ทุกคนล็อกอินไม่ได้ (ฝั่ง unit ก็มี characterization ของข้อความ notify ด้วย)</p>
+  <div class="exit"><b>เงื่อนไขทางออก:</b> ทุก boundary ที่จะแตะมี test ที่ผ่านด้วยพฤติกรรมปัจจุบัน และ QUIRK ทุกข้อมีเจ้าของตัดสินใจ</div>
+</article>
+<article class="phase " id="p4">
+  <h3><span class="no">4</span>test ระดับ feature (Unit · E2E · A11y)</h3>
+  <p class="goal">ครอบคลุมพฤติกรรมที่ตั้งใจให้มี ตามปิรามิด: unit เร็ว, E2E ครอบ journey</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>เขียน E2E ตาม journey ที่จัดลำดับไว้ใน phase 0</li><li>เพิ่ม a11y ด้วย axe และ test ด้านความปลอดภัย (<code>@security</code>)</li><li>ดู flaky และ assertion ที่อ่อนเกินไป</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>เขียน unit test ของ logic ที่ไม่ต้องใช้ browser (<code>unit/*.test.mjs</code>)</li><li>review test ของ QA ว่าตรง requirement</li><li>เพิ่ม test ใน PR เดียวกับ feature ใหม่</li></ul></div>
+  </div>
+  <p class="here"><b>ใน testover:</b> E2E ใน <code>tests/*.spec.ts</code>, a11y ใน <code>tests/a11y.spec.ts</code> รวม 137 Playwright test ใน 10 ไฟล์ (5 smoke, 12 security, 5 visual)</p>
+  <div class="exit"><b>เงื่อนไขทางออก:</b> feature ใหม่ทุกตัวมี test อย่างน้อยหนึ่งชั้นก่อน merge</div>
+</article>
+<article class="phase " id="p5">
+  <h3><span class="no">5</span>ต่อเข้า CI (Gate & Report)</h3>
+  <p class="goal">ให้ test รันเอง และบอกผลถึงคนที่ต้องรู้</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>เลือกชุดที่ gate PR (<code>@smoke</code>) กับชุดเต็มที่รันตามเวลา</li><li>ตั้ง report (Allure) และการแจ้งเตือน (<code>scripts/notify.mjs</code>)</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>ดูแล workflow / secret / environment</li><li>รับผิดชอบ build ที่แดงบน PR ของตัวเอง</li></ul></div>
+  </div>
+  <p class="here"><b>ใน testover:</b> <code>smoke.yml</code> รัน unit + smoke ทุก push/PR · <code>weekend-e2e.yml</code> รันชุดเต็มทุกเสาร์-อาทิตย์ 09:00 เวลาไทย พร้อม unit, Allure และแจ้งเตือน · <code>cloudflare-pages.yml</code> publish docs และ report</p>
+  <div class="exit"><b>เงื่อนไขทางออก:</b> PR ที่ทำให้ smoke/unit/contract แดง merge ไม่ได้ และผลชุดเต็มถึงทีมโดยไม่ต้องมีคนไปกด</div>
+</article>
+<article class="phase " id="p6">
+  <h3><span class="no">6</span>ดูแลต่อเนื่อง (Maintain)</h3>
+  <p class="goal">กัน test เน่า และเปลี่ยนสิ่งที่ test เปิดเผยให้เป็นการตัดสินใจ</p>
+  <div class="cols">
+    <div class="who qa"><h4>QA</h4><ul><li>triage ผลรายสัปดาห์: บั๊กจริง / flaky / test ล้าสมัย</li><li>แยก test ที่ไม่เสถียรออกมา quarantine แล้วตามแก้</li><li>อัปเดตเอกสาร tag และตัวเลข</li></ul></div>
+    <div class="who dev"><h4>Dev</h4><ul><li>เมื่อ characterization/contract แดง ตัดสินว่า “แก้ app” หรือ “แก้ expectation”</li><li>แก้ QUIRK ที่เป็นบั๊ก แล้วเปลี่ยนชื่อ test ให้อธิบายพฤติกรรมที่ถูก</li></ul></div>
+  </div>
+  <p class="here"><b>ใน testover:</b> หัวไฟล์ characterization เขียนไว้ตรง ๆ: ถ้าแดง ให้ตัดสินใจอย่างรู้ตัวก่อน แล้วจึงอัปเดต expectation</p>
+  <div class="exit"><b>เงื่อนไขทางออก:</b> ไม่มี test แดงค้างโดยไม่มีเจ้าของ</div>
+</article>
+<h2 class="sec" id="compare"><span class="no">03</span>Contract vs Characterization</h2><p class="sub">สองอย่างนี้มักถูกสับสน ต่างกันที่ “ยึดอะไรเป็นความจริง”</p>
+<div class="vs"><div class="k"><h3>Contract testing</h3><ul><li>ยึด <b>ข้อตกลงที่ควรเป็น</b> เป็นความจริง</li><li>เขียนก่อนหรือพร้อมการออกแบบ ผ่านการตกลงของ Dev และ QA</li><li>ถ้าแดง = ฝ่ายใดฝ่ายหนึ่งผิดข้อตกลง ต้องแก้ฝั่งนั้น</li><li>ตรวจที่ขอบ: ข้อมูลใน storage, รายงาน, webhook</li><li>สัญลักษณ์: <code>@contract</code>, <code>contracts/schemas.mjs</code></li></ul></div><div class="z"><h3>Characterization testing</h3><ul><li>ยึด <b>สิ่งที่ app ทำจริงวันนี้</b> เป็นความจริง</li><li>เขียนทีหลังจากสังเกต โดยไม่ตัดสินว่าถูกผิด</li><li>ถ้าแดง = พฤติกรรมเปลี่ยน ต้องตัดสินว่าตั้งใจหรือไม่</li><li>ตรวจที่ input และขอบเขต: ความยาว อักขระ ข้อมูลเสีย</li><li>สัญลักษณ์: <code>@characterization</code>, ชื่อ <code>QUIRK:</code></li></ul></div></div>
+<h3>เมื่อ test เหล่านี้แดง ใครทำอะไร</h3>
+<div class="flow"><div class="">Test แดง</div><div class="arrow" aria-hidden="true">↓</div><div class="q">เป็น Contract หรือ Characterization?</div><div class="arrow" aria-hidden="true">↓</div><div class="">Contract → หาว่าใครผิดข้อตกลงแล้วแก้ฝั่งนั้น หรือเปิด PR แก้ schema พร้อมเหตุผล (Dev + QA เซ็นร่วมกัน)</div><div class="arrow" aria-hidden="true">↓</div><div class="">Characterization → Dev ตัดสิน: ตั้งใจเปลี่ยน? แก้ expectation / เป็นบั๊ก? แก้ app</div><div class="arrow" aria-hidden="true">↓</div><div class="">อัปเดตเอกสารและชื่อ test (ถ้าเคยเป็น QUIRK ให้เปลี่ยนชื่อ)</div></div>
+<p class="note"><b>ลำดับ:</b> กับโค้ดที่มีอยู่แล้ว (legacy) มักทำ Characterization ก่อน Contract เพราะต้องเห็นของจริงก่อนจึงตกลงได้ว่าควรเป็นอะไร ใน testover จัด Contract เป็น phase 2 เพราะ test ชั้นถัดไป import schema ร่วมกัน สลับลำดับสองขั้นนี้ได้โดยไม่กระทบขั้นอื่น</p>
+<h2 class="sec" id="collab"><span class="no">04</span>Dev × QA ในแต่ละขั้น</h2><p class="sub">R = ลงมือหลัก · ร่วม = ทำด้วยกัน · รีวิว = ตรวจและเซ็น</p>
+<div class="tw"><table><thead><tr><th>Phase</th><th>QA</th><th>Dev</th><th>สิ่งที่ส่งต่อกัน</th></tr></thead><tbody><tr><td class="c">0 เลือกสิ่งที่จะ automate</td><td>R จัดลำดับ journey</td><td>ให้ข้อมูลความเสี่ยง</td><td>รายการ journey</td></tr><tr><td class="c">1 Foundation</td><td>R เขียน framework</td><td>ให้ selector เสถียร + seed</td><td>convention ของ selector</td></tr><tr><td class="c">2 Contract</td><td>R เขียน schema/test</td><td>ร่วม กำหนดข้อมูลที่ถูกต้อง · รีวิว</td><td>schema ที่ตกลงแล้ว</td></tr><tr><td class="c">3 Characterization</td><td>R เขียน test บันทึกพฤติกรรม</td><td>ร่วม ตัดสิน QUIRK แต่ละข้อ</td><td>รายการ QUIRK + ticket</td></tr><tr><td class="c">4 Feature tests</td><td>R E2E / a11y</td><td>R unit · รีวิว E2E</td><td>test อยู่ใน PR เดียวกับ feature</td></tr><tr><td class="c">5 CI</td><td>R เลือกชุด + report</td><td>R workflow/secret</td><td>gate ที่ PR + รายงาน</td></tr><tr><td class="c">6 Maintain</td><td>R triage</td><td>R แก้ตามที่ตัดสิน</td><td>แก้ app หรือแก้ expectation</td></tr></tbody></table></div>
+<h2 class="sec" id="handshake"><span class="no">05</span>จุดส่งต่องานที่ต้องตกลงให้ชัด</h2><p class="sub">จุดเหล่านี้คือที่ที่ automation มักพัง เมื่อสองฝ่ายเข้าใจไม่ตรงกัน</p>
+<div class="tw"><table><tbody><tr><td class="c">Selector</td><td>Dev แจ้งก่อนเปลี่ยน DOM; QA ใช้ role/label ก่อน และใช้ test id เมื่อจำเป็น</td></tr><tr><td class="c">Seed data</td><td>Dev รับประกันบัญชี demo และสถานะเริ่มต้น; QA ไม่พึ่งข้อมูลที่ test อื่นสร้าง</td></tr><tr><td class="c">การเปลี่ยน Contract</td><td>แก้ <code>contracts/schemas.mjs</code> ใน PR เดียวกับโค้ด และให้ QA รีวิว</td></tr><tr><td class="c">QUIRK</td><td>QA พบ → Dev ตัดสิน “ตั้งใจ/บั๊ก” → บันทึก ticket หรือเหตุผลไว้</td></tr><tr><td class="c">Definition of Done</td><td>feature ต้องมี test อย่างน้อยหนึ่งชั้นก่อน merge และ smoke ต้องเขียว</td></tr><tr><td class="c">ผลชุดเต็ม</td><td>QA triage ผลรายสัปดาห์ Dev รับ ticket ที่เป็นบั๊กจริง</td></tr></tbody></table></div>
+<h2 class="sec" id="visual"><span class="no">06</span>Visual snapshot testing</h2><p class="sub">เทียบภาพหน้าจอจริงกับภาพอ้างอิง (baseline) เพื่อจับ UI ที่เพี้ยนทั้งที่ test อื่นยังผ่าน อยู่ในชั้น phase 4 ต่อจาก E2E</p>
+<div class="tw"><table><tbody><tr><td class="c">คืออะไร</td><td>test เปิดหน้า เตรียมสถานะ แล้วเรียก <code>toHaveScreenshot()</code> เทียบ pixel กับภาพที่ commit ไว้ ต่างเกินเกณฑ์ (1%) จึงแดง ต่างจาก <code>screenshot: only-on-failure</code> ที่แค่เก็บภาพไว้ดูตอนพัง</td></tr><tr><td class="c">ใน testover</td><td><code>tests/visual.spec.ts</code> 5 หน้าจอ ติด <code>@visual</code>: login, register ตอน error, task board, task board แบบ dark, profile · baseline อยู่ที่ <code>tests/__screenshots__/</code></td></tr><tr><td class="c">สร้าง baseline ที่ไหน</td><td>ใน Docker image ของ Playwright (Linux) ผ่าน <code>npm run test:visual:update</code> ไม่ใช่บน Windows หรือ Mac เพราะ font และ anti-aliasing ต่างกันและจะทำให้ CI แดง</td></tr><tr><td class="c">QA ทำ</td><td>เลือกหน้าจอที่คุ้มทำ, เตรียมสถานะให้นิ่ง (ข้อมูลตายตัว ปิด animation), เปิดดูภาพทุกครั้งก่อน commit baseline</td></tr><tr><td class="c">Dev ทำ</td><td>บอกเมื่อตั้งใจเปลี่ยนหน้าตา, อนุมัติ baseline ใหม่ใน PR เดียวกับการเปลี่ยน UI, แจ้งค่าที่เปลี่ยนเองทุกครั้ง เช่น เลขเวอร์ชัน วันที่ เพื่อ mask</td></tr><tr><td class="c">ข้อควรระวัง</td><td>ภาพแดง ≠ บั๊กเสมอไป ต้องดู diff แล้วตัดสินแบบเดียวกับ characterization: ตั้งใจ → update baseline, ไม่ตั้งใจ → แก้ UI · ป้ายเวอร์ชันมุมขวาล่างอาจเปลี่ยนทุก release</td></tr></tbody></table></div>
+<h2 class="sec" id="cmd"><span class="no">07</span>คำสั่งที่ใช้</h2><p class="sub">รันเฉพาะชั้นที่ต้องการได้ด้วย tag</p>
+<pre>npm run test:unit             # unit + contract C2/C3 (node:test)
+npm run test:contract         # contract ทั้งหมด (unit + @contract)
+npm run test:characterization # characterization 42 test
+npm run test:smoke            # 5 test เร็ว ๆ สำหรับ PR
+npm run test:safe             # ทุกอย่างยกเว้น @destructive
+npm run test:visual           # เทียบภาพ 5 หน้าจอ (ใน Docker)
+npm run test:visual:update    # สร้าง/อัปเดต baseline (ใน Docker)
+npm test                      # ชุดเต็ม 137 test</pre>
+</main>
+<footer>อ่านต่อ: <a href="characterization-why.html">ทำไมต้องทำ Characterization</a> · <a href="testing-structure.html">โครงสร้างการทดสอบ</a> · <a href="overview.html">ภาพรวมโปรเจกต์</a> · <a href="tags.md">tags</a> · <a href="automation-phases.en.html">English</a></footer>
+</div>
+<script>
+(function(){var b=document.getElementById('theme'),r=document.documentElement;
+try{var s=localStorage.getItem('docs.theme');if(s)r.setAttribute('data-theme',s)}catch(e){}
+b.addEventListener('click',function(){var cur=r.getAttribute('data-theme');var dark=cur?cur==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+var n=dark?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('docs.theme',n)}catch(e){}})})();
+</script>
+</body>
+</html>
