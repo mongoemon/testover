@@ -87,6 +87,7 @@ npm start           # เปิด http://localhost:3000/docs/overview.html อ�
 npm test                          # รันทุกเคส (เปิดเว็บให้เองอัตโนมัติ)
 npm run report                    # เปิดรายงาน HTML
 npm run test:headed               # รันแบบเห็นเบราว์เซอร์
+npm run test:ui                   # เปิด UI Mode ของ Playwright (เลือกเคส, ดู timeline, รันซ้ำได้)
 npm start                         # เปิดเว็บเองที่ http://localhost:3000 (เอกสารอยู่ที่ /docs)
 npm run build:pages               # สร้าง dist/ แบบเดียวกับที่ขึ้น Cloudflare Pages
 ```
@@ -167,7 +168,12 @@ npx playwright test --grep "@auth|@profile"        # หลาย tag แบบ 
 npx playwright test --grep @validation --grep-invert @auth   # มีตัวหนึ่ง แต่ไม่เอาอีกตัว
 npx playwright test --grep-invert @destructive     # ข้ามเคสที่ลบข้อมูล
 npx playwright test --list                         # ดูรายการเคสทั้งหมด
+npx playwright test --ui --grep @smoke             # UI Mode เฉพาะบาง tag
 ```
+
+**UI Mode** (`npm run test:ui`) เปิดหน้าต่างของ Playwright ให้กดเลือกเคสมารัน ดู timeline, screenshot ของแต่ละ step,
+network และ console ย้อนหลังได้ และมี watch mode (กดรูปตา) ที่รันใหม่ให้อัตโนมัติเมื่อแก้ไฟล์เทส
+เหมาะกับตอนเขียนหรือไล่ดีบั๊กเคสที่พัง ส่วน CI ให้ใช้ `npm test`
 
 เพิ่มเคสใหม่: ใส่ tag พื้นที่ผ่าน `describe` ที่มีอยู่ และเติม tag ลักษณะเคสถ้าเข้าข่าย
 
