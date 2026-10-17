@@ -416,7 +416,7 @@
   <p>Kind tags in use: <code>@smoke</code> <code>@validation</code> <code>@security</code> <code>@persistence</code> <code>@resilience</code> <code>@destructive</code> <code>@a11y</code> <code>@responsive</code> <code>@contract</code> <code>@characterization</code>, plus area tags <code>@auth</code> <code>@tasks</code> <code>@profile</code> <code>@journey</code>. A test can carry several tags.</p>
 
   <h2 class="sec" id="gaps"><span class="no">7</span>Good to know: current gaps</h2>
-  <div class="note"><b>Unit tests don't run in CI yet.</b> Both <code>smoke.yml</code> and <code>weekend-e2e.yml</code> run only Playwright. The 42 tests in <code>unit/</code> (including contracts C2 and C3) must be run by hand with <code>npm run test:unit</code>. To have them caught automatically, add that step to a workflow.</div>
+  <div class="note"><b>Unit tests run in CI.</b> <code>smoke.yml</code> runs <code>npm run test:unit</code> on every push/PR, and <code>weekend-e2e.yml</code> runs it after Playwright. The tests in <code>unit/</code> (including contracts C2 and C3) can also be run locally with <code>npm run test:unit</code>.</div>
   <div class="note"><b>There is no heartbeat.</b> If GitHub's schedule is disabled or GitHub is down, no message arrives and nobody notices. The README suggests healthchecks.io but it is not wired up.</div>
   <div class="note"><b>Chromium only.</b> Firefox and Safari are not covered.</div>
 

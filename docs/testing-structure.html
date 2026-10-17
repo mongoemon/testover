@@ -424,7 +424,7 @@
   <p>Tag ลักษณะเคสที่ใช้อยู่: <code>@smoke</code> <code>@validation</code> <code>@security</code> <code>@persistence</code> <code>@resilience</code> <code>@destructive</code> <code>@a11y</code> <code>@responsive</code> <code>@contract</code> <code>@characterization</code> และ tag ตามพื้นที่ <code>@auth</code> <code>@tasks</code> <code>@profile</code> <code>@journey</code> เคสหนึ่งมีได้หลาย tag</p>
 
   <h2 class="sec" id="gaps"><span class="no">7</span>สิ่งที่ควรรู้: ช่องว่างตอนนี้</h2>
-  <div class="note"><b>Unit test ยังไม่รันใน CI</b> ทั้ง <code>smoke.yml</code> และ <code>weekend-e2e.yml</code> รันเฉพาะ Playwright เท่านั้น เทส 42 เคสใน <code>unit/</code> (รวม contract C2 และ C3) ต้องสั่ง <code>npm run test:unit</code> เองในเครื่อง ถ้าอยากให้ถูกจับอัตโนมัติ ให้เพิ่ม step นี้ใน workflow</div>
+  <div class="note"><b>Unit test รันใน CI แล้ว</b> <code>smoke.yml</code> รัน <code>npm run test:unit</code> ทุก push/PR และ <code>weekend-e2e.yml</code> รันต่อจาก Playwright เทสใน <code>unit/</code> (รวม contract C2 และ C3) สั่งเองในเครื่องได้ด้วย <code>npm run test:unit</code></div>
   <div class="note"><b>ยังไม่มี heartbeat</b> ถ้า schedule ของ GitHub ถูกปิดหรือล่ม จะไม่มีข้อความเข้าเลยและไม่มีใครรู้ README แนะนำ healthchecks.io แต่ยังไม่ได้ต่อ</div>
   <div class="note"><b>เทส Chromium อย่างเดียว</b> ยังไม่ครอบคลุม Firefox หรือ Safari</div>
 

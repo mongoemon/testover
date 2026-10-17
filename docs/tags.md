@@ -208,7 +208,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
 ## 7. ข้อควรระวัง
 
 - **มี workflow 2 ตัว แยกตาม tag:**
-  - `.github/workflows/smoke.yml` รัน `npm run test:smoke` (`@smoke`) ทุกครั้งที่ push เข้า `main` และทุก pull request — เร็ว ไม่ส่ง webhook
+  - `.github/workflows/smoke.yml` รัน unit + `npx playwright test --grep "@smoke|@characterization"` ทุกครั้งที่ push เข้า `main` และทุก pull request — เร็ว ไม่ส่ง webhook และอัปโหลด `smoke-report` / `allure-report` ทุกรอบ
   - `.github/workflows/weekend-e2e.yml` รัน **ทุกเคส** (`npx playwright test` ไม่ใส่ filter) ทุกเสาร์-อาทิตย์ แล้วแจ้งผล
   ถ้าอยากเพิ่มงานตามกลุ่ม (เช่น `@a11y` ทุก PR ที่แก้ UI) ให้คัดลอก `smoke.yml` แล้วเปลี่ยนคำสั่งเป็น `npx playwright test --grep @a11y`
 - **`--grep` จับแบบ regex กับชื่อทั้งหมด:** ชื่อ tag ที่เป็นส่วนหนึ่งของอีกตัว (เช่น `@auth` กับ `@authz`) จะจับปนกัน ให้ตั้งชื่อ tag ให้ไม่เป็นคำนำหน้าของกันและกัน

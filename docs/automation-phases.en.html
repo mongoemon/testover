@@ -146,7 +146,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
     <div class="who qa"><h4>QA</h4><ul><li>Choose the PR gate (<code>@smoke</code>) and the scheduled full suite</li><li>Set up reporting (Allure) and notification (<code>scripts/notify.mjs</code>)</li></ul></div>
     <div class="who dev"><h4>Dev</h4><ul><li>Own workflows, secrets and environments</li><li>Own a red build on their own PR</li></ul></div>
   </div>
-  <p class="here"><b>In testover:</b> <code>smoke.yml</code> runs unit + smoke on every push/PR · <code>weekend-e2e.yml</code> runs everything Sat–Sun 09:00 Thailand time with unit, Allure and notification · <code>cloudflare-pages.yml</code> publishes docs and reports</p>
+  <p class="here"><b>In testover:</b> <code>smoke.yml</code> runs unit + smoke + characterization on every push/PR · <code>weekend-e2e.yml</code> runs everything Sat–Sun 09:00 Thailand time with unit, Allure and notification · <code>cloudflare-pages.yml</code> publishes docs and reports</p>
   <div class="exit"><b>Exit condition:</b> A PR that turns smoke/unit/contract red cannot merge, and the full result reaches the team unprompted.</div>
 </article>
 <article class="phase " id="p6">

@@ -48,7 +48,7 @@ scripts/
   notify.mjs        อ่านผลเทสแล้วส่งเข้า webhook
   build-pages.mjs   รวมเว็บ + docs/ + README.md ไว้ใน dist/ ให้ Cloudflare Pages
 .github/workflows/
-  smoke.yml         ชุดเร็ว @smoke ทุกครั้งที่ push เข้า main และทุก pull request
+  smoke.yml         ชุดเร็ว (unit + @smoke + @characterization) ทุกครั้งที่ push เข้า main และทุก pull request
   weekend-e2e.yml   รันทุกเคสเสาร์-อาทิตย์ตามเวลาที่ตั้ง แล้วแจ้งผลเข้า webhook
 playwright.config.ts
 ```
@@ -117,11 +117,11 @@ npm run notify
 
 | ไฟล์ | เมื่อไหร่ | รันอะไร | แจ้ง webhook |
 |---|---|---|---|
-| `smoke.yml` | push เข้า `main`, ทุก pull request, กดรันเอง | `@smoke` 5 เคส (~ไม่กี่นาที) | ไม่ส่ง (ดูผลที่แท็บ Actions / ช่อง checks ของ PR) |
+| `smoke.yml` | push เข้า `main`, ทุก pull request, กดรันเอง | unit + `@smoke` + `@characterization` (50 เคส Playwright รอบเดียว ~ไม่กี่นาที) | ไม่ส่ง (ดูผลที่แท็บ Actions / ช่อง checks ของ PR) |
 | `weekend-e2e.yml` | เสาร์-อาทิตย์ 09:00 เวลาไทย, กดรันเอง | **ทั้ง 127 เคส** | ส่งทุกครั้ง ผ่านหรือพัง |
 
 `smoke.yml` ยกเลิกรอบเก่าให้อัตโนมัติถ้ามี push ใหม่เข้ามาที่ branch เดียวกัน (`concurrency`)
-และอัปโหลดรายงานเฉพาะตอนพัง ถ้าอยากให้ PR ต้องผ่านก่อน merge ให้ตั้ง branch protection → Require status checks → เลือก `smoke`
+และอัปโหลดรายงานทุกรอบ (artifact `smoke-report` = Playwright HTML, `allure-report` = Allure) พร้อมตารางสรุปผลในหน้า run และ annotation บน PR ถ้าอยากให้ PR ต้องผ่านก่อน merge ให้ตั้ง branch protection → Require status checks → เลือก `smoke`
 
 ### Accessibility ด้วย axe
 

@@ -129,7 +129,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <div class="k"><b>At the edge · Contract</b> locks the minimum agreement consumers need → generic: Pact, schema validation · testover: zod in <code>contracts/schemas.mjs</code></div>
 <div class="o"><b>Appearance · Visual snapshot</b> catches UI drift while other tests stay green → Playwright <code>toHaveScreenshot()</code> in Docker (Linux) · testover: <code>tests/visual.spec.ts</code>, 5 screens</div>
 <div class="i"><b>Fast · Unit</b> logic that needs no browser, and where characterization tests are later converted to → node:test · testover: <code>unit/*.test.mjs</code></div>
-<div class="o"><b>Orchestration · CI</b> ordered fast to slow to save resources → GitHub Actions / GitLab CI · testover: <code>smoke.yml</code> (unit + smoke on every PR), <code>weekend-e2e.yml</code> (full suite)</div>
+<div class="o"><b>Orchestration · CI</b> ordered fast to slow to save resources → GitHub Actions / GitLab CI · testover: <code>smoke.yml</code> (unit + smoke + characterization on every PR), <code>weekend-e2e.yml</code> (full suite)</div>
 </div>
 <h3>Practices that make it workable</h3>
 <div class="tw"><table><tbody>

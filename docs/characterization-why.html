@@ -129,7 +129,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <div class="k"><b>ที่ขอบระบบ · Contract</b> ล็อกข้อตกลงขั้นต่ำที่ผู้ใช้ข้อมูลต้องการ → ทั่วไป: Pact, schema validation · testover: zod ใน <code>contracts/schemas.mjs</code></div>
 <div class="o"><b>หน้าตา · Visual snapshot</b> จับ UI ที่เพี้ยนทั้งที่ test อื่นผ่าน → Playwright <code>toHaveScreenshot()</code> + Docker (Linux) · testover: <code>tests/visual.spec.ts</code> 5 หน้าจอ</div>
 <div class="i"><b>เร็ว · Unit</b> logic ที่ไม่ต้องใช้ browser และเป็นที่ที่ characterization มักถูกแปลงไปอยู่ในภายหลัง → node:test · testover: <code>unit/*.test.mjs</code></div>
-<div class="o"><b>ควบคุม · CI</b> เรียงเร็วไปช้า ประหยัด resource → GitHub Actions / GitLab CI · testover: <code>smoke.yml</code> (unit + smoke ทุก PR), <code>weekend-e2e.yml</code> (ชุดเต็ม)</div>
+<div class="o"><b>ควบคุม · CI</b> เรียงเร็วไปช้า ประหยัด resource → GitHub Actions / GitLab CI · testover: <code>smoke.yml</code> (unit + smoke + characterization ทุก PR), <code>weekend-e2e.yml</code> (ชุดเต็ม)</div>
 </div>
 <h3>ตัวช่วยให้ใช้ได้จริง</h3>
 <div class="tw"><table><tbody>

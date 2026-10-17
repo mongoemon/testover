@@ -163,7 +163,7 @@
       <tr><td><code>playwright.config.ts</code></td><td>ตั้งค่า retry, เก็บหลักฐานตอนพัง, เปิดเว็บให้เอง, สร้าง <code>results.json</code></td></tr>
       <tr><td><code>scripts/notify.mjs</code></td><td>อ่าน <code>results.json</code> แล้วส่งข้อความเข้า <code>WEBHOOK_URL</code></td></tr>
       <tr><td><code>tests/a11y.spec.ts</code></td><td>axe ตรวจ accessibility (WCAG 2.1 A/AA) ทุกหน้าและทุกสถานะสำคัญ รวมโหมดมืด</td></tr>
-      <tr><td><code>.github/workflows/smoke.yml</code></td><td>ชุดเร็ว <code>@smoke</code> ทุกครั้งที่ push เข้า <code>main</code> และทุก pull request (ไม่ส่ง webhook)</td></tr>
+      <tr><td><code>.github/workflows/smoke.yml</code></td><td>ชุดเร็ว unit + <code>@smoke</code> + <code>@characterization</code> ทุกครั้งที่ push เข้า <code>main</code> และทุก pull request พร้อม report Playwright และ Allure (ไม่ส่ง webhook)</td></tr>
       <tr><td><code>.github/workflows/weekend-e2e.yml</code></td><td>รันทุกเคสเสาร์-อาทิตย์ตามเวลาที่ตั้ง แล้วแจ้งผลเข้า webhook</td></tr>
     </tbody>
   </table>

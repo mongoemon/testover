@@ -146,7 +146,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
     <div class="who qa"><h4>QA</h4><ul><li>เลือกชุดที่ gate PR (<code>@smoke</code>) กับชุดเต็มที่รันตามเวลา</li><li>ตั้ง report (Allure) และการแจ้งเตือน (<code>scripts/notify.mjs</code>)</li></ul></div>
     <div class="who dev"><h4>Dev</h4><ul><li>ดูแล workflow / secret / environment</li><li>รับผิดชอบ build ที่แดงบน PR ของตัวเอง</li></ul></div>
   </div>
-  <p class="here"><b>ใน testover:</b> <code>smoke.yml</code> รัน unit + smoke ทุก push/PR · <code>weekend-e2e.yml</code> รันชุดเต็มทุกเสาร์-อาทิตย์ 09:00 เวลาไทย พร้อม unit, Allure และแจ้งเตือน · <code>cloudflare-pages.yml</code> publish docs และ report</p>
+  <p class="here"><b>ใน testover:</b> <code>smoke.yml</code> รัน unit + smoke + characterization ทุก push/PR · <code>weekend-e2e.yml</code> รันชุดเต็มทุกเสาร์-อาทิตย์ 09:00 เวลาไทย พร้อม unit, Allure และแจ้งเตือน · <code>cloudflare-pages.yml</code> publish docs และ report</p>
   <div class="exit"><b>เงื่อนไขทางออก:</b> PR ที่ทำให้ smoke/unit/contract แดง merge ไม่ได้ และผลชุดเต็มถึงทีมโดยไม่ต้องมีคนไปกด</div>
 </article>
 <article class="phase " id="p6">
