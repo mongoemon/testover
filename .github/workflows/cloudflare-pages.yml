@@ -1,6 +1,7 @@
 name: Publish site
 
-# Publishes docs/ plus the latest Allure and Playwright reports to Cloudflare Pages.
+# Publishes the demo app at "/", docs/ at /docs, and the latest Allure and Playwright reports
+# (hub page at /status/) to Cloudflare Pages.
 # Does not touch weekend-e2e.yml or smoke.yml: it only reads the artifacts that
 # Weekend E2E already uploads (allure-report, playwright-report).
 # Needs repo secrets CLOUDFLARE_API_TOKEN and CLOUDFLARE_ACCOUNT_ID; the project
@@ -15,6 +16,9 @@ on:
     paths:
       - 'docs/**'
       - '.github/pages/**'
+      - 'app/**'
+      - 'scripts/build-pages.mjs'
+      - 'README.md'
       - '.github/workflows/cloudflare-pages.yml'
   workflow_dispatch:
 
@@ -61,15 +65,16 @@ jobs:
           SITE_SHA: ${{ github.sha }}
           REPORT_SHA: ${{ steps.run.outputs.report_sha }}
         run: |
-          mkdir -p _site/reports/allure _site/reports/playwright
-          cp -r docs _site/docs
-          cp README.md _site/README.md
-          cp .github/pages/index.html _site/index.html
+          # "/" must stay the demo app (same output as `npm run build:pages`); the report hub lives at /status/.
+          node scripts/build-pages.mjs
+          cp -r dist _site
+          mkdir -p _site/reports/allure _site/reports/playwright _site/status
+          cp .github/pages/index.html _site/status/index.html
           # Stamp the commits on the landing page so a visitor knows which version they are looking at.
           sed -i \
             -e "s/__SITE_SHA_SHORT__/${SITE_SHA:0:7}/g" -e "s/__SITE_SHA__/${SITE_SHA}/g" \
             -e "s/__REPORT_SHA_SHORT__/${REPORT_SHA:0:7}/g" -e "s/__REPORT_SHA__/${REPORT_SHA}/g" \
-            _site/index.html
+            _site/status/index.html
           touch _site/.nojekyll
 
       - name: Download Allure report
