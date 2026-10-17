@@ -55,11 +55,35 @@ playwright.config.ts
 
 ## 2. รันในเครื่อง
 
-ต้องมี Node.js 20 ขึ้นไป
+### ตั้งค่าเครื่องใหม่ (ครั้งแรก)
+
+ต้องมี:
+- **Node.js 22 ขึ้นไป** (`node -v`) รุ่น 20 ใช้ไม่ได้ เพราะ `npm run test:unit` ใช้ glob ของ `node --test` ที่มีตั้งแต่ Node 21
+- **Git**
+- **Java 8 ขึ้นไป**: เฉพาะถ้าจะใช้คำสั่ง `allure:*` ส่วนเทสปกติไม่ต้องมี
 
 ```bash
-npm install
-npx playwright install chromium   # ครั้งแรกครั้งเดียว
+git clone https://github.com/mongoemon/testover.git
+cd testover
+npm ci                            # ติดตั้งตาม package-lock.json เป๊ะ ไม่แก้ไฟล์ lock
+npx playwright install chromium   # Linux ใช้ --with-deps chromium เพื่อลง library ของระบบด้วย
+```
+
+เช็กว่าเครื่องพร้อม:
+
+```bash
+npm run test:unit   # ต้องเห็น pass 50, fail 0
+npm test            # ต้องเห็น 127 passed (เปิดเว็บให้เองอัตโนมัติ)
+npm start           # เปิด http://localhost:3000/docs/overview.html อ่านเอกสารได้
+```
+
+- ใช้ `npm ci` แทน `npm install` เพื่อให้ได้ dependency รุ่นเดียวกับเครื่องอื่นและ CI ถ้าใช้ `npm install` แล้ว `package-lock.json` เปลี่ยน อย่า commit ไฟล์นั้นถ้าไม่ได้ตั้งใจอัปเดต dependency
+- ไม่ต้องตั้ง `.env` หรือ secret อะไรในเครื่อง `WEBHOOK_URL` ใช้แค่บน GitHub Actions (หัวข้อ 5) ถ้าอยากลองส่งจริงจากเครื่องให้ใส่ตอนรัน: `WEBHOOK_URL=<url> npm run notify`
+- ไม่ต้องลง Wrangler หรือตั้งค่า Cloudflare ในเครื่อง การ deploy ทำผ่าน push เข้า `main` (ดู [เปิดอ่านเอกสาร](#เปิดอ่านเอกสาร))
+
+### คำสั่งที่ใช้บ่อย
+
+```bash
 npm test                          # รันทุกเคส (เปิดเว็บให้เองอัตโนมัติ)
 npm run report                    # เปิดรายงาน HTML
 npm run test:headed               # รันแบบเห็นเบราว์เซอร์
