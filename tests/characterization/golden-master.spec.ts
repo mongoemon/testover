@@ -3,7 +3,7 @@
 // catches fields nobody thought to assert (new keys, changed ids, leaked values).
 // If one fails, read the diff and decide: unintended -> fix the app; intended -> review the
 // change, then run `npm run test:characterization -- --update-snapshots` and commit the diff.
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/evidence';
 import { ALICE, AuthPage, DEMO, ProfilePage, TasksPage, signIn } from '../support/pages';
 import { maskVolatile, snapshotStorage } from '../support/golden';
 

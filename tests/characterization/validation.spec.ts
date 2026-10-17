@@ -1,7 +1,7 @@
 // Characterization tests: pin down what the app does TODAY at its input boundaries.
 // They record reality, not intent. If one fails, decide deliberately whether the
 // behaviour change is wanted, then update the expectation.
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/evidence';
 import { AuthPage, ProfilePage, TasksPage, signIn, DEMO, type Account } from '../support/pages';
 import { readJson } from '../support/storage';
 

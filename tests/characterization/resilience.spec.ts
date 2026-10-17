@@ -1,6 +1,6 @@
 // Characterization of how the app boots from unexpected localStorage content and
 // how the router behaves. Records current behaviour, including surprising parts.
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/evidence';
 import { DEMO, TasksPage } from '../support/pages';
 import { dumpStorage, readJson, readRaw, seedStorage } from '../support/storage';
 

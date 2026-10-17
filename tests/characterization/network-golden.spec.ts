@@ -4,7 +4,7 @@
 //     appearing here is a real behavior change, e.g. a tracker or a new backend call).
 // Failure workflow is the same as golden-master.spec.ts: read the diff, then fix the app or run
 // `npm run test:characterization -- --update-snapshots` and commit the reviewed change.
-import { expect, test } from '@playwright/test';
+import { expect, test } from '../support/evidence';
 import { ALICE, AuthPage, DEMO, TasksPage, signIn } from '../support/pages';
 import { recordTraffic, snapshotResponses, type RouteProbe } from '../support/network';
 

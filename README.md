@@ -37,6 +37,7 @@ app/
   server.mjs        เซิร์ฟเวอร์ static เล็กๆ (ไม่ต้องติดตั้งอะไรเพิ่ม) เสิร์ฟทั้งเว็บและ docs/
 tests/
   support/pages.ts  Page Object (AuthPage, TasksPage, ProfilePage) + ข้อมูลผู้ใช้ทดสอบ
+  support/evidence.ts  fixture ที่แนบ localStorage จริงเข้า report ทุกเคสใน characterization/
   login.spec.ts     สมัครสมาชิก, login/logout, route guard, session, 404, title
   tasks.spec.ts     เพิ่ม/แก้/ลบ/ติ๊กเสร็จ, ค้นหา, กรอง, clear completed, ข้อมูลคงอยู่หลัง reload
   profile.spec.ts   เปลี่ยนชื่อ, เปลี่ยนรหัสผ่าน, dark mode, ลบบัญชี
@@ -178,6 +179,23 @@ network และ console ย้อนหลังได้ และมี watc
 เพิ่มเคสใหม่: ใส่ tag พื้นที่ผ่าน `describe` ที่มีอยู่ และเติม tag ลักษณะเคสถ้าเข้าข่าย
 
 อธิบายทุก tag, กรณีที่ควรใช้ตัวไหน และคำสั่งทั้งหมด: [docs/tags.md](docs/tags.md)
+
+### หลักฐาน localStorage ในรายงาน (เคส `characterization/`)
+
+localStorage ของเบราว์เซอร์ในเทสอยู่ในหน่วยความจำและหายเมื่อเทสจบ ไม่มีไฟล์ให้เปิดดู
+ทุกเคสใน `tests/characterization/` จึงแนบค่าจริงที่แอปเก็บไว้เข้า report ให้อัตโนมัติหลังเทสจบ (ทั้งเคสที่ผ่านและล้ม)
+เพื่อใช้เทียบกับ snapshot ที่ commit ไว้ใน `tests/__screenshots__/characterization/`
+
+```bash
+npx playwright test tests/characterization   # รันชุด characterization
+npm run report                               # เปิดรายงาน HTML แล้วคลิกเคสที่ต้องการ
+```
+
+- ในรายงานจะเห็น attachment ชื่อ `actual-localStorage.json` ถ้าเคสเปิดหลายหน้าจะแยกเป็น `actual-localStorage-page1.json`, `-page2.json`
+- เนื้อหาผ่านการจัดรูปแบบเดียวกับที่ใช้เทียบ golden master (เรียง key, mask timestamp เป็น `<TIMESTAMP>` และ UUID เป็น `<UUID>`) จึงเทียบกับ snapshot ได้ตรงๆ
+- เคสที่ไม่เปิดหน้าเว็บ เช่น `server responses for known and unknown routes` (ใช้ `request` ล้วน) จะไม่มี attachment
+- ทำงานผ่าน fixture อัตโนมัติใน [tests/support/evidence.ts](tests/support/evidence.ts) ไฟล์ spec ใหม่ในโฟลเดอร์นี้ต้อง import `test` และ `expect` จาก `../support/evidence` แทน `@playwright/test` ถึงจะได้หลักฐานเช่นกัน
+- ข้อมูลที่แนบอาจมีรหัสผ่านทดสอบ (เช่น `s3cretpass`) ถ้าวันหนึ่งใช้ข้อมูลจริงต้อง mask ก่อน
 
 ผู้ใช้ทดสอบ: `demo` / `demo1234` (มีให้ในแอปตั้งแต่เริ่ม) และ `alice` / `s3cretpass` (สมัครใหม่ในเทส) เป็นข้อมูลสมมติ
 แต่ละเคสเริ่มด้วย browser context ใหม่ จึงไม่มีข้อมูลค้างข้ามเคส
