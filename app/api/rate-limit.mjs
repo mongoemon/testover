@@ -8,9 +8,18 @@ const MAX_TRACKED_CLIENTS = 10_000;
 
 const counters = new Map(); // `${bucket}|${ip}` -> { count, resetAt }
 
-/** The caller's address: the last X-Forwarded-For entry (added by our own proxy) when trusted. */
+/**
+ * The caller's address. Behind a trusted proxy (TRUST_PROXY=1) it is, in order:
+ *  1. the header named by CLIENT_IP_HEADER, if set (e.g. cf-connecting-ip: Cloudflare sets it on
+ *     every request and overwrites whatever the client sent, so it cannot be spoofed);
+ *  2. the last X-Forwarded-For entry (added by our own proxy).
+ * Without a trusted proxy it is the socket address.
+ */
 export function clientAddress(request) {
   if (trustsProxy()) {
+    const named = process.env.CLIENT_IP_HEADER?.trim().toLowerCase();
+    const fromHeader = named ? request.headers[named] : undefined;
+    if (typeof fromHeader === 'string' && fromHeader.trim() !== '') return fromHeader.trim();
     const forwarded = String(request.headers['x-forwarded-for'] ?? '').split(',').map((part) => part.trim()).filter(Boolean);
     if (forwarded.length > 0) return forwarded[forwarded.length - 1];
   }

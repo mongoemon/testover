@@ -149,6 +149,41 @@ describe('public mode: rate limits', () => {
   });
 });
 
+describe('public mode: client address header', () => {
+  const badRegistration = (headers) => call('POST', '/api/users', { body: { username: 'x' }, headers });
+
+  test('CLIENT_IP_HEADER wins over X-Forwarded-For, whose entries may change between requests', async () => {
+    process.env.HARDENED = '1';
+    process.env.TRUST_PROXY = '1';
+    process.env.CLIENT_IP_HEADER = 'CF-Connecting-IP';
+    try {
+      // the proxy chain's last entry differs every time (as with a CDN edge), the client does not
+      for (let i = 0; i < 20; i += 1) {
+        const headers = { 'CF-Connecting-IP': '5.6.7.8', 'X-Forwarded-For': `5.6.7.8, edge-${i}` };
+        assert.equal((await badRegistration(headers)).status, 422);
+      }
+      const blocked = await badRegistration({ 'CF-Connecting-IP': '5.6.7.8', 'X-Forwarded-For': '5.6.7.8, edge-new' });
+      assert.equal(blocked.status, 429);
+      const other = await badRegistration({ 'CF-Connecting-IP': '9.9.9.9', 'X-Forwarded-For': '9.9.9.9, edge-0' });
+      assert.equal(other.status, 422);
+    } finally {
+      delete process.env.CLIENT_IP_HEADER;
+    }
+  });
+
+  test('falls back to X-Forwarded-For when the named header is missing', async () => {
+    process.env.HARDENED = '1';
+    process.env.TRUST_PROXY = '1';
+    process.env.CLIENT_IP_HEADER = 'cf-connecting-ip';
+    try {
+      for (let i = 0; i < 20; i += 1) assert.equal((await badRegistration({ 'X-Forwarded-For': '1.1.1.1, 10.0.0.1' })).status, 422);
+      assert.equal((await badRegistration({ 'X-Forwarded-For': '1.1.1.1, 10.0.0.1' })).status, 429);
+    } finally {
+      delete process.env.CLIENT_IP_HEADER;
+    }
+  });
+});
+
 describe('Content-Security-Policy', () => {
   const hash = (text) => `'sha256-${createHash('sha256').update(text, 'utf8').digest('base64')}'`;
 

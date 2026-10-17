@@ -22,3 +22,7 @@ services:
       # Render's proxy appends the caller's address to X-Forwarded-For.
       - key: TRUST_PROXY
         value: "1"
+      # Render sits behind Cloudflare, whose edge IP changes between requests, so the last
+      # X-Forwarded-For entry is no use as a client key. Cloudflare sets this header itself.
+      - key: CLIENT_IP_HEADER
+        value: cf-connecting-ip
