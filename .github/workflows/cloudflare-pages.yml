@@ -49,13 +49,27 @@ jobs:
                    --jq '[.[] | select(.status=="completed")][0].databaseId // empty')
           fi
           echo "id=${id}" >> "$GITHUB_OUTPUT"
+          # Commit the reports were produced from (may differ from the commit being deployed).
+          sha=""
+          if [ -n "${id}" ]; then
+            sha=$(gh run view "${id}" --repo "${{ github.repository }}" --json headSha --jq '.headSha // empty')
+          fi
+          echo "report_sha=${sha:-none}" >> "$GITHUB_OUTPUT"
 
       - name: Assemble site
+        env:
+          SITE_SHA: ${{ github.sha }}
+          REPORT_SHA: ${{ steps.run.outputs.report_sha }}
         run: |
           mkdir -p _site/reports/allure _site/reports/playwright
           cp -r docs _site/docs
           cp README.md _site/README.md
           cp .github/pages/index.html _site/index.html
+          # Stamp the commits on the landing page so a visitor knows which version they are looking at.
+          sed -i \
+            -e "s/__SITE_SHA_SHORT__/${SITE_SHA:0:7}/g" -e "s/__SITE_SHA__/${SITE_SHA}/g" \
+            -e "s/__REPORT_SHA_SHORT__/${REPORT_SHA:0:7}/g" -e "s/__REPORT_SHA__/${REPORT_SHA}/g" \
+            _site/index.html
           touch _site/.nojekyll
 
       - name: Download Allure report
