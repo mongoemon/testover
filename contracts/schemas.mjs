@@ -1,54 +1,60 @@
 // Executable contracts for the boundaries the project crosses.
-//   C1 localStorage data written/read by app/index.html
+//   C1 localStorage data written/read by app/index.html (session token and theme)
 //   C2 the slice of Playwright's JSON report that scripts/notify.mjs reads
 //   C3 the body POSTed to the webhook
+//   C4 the JSON the API (app/api/) sends to the browser
 // Plain ESM so node:test (unit/) and Playwright (tests/) can both import it.
 import { z } from 'zod';
 
-// ---------- C1: localStorage ----------
+// ---------- C1: localStorage (the browser keeps only the session token and the theme) ----------
 export const PRIORITY_VALUES = ['low', 'medium', 'high'];
 
 export const storageKeys = {
-  users: 'tb.users',
   session: 'tb.session',
   theme: 'tb.theme',
-  tasks: (username) => `tb.tasks.${username}`,
 };
 
-// Strict on purpose: a new field written by the app must be a conscious contract change,
-// and `.parse()` must not silently strip it before a test compares the result.
-const isTrimmed = (value) => value === value.trim();
-
-export const userRecordSchema = z
-  .object({
-    password: z.string().min(8), // the app enforces >= 8 on register and password change
-    displayName: z.string().min(1).refine(isTrimmed, 'displayName must be trimmed'),
-  })
-  .strict();
-
-/** Mirrors USERNAME_RE in app/index.html. */
-export const usernameSchema = z.string().regex(/^[a-z0-9_]{3,20}$/);
-
-/** `tb.users`: username -> record. */
-export const usersSchema = z.record(usernameSchema, userRecordSchema);
-
-/** `tb.session`: the signed-in username. */
-export const sessionSchema = z.string();
+/** `tb.session`: the bearer token the API issued at login or registration. */
+export const sessionTokenSchema = z.string().uuid();
 
 /** `tb.theme` */
 export const themeSchema = z.enum(['light', 'dark']);
 
+// ---------- C4: JSON API (see contracts/openapi.yaml) ----------
+// Strict on purpose: a new field in a response must be a conscious contract change,
+// and `.parse()` must not silently strip it before a test compares the result.
+const isTrimmed = (value) => value === value.trim();
+
+/** Mirrors USERNAME_RE in app/api/validation.mjs. */
+export const usernameSchema = z.string().regex(/^[a-z0-9_]{3,20}$/);
+
+export const userSchema = z
+  .object({
+    username: usernameSchema,
+    displayName: z.string().min(1).refine(isTrimmed, 'displayName must be trimmed'),
+  })
+  .strict();
+
+export const sessionResponseSchema = z.object({ token: sessionTokenSchema, user: userSchema }).strict();
+
 export const taskSchema = z
   .object({
-    id: z.number().int(),
+    id: z.number().int().positive(),
     title: z.string().min(1).max(80).refine(isTrimmed, 'title must be trimmed'), // MAX_TITLE = 80
     priority: z.enum(PRIORITY_VALUES),
     done: z.boolean(),
   })
   .strict();
 
-/** `tb.tasks.<username>` */
-export const tasksSchema = z.array(taskSchema);
+export const tasksResponseSchema = z.object({ tasks: z.array(taskSchema) }).strict();
+
+export const errorResponseSchema = z
+  .object({
+    error: z
+      .object({ code: z.string().min(1), message: z.string().min(1), details: z.array(z.string()).optional() })
+      .strict(),
+  })
+  .strict();
 
 // ---------- C2: Playwright JSON report (only the fields notify.mjs depends on) ----------
 export const reportSuiteSchema = z.lazy(() =>

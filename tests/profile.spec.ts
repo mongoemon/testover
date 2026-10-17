@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/evidence';
 import { ALICE, AuthPage, DEMO, ProfilePage, TasksPage, signIn } from './support/pages';
 
 test.describe('Profile', { tag: '@profile' }, () => {

@@ -1,0 +1,340 @@
+openapi: 3.0.3
+info:
+  title: Task Board API
+  version: 2026.10.18
+  description: |
+    JSON API behind the Task Board demo app (code in app/api/). In-memory, resets on restart.
+
+    Every request may carry an `X-Tenant` header. Tenants are isolated worlds (users, tasks,
+    sessions); the test suite sends a different one per test so tests can run in parallel.
+    Without the header the shared `default` tenant is used. Each tenant starts with the
+    account `demo` / `demo1234`.
+servers:
+  - url: http://localhost:3000
+x-public-mode: |
+  With HARDENED=1 the shared `demo` account answers 403 (`demo_protected`) to PATCH /api/me,
+  PUT /api/me/password and DELETE /api/me; X-Tenant is ignored; and every route can answer 429
+  (`rate_limited`, with Retry-After): 300 requests a minute per client, 20 for the routes that hash a password.
+tags:
+  - name: health
+  - name: users
+  - name: sessions
+  - name: tasks
+
+paths:
+  /api/health:
+    get:
+      tags: [health]
+      summary: Liveness check
+      responses:
+        '200':
+          description: The server is up
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [status]
+                properties:
+                  status: { type: string, enum: [ok] }
+
+  /api/users:
+    post:
+      tags: [users]
+      summary: Register an account and sign in
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/RegisterRequest' }
+      responses:
+        '201':
+          description: Account created; the response signs the new user in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '409': { $ref: '#/components/responses/UsernameTaken' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /api/sessions:
+    post:
+      tags: [sessions]
+      summary: Sign in
+      description: After 10 failed attempts for one username within a minute the API answers 429 (`too_many_attempts`, with `Retry-After`).
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema: { $ref: '#/components/schemas/LoginRequest' }
+      responses:
+        '201':
+          description: Signed in
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Session' }
+        '401':
+          description: Username and password do not match (same answer for unknown users)
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [sessions]
+      summary: Sign out (ends the token used for this call)
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Signed out }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/me:
+    get:
+      tags: [users]
+      summary: The signed-in user
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: The user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    patch:
+      tags: [users]
+      summary: Change the display name
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [displayName]
+              properties:
+                displayName: { type: string, minLength: 1, maxLength: 100 }
+      responses:
+        '200':
+          description: The updated user
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/User' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [users]
+      summary: Delete the account, its tasks and all its sessions
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Account deleted }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/me/password:
+    put:
+      tags: [users]
+      summary: Change the password
+      description: Checked in this order - current password (403), new password length (422), confirmation (422).
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [currentPassword, newPassword, confirmPassword]
+              properties:
+                currentPassword: { type: string }
+                newPassword: { type: string, minLength: 8, maxLength: 200 }
+                confirmPassword: { type: string }
+      responses:
+        '204': { description: Password changed }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '403':
+          description: The current password is incorrect
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+
+  /api/tasks:
+    get:
+      tags: [tasks]
+      summary: The signed-in user's tasks, oldest first
+      security: [{ bearerAuth: [] }]
+      responses:
+        '200':
+          description: The tasks
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [tasks]
+                properties:
+                  tasks:
+                    type: array
+                    items: { $ref: '#/components/schemas/Task' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+    post:
+      tags: [tasks]
+      summary: Add a task
+      description: The id comes from a per-user counter that only grows, so a deleted task's id is never reused. At most 200 tasks per user (422 limit_reached).
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              required: [title]
+              properties:
+                title: { type: string, minLength: 1, maxLength: 80, description: Trimmed before it is stored }
+                priority: { $ref: '#/components/schemas/Priority' }
+      responses:
+        '201':
+          description: The new task
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [tasks]
+      summary: Delete every completed task
+      security: [{ bearerAuth: [] }]
+      parameters:
+        - name: completed
+          in: query
+          required: true
+          description: Must be `true`; the call is refused without it so it can never wipe the list by accident.
+          schema: { type: string, enum: ['true'] }
+      responses:
+        '204': { description: Completed tasks deleted }
+        '400':
+          description: The `completed=true` filter is missing
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Error' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+
+  /api/tasks/{id}:
+    parameters:
+      - name: id
+        in: path
+        required: true
+        schema: { type: integer, minimum: 1 }
+    patch:
+      tags: [tasks]
+      summary: Change a task (send any of title, priority, done)
+      security: [{ bearerAuth: [] }]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              minProperties: 1
+              properties:
+                title: { type: string, minLength: 1, maxLength: 80 }
+                priority: { $ref: '#/components/schemas/Priority' }
+                done: { type: boolean }
+      responses:
+        '200':
+          description: The updated task
+          content:
+            application/json:
+              schema: { $ref: '#/components/schemas/Task' }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/TaskNotFound' }
+        '422': { $ref: '#/components/responses/ValidationFailed' }
+    delete:
+      tags: [tasks]
+      summary: Delete a task
+      security: [{ bearerAuth: [] }]
+      responses:
+        '204': { description: Task deleted }
+        '401': { $ref: '#/components/responses/Unauthenticated' }
+        '404': { $ref: '#/components/responses/TaskNotFound' }
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      description: The `token` returned by POST /api/users or POST /api/sessions.
+
+  schemas:
+    Priority:
+      type: string
+      enum: [low, medium, high]
+      default: medium
+    User:
+      type: object
+      additionalProperties: false
+      required: [username, displayName]
+      properties:
+        username: { type: string, pattern: '^[a-z0-9_]{3,20}$' }
+        displayName: { type: string, minLength: 1 }
+    Session:
+      type: object
+      additionalProperties: false
+      required: [token, user]
+      properties:
+        token: { type: string, format: uuid }
+        user: { $ref: '#/components/schemas/User' }
+    Task:
+      type: object
+      additionalProperties: false
+      required: [id, title, priority, done]
+      properties:
+        id: { type: integer, minimum: 1 }
+        title: { type: string, minLength: 1, maxLength: 80 }
+        priority: { $ref: '#/components/schemas/Priority' }
+        done: { type: boolean }
+    RegisterRequest:
+      type: object
+      required: [username, displayName, password]
+      properties:
+        username: { type: string, description: 'Trimmed and lower-cased; 3-20 of a-z, 0-9, _' }
+        displayName: { type: string, minLength: 1, maxLength: 100 }
+        password: { type: string, minLength: 8, maxLength: 200 }
+    LoginRequest:
+      type: object
+      required: [username, password]
+      properties:
+        username: { type: string, description: Case-insensitive, surrounding spaces ignored }
+        password: { type: string }
+    Error:
+      type: object
+      additionalProperties: false
+      required: [error]
+      properties:
+        error:
+          type: object
+          additionalProperties: false
+          required: [code, message]
+          properties:
+            code: { type: string, example: validation_failed }
+            message: { type: string }
+            details:
+              type: array
+              description: Every problem found, in form order (validation_failed only)
+              items: { type: string }
+
+  responses:
+    Unauthenticated:
+      description: Missing, unknown or ended bearer token
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    ValidationFailed:
+      description: The body broke a rule; `details` lists every problem
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    UsernameTaken:
+      description: The username is already registered in this tenant
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }
+    TaskNotFound:
+      description: No such task for the signed-in user
+      content:
+        application/json:
+          schema: { $ref: '#/components/schemas/Error' }

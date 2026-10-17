@@ -174,7 +174,7 @@
         <div class="who">สิ่งที่ถูกทดสอบ</div>
         <h3>เว็บ Task Board ที่สร้างไว้ในโปรเจกต์</h3>
         <p>ผู้ใช้สมัคร/login → เพิ่มงานพร้อมระดับความสำคัญ → ติ๊กเสร็จ แก้ ลบ ค้นหา กรอง → ตั้งค่าโปรไฟล์ เปลี่ยนรหัสผ่าน เปิด dark mode หรือลบบัญชี</p>
-        <p>ข้อมูลเก็บใน localStorage ของเบราว์เซอร์ ไม่ต้องมี backend จึงรันง่ายและผลคงที่</p>
+        <p>ข้อมูลเก็บใน memory ของ backend เล็กๆ ที่มากับแอป (/api) เริ่มด้วย npm start คำสั่งเดียว ไม่ต้องติดตั้งฐานข้อมูล และแต่ละเทสแยกข้อมูลด้วย header X-Tenant จึงผลคงที่</p>
         <div class="out"><b>ไฟล์:</b> <code>app/index.html</code>, <code>app/server.mjs</code> · ผู้ใช้ทดลอง <code>demo</code> / <code>demo1234</code></div>
       </div>
     </li>
@@ -264,7 +264,7 @@ npm test                          # รันทั้ง 127 เคส</pre>
     </table>
   </div>
 
-  <div class="note"><strong>ข้อควรระวัง:</strong> แอปนี้เก็บรหัสผ่านเป็นข้อความธรรมดาใน localStorage โดยตั้งใจ เพื่อให้เทสได้โดยไม่ต้องมี backend ห้ามนำแบบนี้ไปใช้กับงานจริง และ Webhook URL คือรหัสลับ ให้เก็บใน GitHub Secrets เท่านั้น</div>
+  <div class="note"><strong>ข้อควรระวัง:</strong> แอปนี้เป็นเดโม: backend เก็บข้อมูลใน memory (หายเมื่อ restart) และบัญชี demo/demo1234 เป็นของสาธารณะ ห้ามใช้รหัสผ่านจริงกับแอปนี้ และ Webhook URL คือรหัสลับ ให้เก็บใน GitHub Secrets เท่านั้น</div>
 
   <section class="next" id="next">
     <h2>ไปต่อที่ไหนดี</h2>

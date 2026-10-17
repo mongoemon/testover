@@ -1,10 +1,13 @@
 {
-  "tb.session": "demo",
-  "tb.theme": "dark",
-  "tb.users": {
-    "demo": {
+  "localStorage": {
+    "tb.session": "<UUID>",
+    "tb.theme": "dark"
+  },
+  "server": {
+    "me": {
       "displayName": "Demo Renamed",
-      "password": "brand-new-pw"
-    }
+      "username": "demo"
+    },
+    "tasks": []
   }
 }

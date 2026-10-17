@@ -2,17 +2,17 @@ import type { APIRequestContext, Page, Request } from '@playwright/test';
 import { maskVolatile } from './golden';
 
 /** Response headers worth pinning; everything else (Date, Connection, ...) varies per run. */
-const STABLE_HEADERS = ['content-type', 'allow', 'location'] as const;
+const STABLE_HEADERS = ['content-type', 'allow', 'location', 'cache-control'] as const;
 
 export interface RouteProbe {
-  readonly method: 'GET' | 'HEAD' | 'POST' | 'DELETE';
+  readonly method: 'GET' | 'HEAD' | 'POST' | 'PUT' | 'DELETE';
   readonly path: string;
 }
 
 /**
  * Calls each route and returns the response "shape" as stable JSON text for toMatchSnapshot().
  * HTML/markdown bodies are reduced to ETag presence + non-empty flag so editing a doc does not
- * break the golden; small text bodies (404/405) are kept verbatim.
+ * break the golden; small text and JSON bodies (404/405, API errors) are kept verbatim.
  */
 export async function snapshotResponses(request: APIRequestContext, probes: readonly RouteProbe[]): Promise<string> {
   const entries: Record<string, unknown>[] = [];
@@ -20,7 +20,8 @@ export async function snapshotResponses(request: APIRequestContext, probes: read
     const response = await request.fetch(probe.path, { method: probe.method, maxRedirects: 0 });
     const headers = response.headers();
     const body = await response.text();
-    const isText = (headers['content-type'] ?? '').startsWith('text/plain');
+    const contentType = headers['content-type'] ?? '';
+    const isText = contentType.startsWith('text/plain') || contentType.startsWith('application/json');
     entries.push({
       request: `${probe.method} ${probe.path}`,
       status: response.status(),

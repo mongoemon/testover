@@ -168,7 +168,7 @@
         <div class="who">What gets tested</div>
         <h3>The Task Board app built into this project</h3>
         <p>A user signs up or logs in → adds tasks with a priority → ticks them done, edits, deletes, searches and filters → updates their profile, changes the password, turns on dark mode, or deletes the account.</p>
-        <p>Data lives in the browser's localStorage with no backend, so the app is easy to run and gives stable results.</p>
+        <p>Data lives in the memory of a small backend (/api) that ships with the app. One command (npm start) runs it, no database is needed, and every test isolates its data with an X-Tenant header, so results are stable.</p>
         <div class="out"><b>Files:</b> <code>app/index.html</code>, <code>app/server.mjs</code> · demo user <code>demo</code> / <code>demo1234</code></div>
       </div>
     </li>
@@ -258,7 +258,7 @@ npm test                          # run all 127 tests</pre>
     </table>
   </div>
 
-  <div class="note"><strong>Heads up:</strong> the app stores passwords as plain text in localStorage on purpose, so it can be tested without a backend. Never do this in a real product. Your webhook URL is a secret: keep it in GitHub Secrets only.</div>
+  <div class="note"><strong>Heads up:</strong> this is a demo backend: data lives in memory and resets on restart, and the demo/demo1234 account is public. Never use a real password here. Your webhook URL is a secret: keep it in GitHub Secrets only.</div>
 
   <section class="next" id="next">
     <h2>Where to go next</h2>

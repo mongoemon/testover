@@ -129,7 +129,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
     <div class="who qa"><h4>QA</h4><ul><li>Express each agreement as a zod schema in <code>contracts/schemas.mjs</code></li><li>Write tests proving the app and scripts really honour the schema</li><li>Build fixtures for pass / fail / empty cases</li></ul></div>
     <div class="who dev"><h4>Dev</h4><ul><li>State what valid data looks like (lengths, types, required fields)</li><li>Review schemas against intent, not just current code</li><li>Change the schema in the same PR when adding a field</li></ul></div>
   </div>
-  <p class="here"><b>In testover:</b> C1 localStorage → <code>tests/contracts/storage.spec.ts</code> · C2 Playwright report and C3 webhook body → <code>unit/contracts.test.mjs</code>. Schemas are <code>.strict()</code> on purpose, so a new field is a conscious contract change.</p>
+  <p class="here"><b>In testover:</b> C1 localStorage (token + theme) → <code>tests/contracts/storage.spec.ts</code> · C4 API JSON → <code>tests/contracts/api.spec.ts</code> (spec: <code>contracts/openapi.yaml</code>) · C2 Playwright report and C3 webhook body → <code>unit/contracts.test.mjs</code>. Schemas are <code>.strict()</code> on purpose, so a new field is a conscious contract change.</p>
   <div class="exit"><b>Exit condition:</b> Every boundary the system crosses has one schema, imported by both unit tests and Playwright.</div>
 </article>
 <article class="phase char" id="p3">
@@ -139,7 +139,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
     <div class="who qa"><h4>QA</h4><ul><li>Walk the boundaries: username 2/3/20/21 chars, forbidden characters, trim/lowercase</li><li>Walk abnormal states: corrupt or wrong-typed storage data</li><li>Name odd behaviours <code>QUIRK:</code> so they are easy to find</li></ul></div>
     <div class="who dev"><h4>Dev</h4><ul><li>Decide case by case whether the behaviour is intended or a bug</li><li>Bug → open a ticket, then change the test with the fix</li><li>Intended → keep it and note the reason in a comment</li></ul></div>
   </div>
-  <p class="here"><b>In testover:</b> <code>tests/characterization/validation.spec.ts</code> and <code>resilience.spec.ts</code> and <code>golden-master.spec.ts</code> (5 whole-localStorage snapshots in <code>tests/__screenshots__/characterization/</code>), 42 tests, 3 named QUIRK, e.g. a new password stored as plain text, or an array in <code>tb.users</code> locking everyone out. (The unit suite also characterizes the exact notify messages.)</p>
+  <p class="here"><b>In testover:</b> <code>tests/characterization/validation.spec.ts</code> and <code>resilience.spec.ts</code> and <code>golden-master.spec.ts</code> (5 whole-state snapshots, localStorage plus what the server holds, in <code>tests/__screenshots__/characterization/</code>) and <code>network-golden.spec.ts</code>, 46 tests. Tests named GUARD pin behaviour that used to be a QUIRK and was fixed by the backend, e.g. passwords are now hashed and task ids are never reused. (The unit suite also characterizes the exact notify messages.)</p>
   <div class="exit"><b>Exit condition:</b> Every boundary you will touch has a passing test of today's behaviour, and each QUIRK has an owner decision.</div>
 </article>
 <article class="phase " id="p4">
@@ -186,7 +186,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <h2 class="sec" id="cmd"><span class="no">07</span>Commands</h2><p class="sub">Run a single layer by tag.</p>
 <pre>npm run test:unit             # unit + C2/C3 contracts (node:test)
 npm run test:contract         # all contracts (unit + @contract)
-npm run test:characterization # 42 characterization tests
+npm run test:characterization # 46 characterization tests
 npm run test:smoke            # 5 fast tests for PRs
 npm run test:safe             # everything except @destructive
 npm run test:visual           # compare 5 screens (in Docker)

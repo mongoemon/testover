@@ -129,7 +129,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
     <div class="who qa"><h4>QA</h4><ul><li>แปลงข้อตกลงเป็น zod schema ใน <code>contracts/schemas.mjs</code></li><li>เขียน test ที่ตรวจว่า app และสคริปต์ “เคารพ” schema จริง</li><li>ทำ fixture ตัวอย่างทั้งกรณี pass / fail / ว่าง</li></ul></div>
     <div class="who dev"><h4>Dev</h4><ul><li>เป็นคนบอกว่าข้อมูลที่ถูกต้องหน้าตาเป็นอย่างไร (ความยาว ชนิด field บังคับ)</li><li>review schema ว่าตรงเจตนา ไม่ใช่แค่ตรงโค้ดปัจจุบัน</li><li>ถ้าจะเพิ่ม field ใหม่ ต้องแก้ schema ใน PR เดียวกัน</li></ul></div>
   </div>
-  <p class="here"><b>ใน testover:</b> C1 localStorage → <code>tests/contracts/storage.spec.ts</code> · C2 รายงาน Playwright และ C3 body ของ webhook → <code>unit/contracts.test.mjs</code> Schema เป็น <code>.strict()</code> โดยตั้งใจ field ใหม่จึงเป็นการเปลี่ยน contract อย่างรู้ตัว</p>
+  <p class="here"><b>ใน testover:</b> C1 localStorage (token + theme) → <code>tests/contracts/storage.spec.ts</code> · C4 JSON ของ API → <code>tests/contracts/api.spec.ts</code> (spec: <code>contracts/openapi.yaml</code>) · C2 รายงาน Playwright และ C3 body ของ webhook → <code>unit/contracts.test.mjs</code> Schema เป็น <code>.strict()</code> โดยตั้งใจ field ใหม่จึงเป็นการเปลี่ยน contract อย่างรู้ตัว</p>
   <div class="exit"><b>เงื่อนไขทางออก:</b> ทุกขอบเขตที่ข้ามระบบมี schema เดียว ที่ทั้ง unit และ Playwright import ใช้ร่วมกัน</div>
 </article>
 <article class="phase char" id="p3">
@@ -139,7 +139,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
     <div class="who qa"><h4>QA</h4><ul><li>ไล่ boundary: username 2/3/20/21 ตัวอักษร, อักขระต้องห้าม, trim/lowercase</li><li>ไล่สถานะผิดปกติ: ข้อมูลใน storage เสียหรือผิดชนิด</li><li>ตั้งชื่อ test ที่เป็นพฤติกรรมแปลก ๆ ว่า <code>QUIRK:</code> เพื่อค้นง่าย</li></ul></div>
     <div class="who dev"><h4>Dev</h4><ul><li>ตัดสินใจเป็นรายข้อว่าพฤติกรรมนี้ “ตั้งใจ” หรือ “บั๊ก”</li><li>บั๊ก → เปิด ticket แล้วแก้ test พร้อมโค้ด</li><li>ตั้งใจ → ปล่อยไว้ และเขียนเหตุผลเป็นคอมเมนต์</li></ul></div>
   </div>
-  <p class="here"><b>ใน testover:</b> <code>tests/characterization/validation.spec.ts</code> และ <code>resilience.spec.ts</code> และ <code>golden-master.spec.ts</code> (snapshot ของ localStorage ทั้งก้อน 5 ชุดใน <code>tests/__screenshots__/characterization/</code>) รวม 42 test มี 3 ตัวชื่อ QUIRK เช่น รหัสผ่านใหม่ถูกเก็บเป็น plain text, หรือ array ใน <code>tb.users</code> ทำให้ทุกคนล็อกอินไม่ได้ (ฝั่ง unit ก็มี characterization ของข้อความ notify ด้วย)</p>
+  <p class="here"><b>ใน testover:</b> <code>tests/characterization/validation.spec.ts</code> และ <code>resilience.spec.ts</code> และ <code>golden-master.spec.ts</code> (snapshot ของ state ทั้งก้อน คือ localStorage กับข้อมูลฝั่ง server 5 ชุด ใน <code>tests/__screenshots__/characterization/</code>) และ <code>network-golden.spec.ts</code> รวม 46 test ตัวที่ชื่อ GUARD คือพฤติกรรมที่เคยเป็น QUIRK แล้วถูกแก้ด้วย backend เช่น รหัสผ่านถูก hash แล้ว และ id ของงานไม่ถูกใช้ซ้ำ (ฝั่ง unit ก็มี characterization ของข้อความ notify ด้วย)</p>
   <div class="exit"><b>เงื่อนไขทางออก:</b> ทุก boundary ที่จะแตะมี test ที่ผ่านด้วยพฤติกรรมปัจจุบัน และ QUIRK ทุกข้อมีเจ้าของตัดสินใจ</div>
 </article>
 <article class="phase " id="p4">
@@ -186,7 +186,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <h2 class="sec" id="cmd"><span class="no">07</span>คำสั่งที่ใช้</h2><p class="sub">รันเฉพาะชั้นที่ต้องการได้ด้วย tag</p>
 <pre>npm run test:unit             # unit + contract C2/C3 (node:test)
 npm run test:contract         # contract ทั้งหมด (unit + @contract)
-npm run test:characterization # characterization 42 test
+npm run test:characterization # characterization 46 test
 npm run test:smoke            # 5 test เร็ว ๆ สำหรับ PR
 npm run test:safe             # ทุกอย่างยกเว้น @destructive
 npm run test:visual           # เทียบภาพ 5 หน้าจอ (ใน Docker)

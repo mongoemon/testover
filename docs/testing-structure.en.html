@@ -254,7 +254,12 @@
     <div class="chain">
       <div class="node">App<small>app/index.html</small></div>
       <div class="arrow">C1</div>
-      <div class="node">localStorage<small>tb.users · tb.session · tb.theme · tb.tasks.&lt;user&gt;</small></div>
+      <div class="node">localStorage<small>tb.session (token) · tb.theme</small></div>
+    </div>
+    <div class="chain">
+      <div class="node">App<small>app/index.html</small></div>
+      <div class="arrow">C4</div>
+      <div class="node">API<small>/api · contracts/openapi.yaml</small></div>
     </div>
     <div class="chain">
       <div class="node">Playwright<small>run results</small></div>
@@ -275,8 +280,13 @@
       <tbody>
         <tr>
           <td><b>C1</b> localStorage</td>
-          <td>The app may only write the listed keys, and the data must have the right shape. For example every task must be <code>{ id: integer, title: string, priority: low|medium|high, done: boolean }</code>, ids must be unique, the session must name a user that exists, and tasks must belong to an existing user.</td>
+          <td>The app may only write <code>tb.session</code> (a UUID token) and <code>tb.theme</code>. Users and tasks are no longer stored in the browser (a task such as <code>{ id, title, priority: low|medium|high, done }</code> is checked under C4).</td>
           <td><code>tests/contracts/storage.spec.ts</code> drives the real UI (register, add/edit/delete tasks, change profile, delete account, switch users) and checks storage after each step.</td>
+        </tr>
+        <tr>
+          <td><b>C4</b> API JSON</td>
+          <td>Every response must match the schemas in <code>contracts/schemas.mjs</code> (and <code>contracts/openapi.yaml</code>): user, session, task, and one error shape <code>{ error: { code, message, details? } }</code> everywhere. Two users never see each other's tasks, and a token is useless in another tenant.</td>
+          <td><code>tests/contracts/api.spec.ts</code> calls the API directly with Playwright's <code>request</code>.</td>
         </tr>
         <tr>
           <td><b>C2</b> Playwright report</td>
@@ -323,19 +333,18 @@
       <thead><tr><th>File</th><th>Records that</th></tr></thead>
       <tbody>
         <tr><td><code>validation.spec.ts</code></td><td>The limits of every form: username length (3 to 20 characters; letters, digits and underscore only), password minimum of 8, task title up to 80, the order of checks (username before password; current password, then length, then confirmation), usernames ignore case but passwords do not, and every failed login shows the same message.</td></tr>
-        <tr><td><code>resilience.spec.ts</code></td><td>How the app boots from odd storage (broken JSON, wrong types, good and bad tasks mixed, a strange theme) and the redirect rule of every route, including each page's title.</td></tr>
+        <tr><td><code>resilience.spec.ts</code></td><td>How the app boots from odd storage (a broken or wrong-typed session, a token the server does not know, keys left by the old localStorage version, a strange theme), how task ids are counted, what the page shows when the server is unreachable, and the redirect rule of every route, including each page's title.</td></tr>
         <tr><td><code>unit/contracts.test.mjs</code></td><td>The exact text <code>notify.mjs</code> builds from each kind of report, and that a run with zero tests counts as PASS.</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="quote">
-    <b>Tests whose names start with QUIRK</b> record behaviour that is probably unintended but is written down as it really is. There are 4 right now:
+    <b>Tests whose names start with QUIRK</b> record behaviour that is probably unintended but is written down as it really is. There are none left right now (an array in storage, broken tasks being dropped and the plain-text password went away with the move to a backend). Tests starting with GUARD are behaviours that are deliberately locked:
     <ul>
       <li>Names like <code>__proto__</code> and <code>constructor</code> can be registered.</li>
-      <li>If <code>tb.users</code> is stored as an array, the app does not repair it and nobody can log in.</li>
-      <li>Malformed tasks are merely hidden, then permanently dropped on the next change.</li>
-      <li>A new password is stored as plain text (deliberate, because this is a demo app).</li>
+      <li>A deleted task's id is never handed out again (the localStorage version reused it).</li>
+      <li>A new password is hashed on the server: after a change only the new one signs in.</li>
     </ul>
     When these bugs get fixed, the QUIRK tests will fail. That is a good sign: update the expected value to the new, correct behaviour.
   </div>

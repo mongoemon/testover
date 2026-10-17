@@ -122,8 +122,8 @@
     <div class="eyebrow">testover · user journey</div>
     <h1>What can a user do on the site?</h1>
     <p class="lead">Task Board is a small to-do site. This page follows a user step by step: what they can do, where they go next and what they see when they get something wrong, with diagrams you can trace by eye.</p>
-    <a class="try" href="../">Open the live app</a>
-    <span class="try-note">Sign in with demo / demo1234</span>
+    <a class="try" href="../">How to run the app</a>
+    <span class="try-note">Run it locally with npm start, then sign in with demo / demo1234</span>
   </header>
 
   <h2 class="sec" id="can-do">What users can do</h2>
@@ -172,9 +172,9 @@
   </div>
 
   <h2 class="sec">Good to know</h2>
-  <ul class="rules"><li><b>Data lives only in this browser.</b> It is kept in localStorage with no backend, so switching browsers or clearing site data loses it. Every account has its own task list.</li><li><b>Usernames are case-insensitive.</b> They are lowercased for you and may only use a–z, 0–9 and _.</li><li><b>You must sign in for Tasks and Profile.</b> Typing the URL directly sends you to Sign in with a notice; a signed-in user opening Sign in or Register is sent to Tasks.</li><li><b>Unknown URLs</b> show Page not found with a link back home.</li><li><b>The version badge</b> in the bottom-right corner opens the change log when you press and hold for about 0.6 seconds (keyboard: Enter or Space).</li><li><b>The Docs link</b> in the top bar and on the Sign in page leads to this documentation.</li></ul>
+  <ul class="rules"><li><b>Data lives on the server.</b> Accounts and tasks are kept in the backend's memory, so you can sign in from any browser and see the same data, but everything resets when the server restarts. The browser keeps only your session and theme. Every account has its own task list.</li><li><b>Usernames are case-insensitive.</b> They are lowercased for you and may only use a–z, 0–9 and _.</li><li><b>You must sign in for Tasks and Profile.</b> Typing the URL directly sends you to Sign in with a notice; a signed-in user opening Sign in or Register is sent to Tasks.</li><li><b>Unknown URLs</b> show Page not found with a link back home.</li><li><b>The version badge</b> in the bottom-right corner opens the change log when you press and hold for about 0.6 seconds (keyboard: Enter or Space).</li><li><b>The Docs link</b> in the top bar and on the Sign in page leads to this documentation.</li></ul>
 
-  <div class="note"><strong>Heads-up:</strong> This is a demo app for practising tests. Passwords are stored as plain text in localStorage on purpose, so never use a real password.</div>
+  <div class="note"><strong>Heads-up:</strong> This is a demo app for practising tests. Data lives in the server's memory and resets on restart, and the demo account is shared, so never use a real password.</div>
 
   <section class="next">
     <h2>Read next</h2>

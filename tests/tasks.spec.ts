@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/evidence';
 import { DEMO, TasksPage, signIn } from './support/pages';
 
 test.describe('Task board', { tag: '@tasks' }, () => {

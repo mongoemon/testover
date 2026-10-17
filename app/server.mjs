@@ -8,11 +8,16 @@
 //   404 unknown path (including a docs file that does not exist)
 //   405 other methods on a known path (Allow: GET, HEAD)
 //   500 index file unreadable
+//   /api/*  JSON API, see app/api/ and contracts/openapi.yaml
 import { createServer } from 'node:http';
 import { createHash } from 'node:crypto';
 import { readFile } from 'node:fs/promises';
 import { fileURLToPath } from 'node:url';
 import { dirname, join } from 'node:path';
+import { RESET_INTERVAL_MS, isHardened } from './api/config.mjs';
+import { handleApi, isApiPath } from './api/router.mjs';
+import { resetDefaultTenant } from './api/store.mjs';
+import { policyFor } from './csp.mjs';
 
 const PORT = Number(process.env.PORT ?? 3000);
 const appDir = dirname(fileURLToPath(import.meta.url));
@@ -41,8 +46,15 @@ function resolveFile(pathname) {
   return null;
 }
 
+// Sent with every static response, so pages cannot be framed or have their type guessed.
+const SECURITY_HEADERS = {
+  'X-Content-Type-Options': 'nosniff',
+  'X-Frame-Options': 'DENY',
+  'Referrer-Policy': 'no-referrer',
+};
+
 function send(response, status, headers = {}, body = '') {
-  response.writeHead(status, headers);
+  response.writeHead(status, { ...SECURITY_HEADERS, ...headers });
   response.end(body);
 }
 
@@ -58,6 +70,11 @@ const server = createServer(async (request, response) => {
   const pathname = parsePathname(request.url);
   if (pathname === null) {
     send(response, 400, { 'Content-Type': 'text/plain' }, 'Bad request');
+    return;
+  }
+
+  if (isApiPath(pathname)) {
+    await handleApi(request, response, new URL(request.url, 'http://localhost'));
     return;
   }
 
@@ -85,6 +102,7 @@ const server = createServer(async (request, response) => {
       return;
     }
     const headers = { 'Content-Type': file.type, ETag: etag };
+    if (file.type === HTML) headers['Content-Security-Policy'] = policyFor(body.toString('utf8'));
     send(response, 200, headers, request.method === 'HEAD' ? '' : body);
   } catch (error) {
     // A missing docs file is just an unknown page; only the app's own index is a server fault.
@@ -92,9 +110,13 @@ const server = createServer(async (request, response) => {
       send(response, 404, { 'Content-Type': 'text/plain' }, 'Not found');
       return;
     }
-    send(response, 500, { 'Content-Type': 'text/plain' }, `Server error: ${error.message}`);
+    // the reason goes to the log, not to the visitor (it can contain file system paths)
+    process.stderr.write(`Static file error for ${pathname}: ${error.stack ?? error}\n`);
+    send(response, 500, { 'Content-Type': 'text/plain' }, 'Server error');
   }
 });
+
+if (isHardened()) setInterval(resetDefaultTenant, RESET_INTERVAL_MS).unref();
 
 server.listen(PORT, () => {
   process.stdout.write(`App listening on http://localhost:${PORT}\n`);

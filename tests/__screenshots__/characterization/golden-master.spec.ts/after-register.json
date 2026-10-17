@@ -1,13 +1,12 @@
 {
-  "tb.session": "alice",
-  "tb.users": {
-    "alice": {
+  "localStorage": {
+    "tb.session": "<UUID>"
+  },
+  "server": {
+    "me": {
       "displayName": "Alice Tester",
-      "password": "s3cretpass"
+      "username": "alice"
     },
-    "demo": {
-      "displayName": "Demo User",
-      "password": "demo1234"
-    }
+    "tasks": []
   }
 }

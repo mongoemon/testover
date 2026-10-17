@@ -39,3 +39,20 @@ export async function snapshotStorage(page: Page): Promise<string> {
   const parsed = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, parseStored(value)]));
   return `${maskVolatile(JSON.stringify(sortKeys(parsed), null, 2))}\n`;
 }
+
+/**
+ * Everything the app persisted, as stable text for toMatchSnapshot(): the browser's localStorage
+ * plus what the server holds for the signed-in user (profile and tasks, read through the API).
+ */
+export async function snapshotState(page: Page): Promise<string> {
+  const raw = await dumpStorage(page);
+  const stored = Object.fromEntries(Object.entries(raw).map(([key, value]) => [key, parseStored(value)]));
+  const token = typeof stored['tb.session'] === 'string' ? stored['tb.session'] : null;
+  let server: unknown = null;
+  if (token !== null) {
+    const headers = { Authorization: `Bearer ${token}` };
+    const [me, tasks] = await Promise.all([page.request.get('/api/me', { headers }), page.request.get('/api/tasks', { headers })]);
+    server = { me: await me.json(), tasks: (await tasks.json()).tasks };
+  }
+  return `${maskVolatile(JSON.stringify(sortKeys({ localStorage: stored, server }), null, 2))}\n`;
+}

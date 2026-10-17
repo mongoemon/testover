@@ -1,1 +1,7 @@
+DELETE /api/tasks/1 [fetch]
 GET / [document]
+GET /api/me [fetch]
+GET /api/tasks [fetch]
+PATCH /api/tasks/1 [fetch]
+POST /api/tasks [fetch]
+POST /api/users [fetch]

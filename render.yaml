@@ -1,0 +1,24 @@
+# Render blueprint for hosting the app and its API (render.com > New > Blueprint > this repo).
+# NOT TESTED against a real Render account: check the first deploy's logs and /api/health.
+#
+# The server has no runtime dependencies, so there is nothing to install or build.
+# After it is live, set the GitHub repo variable APP_URL to the service URL; the next Pages deploy
+# then shows an "Open the app" button on the landing page (see scripts/build-pages.mjs).
+services:
+  - type: web
+    name: testover-app
+    runtime: node
+    plan: free
+    buildCommand: echo "nothing to build"
+    startCommand: node app/server.mjs
+    healthCheckPath: /api/health
+    autoDeploy: true
+    envVars:
+      - key: NODE_VERSION
+        value: "22"
+      # Public mode: read-only shared demo account, per-IP rate limits, hourly reset (app/api/config.mjs).
+      - key: HARDENED
+        value: "1"
+      # Render's proxy appends the caller's address to X-Forwarded-For.
+      - key: TRUST_PROXY
+        value: "1"

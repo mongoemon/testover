@@ -1,95 +1,60 @@
-// Characterization of how the app boots from unexpected localStorage content and
-// how the router behaves. Records current behaviour, including surprising parts.
+// Characterization of how the app boots from unexpected localStorage content, how the server
+// numbers tasks, and how the router behaves. Records current behaviour, including surprising parts.
+// Users and tasks live on the server now, so the only browser state that can be "unexpected" is the
+// session token and the theme; malformed API input is characterized in unit/api.test.mjs.
 import { expect, test } from '../support/evidence';
-import { DEMO, TasksPage } from '../support/pages';
-import { dumpStorage, readJson, readRaw, seedStorage } from '../support/storage';
+import { DEMO, TasksPage, signIn } from '../support/pages';
+import { serverTasks } from '../support/server';
+import { dumpStorage, readRaw, seedStorage } from '../support/storage';
 
-const users = (extra: Record<string, unknown> = {}): string =>
-  JSON.stringify({ demo: { password: DEMO.password, displayName: DEMO.displayName }, ...extra });
+const UNKNOWN_TOKEN = '3f1c0d0e-0000-4000-8000-000000000000';
 
 test.describe('Boot from unexpected storage @characterization @resilience', () => {
-  test('corrupted tb.users is silently replaced by the seeded demo account', async ({ page }) => {
-    await seedStorage(page, { 'tb.users': '{not json' });
-    expect(await readJson(page, 'tb.users')).toEqual({ demo: { password: 'demo1234', displayName: 'Demo User' } });
-  });
-
-  test('an absent tb.users is seeded with the demo account on first load', async ({ page }) => {
+  test('a first load stores nothing', async ({ page }) => {
     await seedStorage(page, {});
-    expect(Object.keys((await readJson(page, 'tb.users')) as object)).toEqual(['demo']);
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    expect(await dumpStorage(page)).toEqual({});
   });
 
-  test('QUIRK: tb.users stored as an array is not replaced and locks everyone out', async ({ page }) => {
-    await seedStorage(page, { 'tb.users': '[]' });
-    expect(await readRaw(page, 'tb.users')).toBe('[]');
-    await page.goto('/#/login');
-    await page.getByLabel('Username', { exact: true }).fill('demo');
-    await page.getByLabel('Password', { exact: true }).fill('demo1234');
-    await page.getByRole('button', { name: 'Login' }).click();
-    await expect(page.getByRole('alert')).toHaveText('Username and password do not match');
-  });
-
-  test('a session that names an unknown user counts as signed out', async ({ page }) => {
-    await seedStorage(page, { 'tb.users': users(), 'tb.session': JSON.stringify('ghost') });
+  test('a session value that is not valid JSON counts as signed out', async ({ page }) => {
+    await seedStorage(page, { 'tb.session': '{not json' });
     await page.goto('/#/tasks');
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     await expect(page.getByRole('status')).toHaveText('Please sign in to continue');
   });
 
   test('a non-string session counts as signed out', async ({ page }) => {
-    await seedStorage(page, { 'tb.users': users(), 'tb.session': JSON.stringify({ username: 'demo' }) });
+    await seedStorage(page, { 'tb.session': JSON.stringify({ username: 'demo' }) });
     await page.goto('/#/tasks');
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
     await expect(page.getByRole('status')).toHaveText('Please sign in to continue');
   });
 
-  test('only well-formed tasks are shown; the rest are ignored but not erased', async ({ page }) => {
-    const mixed = [
-      { id: 1, title: 'valid', priority: 'low', done: false },
-      { id: '2', title: 'string id', priority: 'low', done: false },
-      { id: 3, title: 'bad priority', priority: 'urgent', done: false },
-      { id: 4, title: 'bad done', priority: 'low', done: 'no' },
-      { id: 5.5, title: 'fractional id', priority: 'low', done: false },
-      null,
-      'text',
-    ];
-    await seedStorage(page, {
-      'tb.users': users(),
-      'tb.session': JSON.stringify('demo'),
-      'tb.tasks.demo': JSON.stringify(mixed),
-    });
+  test('a token the server does not know counts as signed out and is forgotten', async ({ page }) => {
+    await seedStorage(page, { 'tb.session': JSON.stringify(UNKNOWN_TOKEN) });
     await page.goto('/#/tasks');
-    const tasks = new TasksPage(page);
-    await tasks.expectTitles(['valid']);
-    expect(await readJson(page, 'tb.tasks.demo')).toEqual(mixed);
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+    await expect(page.getByRole('status')).toHaveText('Please sign in to continue');
+    expect(await readRaw(page, 'tb.session')).toBeNull();
   });
 
-  test('QUIRK: the first change after loading invalid tasks permanently drops them', async ({ page }) => {
-    await seedStorage(page, {
-      'tb.users': users(),
-      'tb.session': JSON.stringify('demo'),
-      'tb.tasks.demo': JSON.stringify([{ id: 1, title: 'ok', priority: 'low', done: false }, { id: 'x' }]),
-    });
+  test('a token that names a user (the old storage format) is not accepted', async ({ page }) => {
+    await seedStorage(page, { 'tb.session': JSON.stringify('demo') });
     await page.goto('/#/tasks');
-    await new TasksPage(page).add('new one');
-    expect(await readJson(page, 'tb.tasks.demo')).toEqual([
-      { id: 1, title: 'ok', priority: 'low', done: false },
-      { id: 2, title: 'new one', priority: 'medium', done: false },
-    ]);
+    await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   });
 
-  test('new ids continue after the highest stored id, not the count', async ({ page }) => {
-    await seedStorage(page, {
-      'tb.users': users(),
-      'tb.session': JSON.stringify('demo'),
-      'tb.tasks.demo': JSON.stringify([
-        { id: 9, title: 'nine', priority: 'low', done: false },
-        { id: 2, title: 'two', priority: 'low', done: true },
-      ]),
-    });
-    await page.goto('/#/tasks');
-    await new TasksPage(page).add('after');
-    const stored = (await readJson(page, 'tb.tasks.demo')) as Array<{ id: number }>;
-    expect(stored.map((task) => task.id)).toEqual([9, 2, 10]);
+  test('keys written by the old localStorage version are ignored and left alone', async ({ page }) => {
+    const legacy = {
+      'tb.users': JSON.stringify({ demo: { password: 'old-secret', displayName: 'Old Demo' } }),
+      'tb.tasks.demo': JSON.stringify([{ id: 1, title: 'from the old version', priority: 'low', done: false }]),
+    };
+    await seedStorage(page, legacy);
+    await signIn(page, DEMO);
+    await expect(page.locator('#greeting')).toHaveText('Hello, Demo User');
+    await expect(page.locator('#task-empty')).toHaveText('No tasks yet. Add your first task above.');
+    expect(await readRaw(page, 'tb.users')).toBe(legacy['tb.users']);
+    expect(await readRaw(page, 'tb.tasks.demo')).toBe(legacy['tb.tasks.demo']);
   });
 
   test('theme: only "dark" turns dark mode on; anything else falls back to light', async ({ page }) => {
@@ -98,16 +63,28 @@ test.describe('Boot from unexpected storage @characterization @resilience', () =
       await expect(page.locator('html')).toHaveAttribute('data-theme', expected);
     }
   });
+});
 
-  test('tasks are stored per user under their own key', async ({ page }) => {
-    await seedStorage(page, {
-      'tb.users': users({ other: { password: 'otherpass1', displayName: 'Other' } }),
-      'tb.session': JSON.stringify('demo'),
-      'tb.tasks.other': JSON.stringify([{ id: 1, title: 'not mine', priority: 'low', done: false }]),
-    });
-    await page.goto('/#/tasks');
-    await expect(page.locator('#task-empty')).toHaveText('No tasks yet. Add your first task above.');
-    expect(Object.keys(await dumpStorage(page)).sort()).toEqual(['tb.session', 'tb.tasks.other', 'tb.users']);
+test.describe('Task ids @characterization @tasks', () => {
+  test('ids keep counting up after a delete, not the count of tasks left', async ({ page }) => {
+    await signIn(page, DEMO);
+    const tasks = new TasksPage(page);
+    for (const title of ['one', 'two', 'three']) await tasks.add(title);
+    await tasks.remove('one');
+    await tasks.add('four');
+    await tasks.expectTitles(['two', 'three', 'four']);
+    expect((await serverTasks(page)).map((task) => task.id)).toEqual([2, 3, 4]);
+  });
+
+  test('GUARD: a deleted task id is never handed out again (the old localStorage version reused it)', async ({ page }) => {
+    await signIn(page, DEMO);
+    const tasks = new TasksPage(page);
+    await tasks.add('first');
+    await tasks.add('second');
+    await tasks.remove('second');
+    await tasks.add('replacement');
+    await tasks.expectTitles(['first', 'replacement']);
+    expect((await serverTasks(page)).map((task) => task.id)).toEqual([1, 3]);
   });
 });
 
@@ -118,13 +95,13 @@ test.describe('Routing rules @characterization @auth', () => {
   });
 
   test('"/" goes to tasks when signed in', async ({ page }) => {
-    await seedStorage(page, { 'tb.users': users(), 'tb.session': JSON.stringify('demo') });
+    await signIn(page, DEMO);
     await page.goto('/#/');
     await expect(page).toHaveURL(/#\/tasks$/);
   });
 
   test('login and register pages bounce a signed-in user to tasks', async ({ page }) => {
-    await seedStorage(page, { 'tb.users': users(), 'tb.session': JSON.stringify('demo') });
+    await signIn(page, DEMO);
     for (const route of ['/#/login', '/#/register']) {
       await page.goto(route);
       await expect(page).toHaveURL(/#\/tasks$/);
@@ -147,10 +124,35 @@ test.describe('Routing rules @characterization @auth', () => {
   });
 
   test('every page sets its own document title', async ({ page }) => {
-    await seedStorage(page, { 'tb.users': users() });
     await page.goto('/#/login');
     await expect(page).toHaveTitle('Task Board — Login');
     await page.goto('/#/register');
     await expect(page).toHaveTitle('Task Board — Register');
+  });
+});
+
+test.describe('When the server cannot be reached @characterization @resilience', () => {
+  test('a failing API shows a retry page instead of a blank screen', async ({ page }) => {
+    await signIn(page, DEMO);
+    await page.route('**/api/tasks', (route) => route.abort('connectionrefused'));
+    await page.reload();
+    await expect(page.getByRole('heading', { name: 'Something went wrong' })).toBeVisible();
+    await expect(page.getByRole('alert')).toHaveText('Cannot reach the server. Check your connection and try again.');
+
+    await page.unroute('**/api/tasks');
+    await page.getByRole('button', { name: 'Try again' }).click();
+    await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible();
+  });
+
+  test('a failed change is reported and the list stays as it was', async ({ page }) => {
+    await signIn(page, DEMO);
+    const tasks = new TasksPage(page);
+    await tasks.add('keeps its place');
+    await page.route('**/api/tasks/*', (route) =>
+      route.fulfill({ status: 500, json: { error: { code: 'server_error', message: 'Something went wrong on the server' } } }),
+    );
+    await tasks.remove('keeps its place');
+    await expect(tasks.alert).toHaveText('Something went wrong on the server');
+    await tasks.expectTitles(['keeps its place']);
   });
 });

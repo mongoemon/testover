@@ -1,7 +1,8 @@
 // Visual snapshot tests: compare key screens pixel-by-pixel against committed baselines.
 // Baselines must be generated on Linux (see scripts/visual.mjs), never on a developer's OS,
 // because fonts and anti-aliasing differ and would fail CI.
-import { expect, test, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { expect, test } from './support/evidence';
 import { AuthPage, ProfilePage, TasksPage, signIn, DEMO } from './support/pages';
 
 // The version badge changes every release; keep it out of the pixel comparison.

@@ -262,7 +262,12 @@
     <div class="chain">
       <div class="node">แอป<small>app/index.html</small></div>
       <div class="arrow">C1</div>
-      <div class="node">localStorage<small>tb.users · tb.session · tb.theme · tb.tasks.&lt;user&gt;</small></div>
+      <div class="node">localStorage<small>tb.session (token) · tb.theme</small></div>
+    </div>
+    <div class="chain">
+      <div class="node">แอป<small>app/index.html</small></div>
+      <div class="arrow">C4</div>
+      <div class="node">API<small>/api · contracts/openapi.yaml</small></div>
     </div>
     <div class="chain">
       <div class="node">Playwright<small>ผลการรัน</small></div>
@@ -283,8 +288,13 @@
       <tbody>
         <tr>
           <td><b>C1</b> localStorage</td>
-          <td>แอปเขียนได้เฉพาะ key ที่กำหนด และรูปข้อมูลต้องตรง เช่น งานแต่ละชิ้นต้องเป็น <code>{ id: จำนวนเต็ม, title: ข้อความ, priority: low|medium|high, done: จริง/เท็จ }</code> id ห้ามซ้ำ session ต้องชี้ไปผู้ใช้ที่มีอยู่จริง และงานต้องเป็นของผู้ใช้ที่มีอยู่</td>
+          <td>แอปเขียนได้เฉพาะ <code>tb.session</code> (token แบบ UUID) กับ <code>tb.theme</code> ผู้ใช้และงานไม่ถูกเก็บในเบราว์เซอร์อีกแล้ว (งานหน้าตาแบบ <code>{ id, title, priority: low|medium|high, done }</code> ถูกตรวจที่ C4)</td>
           <td><code>tests/contracts/storage.spec.ts</code> ขับ UI จริง (สมัคร เพิ่ม/แก้/ลบงาน เปลี่ยนโปรไฟล์ ลบบัญชี สลับผู้ใช้) แล้วตรวจ storage หลังแต่ละขั้น</td>
+        </tr>
+        <tr>
+          <td><b>C4</b> JSON ของ API</td>
+          <td>ทุก response ต้องตรง schema ใน <code>contracts/schemas.mjs</code> (และ <code>contracts/openapi.yaml</code>): user, session, task, และ error รูปเดียวกันหมด <code>{ error: { code, message, details? } }</code> ผู้ใช้สองคนไม่เห็นงานของกันและกัน token ใช้ข้าม tenant ไม่ได้</td>
+          <td><code>tests/contracts/api.spec.ts</code> เรียก API ตรงๆ ด้วย <code>request</code> ของ Playwright</td>
         </tr>
         <tr>
           <td><b>C2</b> รายงาน Playwright</td>
@@ -331,19 +341,18 @@
       <thead><tr><th>ไฟล์</th><th>จดไว้ว่า</th></tr></thead>
       <tbody>
         <tr><td><code>validation.spec.ts</code></td><td>ขอบเขตของทุกฟอร์ม: ความยาว username (3 ถึง 20 ตัว, ใช้ได้เฉพาะตัวอักษร ตัวเลข underscore), รหัสผ่านขั้นต่ำ 8 ตัว, ชื่องานไม่เกิน 80 ตัว, ลำดับการตรวจ (ตรวจ username ก่อนรหัสผ่าน ตรวจรหัสเดิมก่อนความยาวก่อนการยืนยัน), username ไม่สนตัวพิมพ์เล็ก/ใหญ่ แต่รหัสผ่านสนใจ, login ผิดทุกกรณีใช้ข้อความเดียวกัน</td></tr>
-        <tr><td><code>resilience.spec.ts</code></td><td>แอปบูตอย่างไรเมื่อ storage ผิดปกติ (JSON พัง, ข้อมูลผิดชนิด, งานผิดรูปปนกับงานดี, theme แปลก) และกฎการ redirect ของแต่ละ route รวมถึง title ของแต่ละหน้า</td></tr>
+        <tr><td><code>resilience.spec.ts</code></td><td>แอปบูตอย่างไรเมื่อ storage ผิดปกติ (session พัง/ผิดชนิด/token ที่ server ไม่รู้จัก, คีย์เก่าจากเวอร์ชัน localStorage, theme แปลก), การนับ id ของงาน และหน้าจอเมื่อ server ติดต่อไม่ได้ และกฎการ redirect ของแต่ละ route รวมถึง title ของแต่ละหน้า</td></tr>
         <tr><td><code>unit/contracts.test.mjs</code></td><td>ข้อความที่ <code>notify.mjs</code> สร้างจากรายงานแต่ละแบบ ตรงตามตัวอักษร และรายงานที่ไม่มีเทสเลยถูกนับเป็น PASS</td></tr>
       </tbody>
     </table>
   </div>
 
   <div class="quote">
-    <b>เคสที่ขึ้นต้นด้วย QUIRK</b> คือพฤติกรรมที่น่าจะไม่ตั้งใจ แต่จดไว้ตามจริงก่อน ตอนนี้มี 4 เคส:
+    <b>เคสที่ขึ้นต้นด้วย QUIRK</b> คือพฤติกรรมที่น่าจะไม่ตั้งใจ แต่จดไว้ตามจริงก่อน ตอนนี้ไม่มีเคส QUIRK เหลือแล้ว (array ใน storage, งานเสียถูกลบ, รหัสผ่านเป็นข้อความธรรมดา หายไปพร้อมการย้ายไป backend) ส่วนเคสที่ขึ้นต้นด้วย GUARD คือพฤติกรรมที่ตั้งใจล็อกไว้:
     <ul>
       <li>ชื่ออย่าง <code>__proto__</code> และ <code>constructor</code> สมัครได้</li>
-      <li>ถ้า <code>tb.users</code> ถูกเก็บเป็น array แอปจะไม่ซ่อมให้และทุกคน login ไม่ได้</li>
-      <li>งานที่ข้อมูลเสียจะแค่ไม่แสดง แต่ถูกลบถาวรเมื่อมีการเปลี่ยนแปลงครั้งถัดไป</li>
-      <li>รหัสผ่านใหม่ถูกเก็บเป็นข้อความธรรมดา (ตั้งใจเพื่อให้เป็นแอปทดลอง)</li>
+      <li>id ของงานไม่ถูกใช้ซ้ำ (เวอร์ชัน localStorage เคยใช้ซ้ำเมื่อลบงานล่าสุด)</li>
+      <li>รหัสผ่านใหม่ถูก hash บน server: เปลี่ยนแล้วมีแต่รหัสใหม่ที่ login ได้</li>
     </ul>
     เมื่อแก้บั๊กเหล่านี้ในอนาคต เคส QUIRK จะพัง ซึ่งเป็นสัญญาณที่ดี ให้เปลี่ยนค่าที่คาดไว้เป็นพฤติกรรมใหม่ที่ถูกต้อง
   </div>

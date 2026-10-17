@@ -33,18 +33,20 @@
 
 ```
 app/
-  index.html        เว็บที่ใช้เทส (สมัคร/login, task board, โปรไฟล์) เก็บข้อมูลใน localStorage
-  server.mjs        เซิร์ฟเวอร์ static เล็กๆ (ไม่ต้องติดตั้งอะไรเพิ่ม) เสิร์ฟทั้งเว็บและ docs/
+  index.html        เว็บที่ใช้เทส (สมัคร/login, task board, โปรไฟล์) เรียก API ที่ /api (เบราว์เซอร์เก็บแค่ session token กับธีมใน localStorage)
+  server.mjs        เซิร์ฟเวอร์เล็กๆ (ไม่ต้องติดตั้งอะไรเพิ่ม) เสิร์ฟทั้งเว็บ, docs/ และ API ที่ /api
+  api/              backend JSON เก็บใน memory: router, handlers, store, validation (spec: contracts/openapi.yaml)
 tests/
   support/pages.ts  Page Object (AuthPage, TasksPage, ProfilePage) + ข้อมูลผู้ใช้ทดสอบ
-  support/evidence.ts  fixture ที่แนบ localStorage จริงเข้า report ทุกเคสใน characterization/
+  support/evidence.ts  fixture: ส่ง header X-Tenant ไม่ซ้ำต่อเทส (server แยกข้อมูลให้) และแนบ localStorage จริงเข้า report ทุกเคสใน characterization/
+  support/server.ts    อ่านสิ่งที่ server เก็บไว้ผ่าน API (serverTasks, loginStatus)
   login.spec.ts     สมัครสมาชิก, login/logout, route guard, session, 404, title
   tasks.spec.ts     เพิ่ม/แก้/ลบ/ติ๊กเสร็จ, ค้นหา, กรอง, clear completed, ข้อมูลคงอยู่หลัง reload
   profile.spec.ts   เปลี่ยนชื่อ, เปลี่ยนรหัสผ่าน, dark mode, ลบบัญชี
   journey.spec.ts   user journey ต่อเนื่อง, ผู้ใช้ 2 คนข้อมูลแยกกัน, จอมือถือ, ข้อมูลใน storage เสีย
   a11y.spec.ts      ตรวจ accessibility ด้วย axe (WCAG 2.1 A/AA) ทุกหน้าและทุกสถานะสำคัญ
   characterization/ บันทึกพฤติกรรมปัจจุบันที่ขอบเขตของข้อมูล (เพิ่มเข้ามาภายหลัง)
-  contracts/        ตรวจว่าข้อมูลใน localStorage ตรง schema (เพิ่มเข้ามาภายหลัง)
+  contracts/        ตรวจว่า localStorage (token + theme) และ JSON ที่ API ส่งตรง schema (เพิ่มเข้ามาภายหลัง)
 scripts/
   notify.mjs        อ่านผลเทสแล้วส่งเข้า webhook
   build-pages.mjs   รวมเว็บ + docs/ + README.md ไว้ใน dist/ ให้ Cloudflare Pages
@@ -155,9 +157,11 @@ axe ช่วยจับปัญหาได้ส่วนหนึ่ง ไ
 | `@destructive` | ลบบัญชี | 2 |
 | `@a11y` | axe (WCAG 2.1 A/AA), คีย์บอร์ด, title ของหน้า | 16 |
 | `@responsive` | จอมือถือ | 1 |
-| `@characterization` | บันทึกพฤติกรรมปัจจุบันที่ขอบเขตของข้อมูล | 42 |
-| `@golden` | Golden Master: localStorage ทั้งก้อนเทียบ snapshot (อยู่ใน `@characterization`) | 5 |
-| `@contract` | ข้อมูลใน localStorage ตรง schema | 6 |
+| `@characterization` | บันทึกพฤติกรรมปัจจุบันที่ขอบเขตของข้อมูล | 46 |
+| `@golden` | Golden Master: state ทั้งก้อน (localStorage + ข้อมูลฝั่ง server) และ response/traffic เทียบ snapshot (อยู่ใน `@characterization`) | 8 |
+| `@contract` | localStorage (token + theme) และ JSON ที่ API ส่งตรง schema | 15 |
+| `@har` | replay HAR ที่บันทึกไว้ให้หน้าเว็บโดยไม่ต้องมี API | 2 |
+| `@api` | JSON ที่ API ส่ง (สำเร็จและ error) ตรง schema และผู้ใช้แยกข้อมูลกัน (อยู่ใน `@contract`) | 9 |
 
 เคสหนึ่งมีได้หลาย tag (เช่น รหัสผ่านผิดเป็นทั้ง `@validation` และ `@security`)
 จึงตัวเลขรวมในตารางเกิน 127
@@ -198,9 +202,49 @@ npm run report                               # เปิดรายงาน HT
 - ข้อมูลที่แนบอาจมีรหัสผ่านทดสอบ (เช่น `s3cretpass`) ถ้าวันหนึ่งใช้ข้อมูลจริงต้อง mask ก่อน
 
 ผู้ใช้ทดสอบ: `demo` / `demo1234` (มีให้ในแอปตั้งแต่เริ่ม) และ `alice` / `s3cretpass` (สมัครใหม่ในเทส) เป็นข้อมูลสมมติ
-แต่ละเคสเริ่มด้วย browser context ใหม่ จึงไม่มีข้อมูลค้างข้ามเคส
+แต่ละเคสเริ่มด้วย browser context ใหม่และส่ง header `X-Tenant` ไม่ซ้ำกัน server จึงแยกบัญชีกับงานให้ทีละเคส ไม่มีข้อมูลค้างข้ามเคสและรันขนานกันได้
 
-> แอปนี้เก็บรหัสผ่านเป็นข้อความธรรมดาใน localStorage โดยตั้งใจ เพื่อให้เทสได้โดยไม่ต้องมี backend ห้ามนำแบบนี้ไปใช้กับงานจริง
+### Backend (API)
+
+`npm start` เปิดทั้งเว็บและ API ที่ `/api` ด้วยโปรเซสเดียว ข้อมูลอยู่ใน memory ของ server และหายเมื่อ restart ทุก endpoint อธิบายไว้ใน [contracts/openapi.yaml](contracts/openapi.yaml)
+
+| Method | Path | ทำอะไร |
+|---|---|---|
+| GET | `/api/health` | เช็กว่า server ยังอยู่ |
+| POST | `/api/users` | สมัครสมาชิกและ login ทันที (ได้ token) |
+| POST / DELETE | `/api/sessions` | login / logout |
+| GET / PATCH / DELETE | `/api/me` | ดู / เปลี่ยนชื่อ / ลบบัญชี |
+| PUT | `/api/me/password` | เปลี่ยนรหัสผ่าน (ออกจากระบบเครื่องอื่นทั้งหมด) |
+| GET / POST / DELETE | `/api/tasks` | รายการ / เพิ่ม / ลบงานที่เสร็จแล้ว (`?completed=true`) |
+| PATCH / DELETE | `/api/tasks/{id}` | แก้ / ลบงาน |
+
+- การยืนยันตัวตนใช้ header `Authorization: Bearer <token>`
+- header `X-Tenant` แยกข้อมูลเป็นคนละ "โลก" (ชุดเทสส่งค่าไม่ซ้ำต่อเทส) ถ้าไม่ส่งจะใช้ tenant `default` ที่ใช้ร่วมกัน และแต่ละ tenant เริ่มด้วยบัญชี `demo` / `demo1234`
+- มีเพดานกันใช้เกินตัว: ผู้ใช้ 50 คนต่อ tenant, งาน 200 ชิ้นต่อคน, session 10 อันต่อคน (อายุ 12 ชั่วโมง) และถ้า login ผิด 10 ครั้งต่อ username ใน 1 นาทีจะถูกล็อกชั่วคราว (429)
+
+#### โหมด public (ตอนเปิดให้คนทั่วไปใช้)
+
+ตั้งตัวแปร `HARDENED=1` (และ `TRUST_PROXY=1` ถ้าอยู่หลัง proxy เช่น Render) แล้วเซิร์ฟเวอร์จะ:
+
+- ล็อกบัญชี `demo` ให้แก้ชื่อ/เปลี่ยนรหัสผ่าน/ลบไม่ได้ (403 `demo_protected`) ผู้ใช้อื่นสมัครบัญชีของตัวเองได้ตามปกติ
+- ไม่สนใจ `X-Tenant` ทุกคนใช้ tenant `default` ร่วมกัน และล้าง tenant นี้ทุก 1 ชั่วโมงกันข้อมูลเต็ม
+- จำกัดอัตราต่อ IP: 300 request/นาทีทั่วไป และ 20 request/นาทีสำหรับ route ที่ต้อง hash รหัสผ่าน (429 `rate_limited` พร้อม `Retry-After`)
+
+ทุกโหมดส่ง Content-Security-Policy แบบผูก hash กับ inline script ของแต่ละหน้า (ไม่ใช้ `unsafe-inline`) พร้อม `X-Frame-Options: DENY` และ `nosniff` ชุดเทสในเครื่องและ CI รันโหมดปกติ ไม่ใช่โหมด public
+
+#### เครื่องมือ record & replay
+
+ผลการลอง Prism, `routeFromHAR` ของ Playwright และ Mockoon กับ API นี้อยู่ที่ [docs/traffic-recording.md](docs/traffic-recording.md) (English: [docs/traffic-recording.en.md](docs/traffic-recording.en.md))
+
+| คำสั่ง | ทำอะไร |
+|---|---|
+| `npm run contract:prism` | เปิดแอป + Prism (proxy) รัน `api.spec.ts` ผ่านมัน แล้วล้มถ้า response ไม่ตรง `contracts/openapi.yaml` (ครั้งแรกต้องมีเน็ต) |
+| `npm run test:har` | replay HAR ให้หน้าเว็บ ไม่ต้องมี API |
+| `npm run har:record` | บันทึก HAR ใหม่จาก server จริง |
+
+ไฟล์ [render.yaml](render.yaml) เป็น blueprint สำหรับ Render (ยังไม่เคยลอง deploy จริง) เมื่อได้ URL แล้วตั้ง repo variable `APP_URL` หน้าแรกบน Pages จะมีปุ่มเปิดแอปให้เอง
+
+> แอปนี้เป็นเดโม: รหัสผ่านถูก hash ด้วย scrypt บน server แต่ข้อมูลอยู่ใน memory ห้ามใช้รหัสผ่านจริง โหมด public ช่วยลดความเสี่ยงแต่ไม่ได้ทำให้พร้อมสำหรับระบบจริง (ไม่มี HTTPS ในตัว ไม่มีฐานข้อมูล ไม่มี log กลาง)
 
 ## 4. Guideline: ตั้งค่า Webhook
 

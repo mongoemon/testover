@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/evidence';
 import { ALICE, DEMO, AuthPage, signIn } from './support/pages';
 
 test.describe('Registration', { tag: '@auth' }, () => {

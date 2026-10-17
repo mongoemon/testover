@@ -1,1 +1,4 @@
 GET / [document]
+GET /api/me [fetch]
+GET /api/tasks [fetch]
+POST /api/sessions [fetch]

@@ -99,5 +99,66 @@
     },
     "hasEtag": false,
     "body": "Method not allowed"
+  },
+  {
+    "request": "GET /api/health",
+    "status": 200,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store"
+    },
+    "hasEtag": false,
+    "body": "{\"status\":\"ok\"}"
+  },
+  {
+    "request": "GET /api/me",
+    "status": 401,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store"
+    },
+    "hasEtag": false,
+    "body": "{\"error\":{\"code\":\"unauthenticated\",\"message\":\"Sign in to continue\"}}"
+  },
+  {
+    "request": "GET /api/tasks",
+    "status": 401,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store"
+    },
+    "hasEtag": false,
+    "body": "{\"error\":{\"code\":\"unauthenticated\",\"message\":\"Sign in to continue\"}}"
+  },
+  {
+    "request": "GET /api/nope",
+    "status": 404,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store"
+    },
+    "hasEtag": false,
+    "body": "{\"error\":{\"code\":\"not_found\",\"message\":\"No such endpoint\"}}"
+  },
+  {
+    "request": "PUT /api/tasks",
+    "status": 405,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "allow": "GET, POST, DELETE",
+      "cache-control": "no-store"
+    },
+    "hasEtag": false,
+    "body": "{\"error\":{\"code\":\"method_not_allowed\",\"message\":\"Method not allowed\"}}"
+  },
+  {
+    "request": "POST /api/sessions",
+    "status": 422,
+    "headers": {
+      "content-type": "application/json; charset=utf-8",
+      "cache-control": "no-store"
+    },
+    "hasEtag": false,
+    "body": "{\"error\":{\"code\":\"validation_failed\",\"message\":\"Username is required\",\"details\":[\"Username is required\"]}}"
   }
 ]

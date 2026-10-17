@@ -64,8 +64,10 @@ jobs:
         env:
           SITE_SHA: ${{ github.sha }}
           REPORT_SHA: ${{ steps.run.outputs.report_sha }}
+          # Optional repo variable: where the app itself is hosted (see item 2 of the README backend notes).
+          APP_URL: ${{ vars.APP_URL }}
         run: |
-          # "/" must stay the demo app (same output as `npm run build:pages`); the report hub lives at /status/.
+          # "/" is a landing page (same output as `npm run build:pages`); the report hub lives at /status/.
           node scripts/build-pages.mjs
           cp -r dist _site
           mkdir -p _site/reports/allure _site/reports/playwright _site/status

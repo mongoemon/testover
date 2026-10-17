@@ -166,7 +166,7 @@
   <table class="tbl">
     <thead><tr><th>ไฟล์</th><th>หน้าที่</th></tr></thead>
     <tbody>
-      <tr><td><code>app/index.html</code></td><td>เว็บที่ถูกเทส: สมัครสมาชิก/login (<code>demo</code>/<code>demo1234</code> มีให้ตั้งแต่เริ่ม), task board (priority, แก้, ลบ, ค้นหา, กรอง), โปรไฟล์ (เปลี่ยนชื่อ/รหัสผ่าน, dark mode, ลบบัญชี) เก็บข้อมูลใน localStorage</td></tr>
+      <tr><td><code>app/index.html</code></td><td>เว็บที่ถูกเทส: สมัครสมาชิก/login (<code>demo</code>/<code>demo1234</code> มีให้ตั้งแต่เริ่ม), task board (priority, แก้, ลบ, ค้นหา, กรอง), โปรไฟล์ (เปลี่ยนชื่อ/รหัสผ่าน, dark mode, ลบบัญชี) ข้อมูลอยู่บน backend ใน memory (<code>app/api/</code>) เบราว์เซอร์เก็บแค่ session token กับธีม</td></tr>
       <tr><td><code>app/server.mjs</code></td><td>เซิร์ฟเวอร์เล็กๆ เสิร์ฟหน้าเว็บ ไม่ต้องติดตั้งอะไรเพิ่ม</td></tr>
       <tr><td><code>tests/support/pages.ts</code></td><td>Page Object (AuthPage, TasksPage, ProfilePage) ให้ทุกเคสใช้ท่าเดียวกัน แก้ที่เดียวเมื่อหน้าเว็บเปลี่ยน</td></tr>
       <tr><td><code>tests/login.spec.ts</code></td><td>สมัครสมาชิก, login/logout, ผู้ที่ยังไม่ login เข้าหน้าภายในไม่ได้, session, หน้า 404, title</td></tr>

@@ -178,12 +178,12 @@ describe('app/server.mjs', () => {
   });
 
   describe('500 Internal Server Error', () => {
-    test('returns 500 with the reason when index file is unreadable', async () => {
+    test('returns 500 without leaking the reason when index file is unreadable', async () => {
       const broken = await startServer({ INDEX_PATH: 'Z:\\definitely\\missing\\index.html' });
       try {
         const res = await send(broken.port);
         assert.equal(res.status, 500);
-        assert.match(res.body, /^Server error: /);
+        assert.equal(res.body, 'Server error');
       } finally {
         broken.stop();
       }

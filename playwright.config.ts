@@ -1,6 +1,8 @@
 import { defineConfig, devices } from '@playwright/test';
 
 const isCI = Boolean(process.env.CI);
+// One id per Playwright run, inherited by the workers: see tenantFor() in tests/support/evidence.ts.
+process.env.PW_RUN_ID ??= Date.now().toString(36);
 const PORT = Number(process.env.PORT ?? 3000);
 const BASE_URL = process.env.BASE_URL ?? `http://localhost:${PORT}`;
 

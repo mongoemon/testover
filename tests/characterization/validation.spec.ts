@@ -3,7 +3,7 @@
 // behaviour change is wanted, then update the expectation.
 import { expect, test } from '../support/evidence';
 import { AuthPage, ProfilePage, TasksPage, signIn, DEMO, type Account } from '../support/pages';
-import { readJson } from '../support/storage';
+import { loginStatus, serverTasks } from '../support/server';
 
 test.describe('Registration boundaries @characterization @validation', () => {
   const account = (username: string, password = 'longenough1'): Account => ({
@@ -42,7 +42,8 @@ test.describe('Registration boundaries @characterization @validation', () => {
     await auth.gotoRegister();
     await auth.register(account('  MiXeD_Case  '));
     await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible();
-    expect(Object.keys((await readJson(page, 'tb.users')) as object)).toContain('mixed_case');
+    await new ProfilePage(page).open();
+    await expect(page.locator('#profile-username')).toHaveText('mixed_case');
   });
 
   test('password: 7 chars is rejected, 8 chars is accepted', async ({ page }) => {
@@ -81,7 +82,7 @@ test.describe('Registration boundaries @characterization @validation', () => {
     await expect(auth.alert).toHaveText('Username is already taken');
   });
 
-  test('GUARD: reserved-looking names such as "__proto__" and "constructor" register safely as ordinary users', async ({ page }) => {
+  test('GUARD: reserved-looking names such as "__proto__" and "constructor" register safely as ordinary users', async ({ page, request }) => {
     const auth = new AuthPage(page);
     for (const username of ['constructor', '__proto__']) {
       await auth.gotoRegister();
@@ -89,8 +90,9 @@ test.describe('Registration boundaries @characterization @validation', () => {
       await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible();
       await auth.logout();
     }
-    const users = (await readJson(page, 'tb.users')) as Record<string, unknown>;
-    expect(Object.keys(users)).toEqual(expect.arrayContaining(['demo', 'constructor', '__proto__']));
+    for (const username of ['constructor', '__proto__']) {
+      expect(await loginStatus(request, username, 'longenough1')).toBe(201);
+    }
   });
 });
 
@@ -147,15 +149,14 @@ test.describe('Task title boundaries @characterization @tasks @validation', () =
 
     await tasks.add('   padded   ');
     await tasks.expectTitles(['padded']);
-    expect(await readJson(page, 'tb.tasks.demo')).toEqual([{ id: 1, title: 'padded', priority: 'medium', done: false }]);
+    expect(await serverTasks(page)).toEqual([{ id: 1, title: 'padded', priority: 'medium', done: false }]);
   });
 
   test('a new task defaults to medium priority and resets the form after adding', async ({ page }) => {
     const tasks = new TasksPage(page);
     await tasks.add('urgent thing', 'High');
     await tasks.add('normal thing');
-    const stored = (await readJson(page, 'tb.tasks.demo')) as Array<{ priority: string }>;
-    expect(stored.map((task) => task.priority)).toEqual(['high', 'medium']);
+    expect((await serverTasks(page)).map((task) => task.priority)).toEqual(['high', 'medium']);
     await expect(page.getByLabel('Priority', { exact: true })).toHaveValue('medium');
   });
 
@@ -184,13 +185,13 @@ test.describe('Profile boundaries @characterization @profile', () => {
     await expect(profile.alert).toHaveText('Passwords do not match');
   });
 
-  test('QUIRK: the new password is stored in plain text', async ({ page }) => {
+  test('GUARD: after a password change only the new password signs in', async ({ page, request }) => {
     await signIn(page, DEMO);
     const profile = new ProfilePage(page);
     await profile.open();
     await profile.changePassword(DEMO.password, 'brand-new-pw');
     await expect(profile.status).toHaveText('Password changed');
-    const users = (await readJson(page, 'tb.users')) as Record<string, { password: string }>;
-    expect(users.demo.password).toBe('brand-new-pw');
+    expect(await loginStatus(request, DEMO.username, 'brand-new-pw')).toBe(201);
+    expect(await loginStatus(request, DEMO.username, DEMO.password)).toBe(401);
   });
 });

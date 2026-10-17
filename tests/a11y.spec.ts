@@ -1,5 +1,6 @@
 import AxeBuilder from '@axe-core/playwright';
-import { test, expect, type Page } from '@playwright/test';
+import type { Page } from '@playwright/test';
+import { test, expect } from './support/evidence';
 import { AuthPage, DEMO, ProfilePage, TasksPage, signIn } from './support/pages';
 
 /** Conformance levels checked: WCAG 2.0 and 2.1, levels A and AA. */

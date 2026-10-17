@@ -1,4 +1,4 @@
-import { test, expect } from '@playwright/test';
+import { test, expect } from './support/evidence';
 import { ALICE, AuthPage, DEMO, ProfilePage, TasksPage, signIn } from './support/pages';
 
 test.describe('User journeys', { tag: '@journey' }, () => {
@@ -128,10 +128,10 @@ test.describe('User journeys', { tag: '@journey' }, () => {
   });
 
   test.describe('resilience to bad stored data', { tag: '@resilience' }, () => {
-    test('recovers from corrupted task storage and stays usable', async ({ page }) => {
+    test('recovers from a corrupted session value and stays usable', async ({ page }) => {
       const tasks = new TasksPage(page);
       await page.goto('/');
-      await page.evaluate(() => localStorage.setItem('tb.tasks.demo', '{not valid json'));
+      await page.evaluate(() => localStorage.setItem('tb.session', '{not valid json'));
 
       await signIn(page, DEMO);
 
@@ -140,23 +140,18 @@ test.describe('User journeys', { tag: '@journey' }, () => {
       await tasks.expectTitles(['Recovered']);
     });
 
-    test('ignores malformed task entries but keeps the valid ones', async ({ page }) => {
+    test('a token the server does not know is dropped and signing in again works', async ({ page }) => {
       const tasks = new TasksPage(page);
       await page.goto('/');
-      await page.evaluate(() =>
-        localStorage.setItem(
-          'tb.tasks.demo',
-          JSON.stringify([
-            { id: 1, title: 'Valid', priority: 'low', done: false },
-            { id: 'x', title: 42 },
-            null,
-          ]),
-        ),
-      );
+      await page.evaluate(() => localStorage.setItem('tb.session', JSON.stringify('3f1c0d0e-0000-4000-8000-000000000000')));
+      await page.goto('/#/tasks');
+      await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
+      expect(await page.evaluate(() => localStorage.getItem('tb.session'))).toBeNull();
 
       await signIn(page, DEMO);
 
-      await tasks.expectTitles(['Valid']);
+      await tasks.add('Back again');
+      await tasks.expectTitles(['Back again']);
     });
   });
 });

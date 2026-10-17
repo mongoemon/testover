@@ -1,7 +1,7 @@
 // Golden Master of network traffic. Two angles:
 //  1. what the server answers for a fixed list of routes (status, stable headers, small bodies);
-//  2. what the browser requests while a user works (the app is client-side, so a new fetch/XHR
-//     appearing here is a real behavior change, e.g. a tracker or a new backend call).
+//  2. what the browser requests while a user works (a new fetch/XHR appearing here is a real
+//     behavior change, e.g. a tracker or a new backend call; every one must go to our own /api).
 // Failure workflow is the same as golden-master.spec.ts: read the diff, then fix the app or run
 // `npm run test:characterization -- --update-snapshots` and commit the reviewed change.
 import { expect, test } from '../support/evidence';
@@ -20,7 +20,20 @@ const PROBES: readonly RouteProbe[] = [
   { method: 'GET', path: '/nope' },
   { method: 'POST', path: '/' },
   { method: 'DELETE', path: '/index.html' },
+  { method: 'GET', path: '/api/health' },
+  { method: 'GET', path: '/api/me' },
+  { method: 'GET', path: '/api/tasks' },
+  { method: 'GET', path: '/api/nope' },
+  { method: 'PUT', path: '/api/tasks' },
+  { method: 'POST', path: '/api/sessions' },
 ];
+
+/** Every fetch/XHR line must be a call to our own /api (no trackers, no third-party hosts). */
+const ownApiOnly = (log: string): boolean =>
+  log
+    .split('\n')
+    .filter((line) => /\[(fetch|xhr)\]$/.test(line))
+    .every((line) => /^[A-Z]+ \/api\//.test(line));
 
 test.describe('Golden master of network traffic @characterization @golden', () => {
   test('server responses for known and unknown routes', async ({ request }) => {
@@ -38,7 +51,8 @@ test.describe('Golden master of network traffic @characterization @golden', () =
     await tasks.complete('Write release notes');
     await tasks.remove('Write release notes');
     const log = traffic.stop();
-    expect(log).not.toMatch(/\[(fetch|xhr|websocket|eventsource)\]/);
+    expect(log).not.toMatch(/\[(websocket|eventsource)\]/);
+    expect(ownApiOnly(log)).toBe(true);
     expect(log).toMatchSnapshot('browser-traffic.txt');
   });
 

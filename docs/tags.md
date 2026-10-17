@@ -34,9 +34,11 @@ Tag คือป้ายที่แปะไว้กับเคสเทส 
 | `@destructive` | 2 | เคสที่ลบข้อมูลจริง (ลบบัญชี) | ข้ามด้วย `npm run test:safe` |
 | `@a11y` | 16 | ตรวจ accessibility ด้วย axe ทุกหน้า/สถานะ + คีย์บอร์ด + title | `npx playwright test --grep @a11y` |
 | `@responsive` | 1 | หน้าจอมือถือ | `npx playwright test --grep @responsive` |
-| `@characterization` | 42 | บันทึกพฤติกรรม *ปัจจุบัน* ที่ขอบเขตของข้อมูล | `npx playwright test --grep @characterization` |
-| `@golden` | 5 | Golden Master: เทียบ localStorage ทั้งก้อนกับ snapshot (เป็นส่วนหนึ่งของ `@characterization`) | `npx playwright test --grep @golden` |
-| `@contract` | 6 | ข้อมูลใน localStorage ต้องตรง schema | `npx playwright test --grep @contract` |
+| `@characterization` | 46 | บันทึกพฤติกรรม *ปัจจุบัน* ที่ขอบเขตของข้อมูล | `npx playwright test --grep @characterization` |
+| `@golden` | 8 | Golden Master: เทียบ state ทั้งก้อน (localStorage + ข้อมูลฝั่ง server) และ response/traffic กับ snapshot (เป็นส่วนหนึ่งของ `@characterization`) | `npx playwright test --grep @golden` |
+| `@contract` | 15 | localStorage (token + theme) และ JSON ที่ API ส่งต้องตรง schema |
+| `@har` | 2 | replay HAR ที่บันทึกไว้ให้หน้าเว็บโดยไม่ต้องมี API (ดู [traffic-recording.md](traffic-recording.md)) | `npm run test:har` |
+| `@api` | 9 | JSON ที่ API ส่ง (สำเร็จและ error) ตรง schema กลาง และผู้ใช้แยกข้อมูลกัน (เป็นส่วนหนึ่งของ `@contract`) | `npx playwright test --grep @api` | `npx playwright test --grep @contract` |
 | `@auth` | 36 | สมัคร, login/logout, route guard, session | `npx playwright test --grep @auth` |
 | `@tasks` | 31 | task board ทั้งหมด | `npx playwright test --grep @tasks` |
 | `@profile` | 12 | หน้าโปรไฟล์ทั้งหมด | `npx playwright test --grep @profile` |
@@ -118,7 +120,7 @@ Tag คือป้ายที่แปะไว้กับเคสเทส 
   และหลายเคสมี `@validation` / `@resilience` ร่วมด้วย จึงรวมอยู่ในจำนวนของ tag เหล่านั้น
 
 ### `@contract` — สัญญาของข้อมูลที่เก็บ
-- **ทำอะไร:** เคสใน `tests/contracts/storage.spec.ts` ขับ UI จริงแล้วตรวจว่าทุกอย่างที่แอปเขียนลง localStorage ตรงกับ schema กลางใน `contracts/schemas.mjs`
+- **ทำอะไร:** เคสใน `tests/contracts/storage.spec.ts` ขับ UI จริงแล้วตรวจว่าทุกอย่างที่แอปเขียนลง localStorage (เหลือแค่ token กับ theme) ตรงกับ schema กลางใน `contracts/schemas.mjs` และเคสใน `tests/contracts/api.spec.ts` ตรวจ JSON ที่ API ส่งกับ schema เดียวกัน (spec คือ `contracts/openapi.yaml`)
   (ผู้ใช้, session, งาน, ธีม) รวมถึงความสัมพันธ์ข้ามคีย์
 - **ใช้เมื่อ:** แก้รูปแบบข้อมูลที่เก็บ หรือเพิ่มฟิลด์ใหม่
 - **คำสั่ง:** `npx playwright test --grep @contract`
