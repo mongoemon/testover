@@ -1,0 +1,103 @@
+[
+  {
+    "request": "GET /",
+    "status": 200,
+    "headers": {
+      "content-type": "text/html; charset=utf-8"
+    },
+    "hasEtag": true,
+    "body": "<non-empty>"
+  },
+  {
+    "request": "HEAD /",
+    "status": 200,
+    "headers": {
+      "content-type": "text/html; charset=utf-8"
+    },
+    "hasEtag": true,
+    "body": "<empty>"
+  },
+  {
+    "request": "GET /index.html",
+    "status": 200,
+    "headers": {
+      "content-type": "text/html; charset=utf-8"
+    },
+    "hasEtag": true,
+    "body": "<non-empty>"
+  },
+  {
+    "request": "GET /index.htm",
+    "status": 301,
+    "headers": {
+      "location": "/"
+    },
+    "hasEtag": false,
+    "body": "<empty>"
+  },
+  {
+    "request": "GET /docs",
+    "status": 301,
+    "headers": {
+      "location": "/docs/overview.html"
+    },
+    "hasEtag": false,
+    "body": "<empty>"
+  },
+  {
+    "request": "GET /docs/overview.html",
+    "status": 200,
+    "headers": {
+      "content-type": "text/html; charset=utf-8"
+    },
+    "hasEtag": true,
+    "body": "<non-empty>"
+  },
+  {
+    "request": "GET /README.md",
+    "status": 200,
+    "headers": {
+      "content-type": "text/markdown; charset=utf-8"
+    },
+    "hasEtag": true,
+    "body": "<non-empty>"
+  },
+  {
+    "request": "GET /docs/missing.html",
+    "status": 404,
+    "headers": {
+      "content-type": "text/plain"
+    },
+    "hasEtag": false,
+    "body": "Not found"
+  },
+  {
+    "request": "GET /nope",
+    "status": 404,
+    "headers": {
+      "content-type": "text/plain"
+    },
+    "hasEtag": false,
+    "body": "Not found"
+  },
+  {
+    "request": "POST /",
+    "status": 405,
+    "headers": {
+      "content-type": "text/plain",
+      "allow": "GET, HEAD"
+    },
+    "hasEtag": false,
+    "body": "Method not allowed"
+  },
+  {
+    "request": "DELETE /index.html",
+    "status": 405,
+    "headers": {
+      "content-type": "text/plain",
+      "allow": "GET, HEAD"
+    },
+    "hasEtag": false,
+    "body": "Method not allowed"
+  }
+]
