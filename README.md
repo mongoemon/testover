@@ -14,7 +14,7 @@
 | ในเครื่อง (`npm start`) | http://localhost:3000 | http://localhost:3000/docs/overview.html |
 
 - ในเว็บกดได้ 2 ที่: ลิงก์ **Read the docs** ใต้ฟอร์ม Sign in หรือเมนู **Docs** ที่แถบด้านบน (หลัง login)
-- `/docs` จะพาไปหน้า overview ให้เอง จากหน้านั้นมีลิงก์ไป guide, โครงสร้างการเทส, tags.md และ README ครบ
+- `/docs` จะพาไปหน้า overview ให้เอง (บนเว็บออนไลน์พาไปหน้า `/status/` ที่รวมเอกสารกับรายงานล่าสุด) จากหน้านั้นมีลิงก์ไป guide, โครงสร้างการเทส, tags.md และ README ครบ
 - ไฟล์ที่เปิดได้: `/docs/<ชื่อไฟล์>.html`, `/docs/<ชื่อไฟล์>.md` และ `/README.md` (ไฟล์ .md จะแสดงเป็นข้อความดิบ)
 - เพิ่มเอกสารใหม่: วางไฟล์ `.html` หรือ `.md` ไว้ใน `docs/` (ชื่อไฟล์ใช้ตัวพิมพ์เล็ก ตัวเลข `-` `.` เท่านั้น) แล้วเพิ่มลิงก์จาก `docs/overview.html`
 - Deploy: push เข้า `main` แล้ว Cloudflare Pages build ให้เอง (build command `npm run build:pages` → โฟลเดอร์ `dist/`) ส่วน branch อื่นจะได้ preview URL แยก
