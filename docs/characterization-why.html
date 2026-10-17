@@ -95,7 +95,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <p class="note"><b>สรุปสั้น ๆ:</b> E2E คือตาข่ายหยาบชั้นนอก ตรวจว่า user flow หลักไม่ตาย Characterization คือตาข่ายละเอียดชั้นใน ประกบก้อนโค้ดที่กำลังจะรื้อ สองอย่างเสริมกัน ไม่ได้แทนกัน</p>
 
 <h3>ใน testover ทำเพื่ออะไร</h3>
-<p>testover เป็นแอปที่ไม่มีสเปกเขียนไว้ พฤติกรรมจริงอยู่ในโค้ดและ <code>localStorage</code> เราจึงมี <code>tests/characterization/</code> จำนวน <b>42 test</b> ใน 3 ไฟล์ (<code>validation.spec.ts</code>, <code>resilience.spec.ts</code> ที่ล็อก boundary ของ input และการ boot จาก storage ที่เสีย และ <code>golden-master.spec.ts</code> ที่เทียบ localStorage ทั้งก้อนกับ snapshot) มี <b>3 ตัวชื่อ <code>QUIRK:</code></b> ซึ่งเป็นพฤติกรรมแปลกที่ถูกบันทึกไว้ตามจริง เช่น รหัสผ่านใหม่ถูกเก็บเป็น plain text, <code>tb.users</code> ที่เป็น array ทำให้ทุกคนล็อกอินไม่ได้, และการเปลี่ยนแปลงครั้งแรกหลังโหลด tasks ที่ไม่ถูกต้องจะทิ้ง tasks ถาวร</p>
+<p>testover เป็นแอปที่ไม่มีสเปกเขียนไว้ พฤติกรรมจริงอยู่ในโค้ด (ทั้งหน้าเว็บและ API) เราจึงมี <code>tests/characterization/</code> จำนวน <b>46 test</b> ใน 4 ไฟล์ (<code>validation.spec.ts</code>, <code>resilience.spec.ts</code> ที่ล็อก boundary ของ input, การ boot จาก storage ที่เสีย และตอน server ติดต่อไม่ได้, <code>golden-master.spec.ts</code> ที่เทียบ state ทั้งก้อนกับ snapshot และ <code>network-golden.spec.ts</code> ที่เทียบ response ของ server กับ request ของเบราว์เซอร์) ตัวที่ชื่อ <b><code>GUARD:</code></b> คือพฤติกรรมที่เคยเป็น <code>QUIRK:</code> (รหัสผ่านเป็น plain text, id ของงานถูกใช้ซ้ำ) แล้วถูกแก้ตอนย้ายไป backend การบันทึกตามจริงก่อนจึงช่วยให้เห็นว่าการย้ายครั้งนั้นเปลี่ยนอะไรบ้าง</p>
 
 <h2 class="sec" id="vs"><span class="no">02</span>เทียบกับ test ชนิดอื่น</h2>
 <p class="sub">ต่างกันที่ “ใครเป็นตัวเฉลย” และ “ตรวจละเอียดแค่ไหน”</p>
@@ -151,6 +151,14 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <tr><td class="c">Tag และคำสั่งรันเฉพาะชั้น</td><td><code>npm run test:characterization</code>, <code>test:contract</code>, <code>test:smoke</code>, <code>test:visual</code></td></tr>
 <tr><td class="c">เรียง CI แบบ fail fast</td><td>Stage 1: lint + unit + characterization (เร็ว) → Stage 2: E2E smoke → Stage 3: เต็มชุด/visual ตามเวลา</td></tr>
 </tbody></table></div>
+<h3>Prism และ Mockoon: เครื่องมือฝั่ง API ทำอะไรได้</h3>
+<p>ทั้งสองตัวทำงานจากไฟล์ spec แบบ OpenAPI (ใน testover คือ <code>contracts/openapi.yaml</code>) ซึ่งเป็น contract ฉบับที่คนอ่านได้ ต่างจาก zod ที่เป็นโค้ด ไฟล์เดียวกันจึงใช้ได้ทั้งเป็นเอกสาร ใช้ตรวจ และใช้สร้าง mock</p>
+<div class="tw"><table><thead><tr><th>เครื่องมือ</th><th>ทำอะไร</th><th>เป็นชั้นไหน</th><th>ใน testover</th><th>ข้อจำกัด</th></tr></thead><tbody>
+<tr><td class="c">Prism (proxy mode)</td><td>ตั้งหน้า API จริง ตรวจทุก request และ response กับ spec แล้วรายงานจุดที่ไม่ตรง</td><td>Contract: ตรวจว่า API จริงยังทำตามข้อตกลง</td><td><code>npm run contract:prism</code> รัน <code>api.spec.ts</code> ผ่าน Prism ผ่านทั้ง 9 เคส และเมื่อลบฟิลด์ <code>done</code> ออกจาก spec Prism ฟ้องทันที</td><td>เห็นเฉพาะสิ่งที่เทสเรียก และเคสที่ส่ง request ผิดโดยตั้งใจจะมี request violation เป็นปกติ จึงดูเฉพาะ response</td></tr>
+<tr><td class="c">Mockoon</td><td>สร้าง mock server จาก spec ให้ front end คุยด้วยได้ตอนยังไม่มี back end</td><td>Seam / mock: ตัดของจริงออกเพื่อให้รันซ้ำได้</td><td>นำเข้า 13 route ได้ที่ <code>mocks/mockoon.json</code> แต่ค่าตัวอย่างเป็นค่าว่าง (ผิด schema ของเราเอง) ต้องแก้มือ และ mock ไม่จำสถานะ</td><td>ทดสอบ flow จริงไม่ได้ (login ผิดก็ได้ 201) จึงยังไม่ใส่ในชุดเทส</td></tr>
+<tr><td class="c">HAR ของ Playwright</td><td>บันทึกการคุยกับ API ครั้งหนึ่งแล้ว replay ให้หน้าเว็บ</td><td>คล้าย characterization ของฝั่ง front end: ล็อก "คำตอบที่หน้าเว็บคาดไว้"</td><td><code>npm run test:har</code> หน้าเว็บทำงานครบโดยไม่แตะ API และ request ที่ไม่ได้บันทึกถูกตัดทิ้งให้เห็น</td><td>เล่นซ้ำลำดับที่สถานะเปลี่ยนไม่ได้ และไม่ได้ทดสอบ back end</td></tr>
+</tbody></table></div>
+<p class="note"><b>ต่างจาก characterization ตรงไหน:</b> characterization บันทึก "สิ่งที่ระบบทำจริงวันนี้" โดยไม่มีสเปกมาก่อน ส่วน Prism ตรวจกับสเปกที่คนเขียนไว้ก่อน ถ้าไม่ตรงต้องตัดสินว่าสเปกผิดหรือโค้ดผิด และ Mockoon กับ HAR เป็นเครื่องมือสร้างฉากให้เทสรันซ้ำได้ ไม่ใช่ตัวเฉลย ที่ลองแล้วใช้ได้ผลจริงที่สุดคือ Prism ผลการลองทั้งหมดอยู่ที่ <a href="traffic-recording.md">traffic-recording.md</a></p>
 <h3>Characterization กับ Contract ใช้คู่กันตอนแยกระบบ</h3>
 <p>ตอนตัด service เก่าไปเป็นใหม่ (Strangler Fig): ยิง input เดียวกันเข้าตัวเก่าและตัวใหม่ ผลต้องตรงกัน (characterization) และ API ของตัวใหม่ต้องไม่ผิดข้อตกลงกับ frontend/mobile (contract)</p>
 
@@ -162,7 +170,7 @@ footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:v
 <li><b>การอัปเดต master ต้องผ่านการตัดสินใจ</b> ไม่รัน <code>--update-snapshots</code> เพื่อให้เขียว</li>
 <li><b>เป็นนั่งร้าน</b> เมื่อโมดูลสะอาดแล้ว ควรแทนด้วย unit test ที่บอกเจตนา</li>
 </ul>
-<p class="note"><b>ใน testover มีทั้งสองแบบ:</b> assertion ตรง ๆ ต่อพฤติกรรม (<code>validation</code>, <code>resilience</code>) ซึ่งอ่านเจตนาง่าย และ Golden Master (<code>golden-master.spec.ts</code>) ที่เทียบ localStorage ทั้งก้อนกับ snapshot เพื่อจับฟิลด์ที่ไม่มีใครนึกถึง ผ่าน <code>toMatchSnapshot()</code> ของ Playwright พร้อม mask timestamp/UUID และเรียงคีย์ให้นิ่ง ไฟล์ snapshot เป็นข้อความ จึงสร้างบน OS ไหนก็ได้ (ต่างจาก visual ที่ต้องสร้างใน Docker Linux) อัปเดตด้วย <code>npm run test:characterization -- --update-snapshots</code> แล้วอ่าน diff ก่อน commit ทุกครั้ง ข้อควรระวัง: snapshot ล็อกค่ารหัสผ่านแบบ plain text ไว้ด้วยเพราะเป็นพฤติกรรมจริงตอนนี้ เมื่อแก้ QUIRK นั้นต้องอัปเดต snapshot พร้อมกัน</p>
+<p class="note"><b>ใน testover มีทั้งสองแบบ:</b> assertion ตรง ๆ ต่อพฤติกรรม (<code>validation</code>, <code>resilience</code>) ซึ่งอ่านเจตนาง่าย และ Golden Master (<code>golden-master.spec.ts</code>) ที่เทียบ state ทั้งก้อน (localStorage + ข้อมูลฝั่ง server) กับ snapshot เพื่อจับฟิลด์ที่ไม่มีใครนึกถึง ผ่าน <code>toMatchSnapshot()</code> ของ Playwright พร้อม mask timestamp/UUID และเรียงคีย์ให้นิ่ง ไฟล์ snapshot เป็นข้อความ จึงสร้างบน OS ไหนก็ได้ (ต่างจาก visual ที่ต้องสร้างใน Docker Linux) อัปเดตด้วย <code>npm run test:characterization -- --update-snapshots</code> แล้วอ่าน diff ก่อน commit ทุกครั้ง ข้อควรระวัง: snapshot ไม่มีรหัสผ่านอีกแล้ว (server เก็บเป็น hash และ API ไม่ส่งออก) การพิสูจน์ว่ารหัสเปลี่ยนจริงจึงอยู่ใน assertion ที่ login ด้วยรหัสใหม่</p>
 
 <h2 class="sec" id="refs"><span class="no">07</span>อ้างอิง</h2>
 <ul>
