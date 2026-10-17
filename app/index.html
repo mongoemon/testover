@@ -68,6 +68,7 @@
     <nav aria-label="Main">
       <a href="#/tasks" id="nav-tasks">Tasks</a>
       <a href="#/profile" id="nav-profile">Profile</a>
+      <a href="/docs/overview.html" id="nav-docs">Docs</a>
     </nav>
     <span id="greeting"></span>
     <button id="logout" type="button">Logout</button>
@@ -217,7 +218,8 @@
           h('p', { class: 'muted' }, 'Demo account: username ', h('strong', {}, 'demo'),
             ' / password ', h('strong', {}, 'demo1234')),
           form, error,
-          h('p', {}, h('a', { href: '#/register' }, 'Create an account')));
+          h('p', {}, h('a', { href: '#/register' }, 'Create an account')),
+          h('p', {}, h('a', { href: '/docs/overview.html' }, 'Read the docs')));
       }
 
       function registerView() {

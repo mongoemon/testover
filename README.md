@@ -6,6 +6,19 @@
 > คนใหม่เริ่มที่นี่: [docs/overview.html](docs/overview.html) ภาพรวมโปรเจกต์ใน 6 ขั้น · New here? [English version](docs/overview.en.html)
 > อยากได้แบบอ่านง่ายมีเช็กลิสต์และตัวช่วยแปลงเวลา cron: เปิด [docs/guide.html](docs/guide.html) ในเบราว์เซอร์
 
+### เปิดอ่านเอกสาร
+
+| ที่ไหน | เว็บ Task Board | เอกสาร |
+|---|---|---|
+| ออนไลน์ (Cloudflare Pages) | https://testover.pages.dev | https://testover.pages.dev/docs/overview.html |
+| ในเครื่อง (`npm start`) | http://localhost:3000 | http://localhost:3000/docs/overview.html |
+
+- ในเว็บกดได้ 2 ที่: ลิงก์ **Read the docs** ใต้ฟอร์ม Sign in หรือเมนู **Docs** ที่แถบด้านบน (หลัง login)
+- `/docs` จะพาไปหน้า overview ให้เอง จากหน้านั้นมีลิงก์ไป guide, โครงสร้างการเทส, tags.md และ README ครบ
+- ไฟล์ที่เปิดได้: `/docs/<ชื่อไฟล์>.html`, `/docs/<ชื่อไฟล์>.md` และ `/README.md` (ไฟล์ .md จะแสดงเป็นข้อความดิบ)
+- เพิ่มเอกสารใหม่: วางไฟล์ `.html` หรือ `.md` ไว้ใน `docs/` (ชื่อไฟล์ใช้ตัวพิมพ์เล็ก ตัวเลข `-` `.` เท่านั้น) แล้วเพิ่มลิงก์จาก `docs/overview.html`
+- Deploy: push เข้า `main` แล้ว Cloudflare Pages build ให้เอง (build command `npm run build:pages` → โฟลเดอร์ `dist/`) ส่วน branch อื่นจะได้ preview URL แยก
+
 ## สารบัญ
 1. [โครงสร้างโปรเจกต์](#1-โครงสร้างโปรเจกต์)
 2. [รันในเครื่อง](#2-รันในเครื่อง)
@@ -21,7 +34,7 @@
 ```
 app/
   index.html        เว็บที่ใช้เทส (สมัคร/login, task board, โปรไฟล์) เก็บข้อมูลใน localStorage
-  server.mjs        เซิร์ฟเวอร์ static เล็กๆ (ไม่ต้องติดตั้งอะไรเพิ่ม)
+  server.mjs        เซิร์ฟเวอร์ static เล็กๆ (ไม่ต้องติดตั้งอะไรเพิ่ม) เสิร์ฟทั้งเว็บและ docs/
 tests/
   support/pages.ts  Page Object (AuthPage, TasksPage, ProfilePage) + ข้อมูลผู้ใช้ทดสอบ
   login.spec.ts     สมัครสมาชิก, login/logout, route guard, session, 404, title
@@ -33,6 +46,7 @@ tests/
   contracts/        ตรวจว่าข้อมูลใน localStorage ตรง schema (เพิ่มเข้ามาภายหลัง)
 scripts/
   notify.mjs        อ่านผลเทสแล้วส่งเข้า webhook
+  build-pages.mjs   รวมเว็บ + docs/ + README.md ไว้ใน dist/ ให้ Cloudflare Pages
 .github/workflows/
   smoke.yml         ชุดเร็ว @smoke ทุกครั้งที่ push เข้า main และทุก pull request
   weekend-e2e.yml   รันทุกเคสเสาร์-อาทิตย์ตามเวลาที่ตั้ง แล้วแจ้งผลเข้า webhook
@@ -41,14 +55,40 @@ playwright.config.ts
 
 ## 2. รันในเครื่อง
 
-ต้องมี Node.js 20 ขึ้นไป
+### ตั้งค่าเครื่องใหม่ (ครั้งแรก)
+
+ต้องมี:
+- **Node.js 22 ขึ้นไป** (`node -v`) รุ่น 20 ใช้ไม่ได้ เพราะ `npm run test:unit` ใช้ glob ของ `node --test` ที่มีตั้งแต่ Node 21
+- **Git**
+- **Java 8 ขึ้นไป**: เฉพาะถ้าจะใช้คำสั่ง `allure:*` ส่วนเทสปกติไม่ต้องมี
 
 ```bash
-npm install
-npx playwright install chromium   # ครั้งแรกครั้งเดียว
+git clone https://github.com/mongoemon/testover.git
+cd testover
+npm ci                            # ติดตั้งตาม package-lock.json เป๊ะ ไม่แก้ไฟล์ lock
+npx playwright install chromium   # Linux ใช้ --with-deps chromium เพื่อลง library ของระบบด้วย
+```
+
+เช็กว่าเครื่องพร้อม:
+
+```bash
+npm run test:unit   # ต้องเห็น pass 50, fail 0
+npm test            # ต้องเห็น 127 passed (เปิดเว็บให้เองอัตโนมัติ)
+npm start           # เปิด http://localhost:3000/docs/overview.html อ่านเอกสารได้
+```
+
+- ใช้ `npm ci` แทน `npm install` เพื่อให้ได้ dependency รุ่นเดียวกับเครื่องอื่นและ CI ถ้าใช้ `npm install` แล้ว `package-lock.json` เปลี่ยน อย่า commit ไฟล์นั้นถ้าไม่ได้ตั้งใจอัปเดต dependency
+- ไม่ต้องตั้ง `.env` หรือ secret อะไรในเครื่อง `WEBHOOK_URL` ใช้แค่บน GitHub Actions (หัวข้อ 5) ถ้าอยากลองส่งจริงจากเครื่องให้ใส่ตอนรัน: `WEBHOOK_URL=<url> npm run notify`
+- ไม่ต้องลง Wrangler หรือตั้งค่า Cloudflare ในเครื่อง การ deploy ทำผ่าน push เข้า `main` (ดู [เปิดอ่านเอกสาร](#เปิดอ่านเอกสาร))
+
+### คำสั่งที่ใช้บ่อย
+
+```bash
 npm test                          # รันทุกเคส (เปิดเว็บให้เองอัตโนมัติ)
 npm run report                    # เปิดรายงาน HTML
 npm run test:headed               # รันแบบเห็นเบราว์เซอร์
+npm start                         # เปิดเว็บเองที่ http://localhost:3000 (เอกสารอยู่ที่ /docs)
+npm run build:pages               # สร้าง dist/ แบบเดียวกับที่ขึ้น Cloudflare Pages
 ```
 
 ทดลองสคริปต์แจ้งผลโดยไม่ส่งจริง (ไม่ตั้ง `WEBHOOK_URL` จะแค่พิมพ์ข้อความออกจอ):
