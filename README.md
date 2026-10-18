@@ -73,8 +73,11 @@ scripts/
   notify.mjs        อ่านผลเทสแล้วส่งเข้า webhook
   build-pages.mjs   รวมเว็บ + docs/ + README.md ไว้ใน dist/ ให้ Cloudflare Pages
 .github/workflows/
-  smoke.yml         ชุดเร็ว (unit + @smoke + @characterization) ทุกครั้งที่ push เข้า main และทุก pull request
+  smoke.yml         ชุดเร็วแยกเป็น job (unit, contract, characterization, smoke-e2e) ทุกครั้งที่ push เข้า main และทุก pull request
   weekend-e2e.yml   รันทุกเคสเสาร์-อาทิตย์ตามเวลาที่ตั้ง แล้วแจ้งผลเข้า webhook
+.github/actions/
+  setup/                Node 22 + npm ci + Chromium (cache ตามรุ่น Playwright) ที่ทุก job เรียกใช้ร่วมกัน
+  playwright-artifacts/ ตารางสรุปผล + อัปโหลดรายงานของแต่ละ job
 playwright.config.ts
 ```
 
@@ -143,11 +146,32 @@ npm run notify
 
 | ไฟล์ | เมื่อไหร่ | รันอะไร | แจ้ง webhook |
 |---|---|---|---|
-| `smoke.yml` | push เข้า `main`, ทุก pull request, กดรันเอง | unit + `@smoke` + `@characterization` (51 เคส Playwright รอบเดียว ~ไม่กี่นาที) | ไม่ส่ง (ดูผลที่แท็บ Actions / ช่อง checks ของ PR) |
+| `smoke.yml` | push เข้า `main`, ทุก pull request, กดรันเอง | หลาย job เรียงจากถูกไปแพง (ด้านล่าง): unit 116 + `@contract` 15 + `@characterization` 46 + `@smoke` 5 | ไม่ส่ง (ดูผลที่แท็บ Actions / ช่อง checks ของ PR) |
 | `weekend-e2e.yml` | เสาร์-อาทิตย์ 09:00 เวลาไทย, กดรันเอง | **ทั้ง 156 เคส** | ส่งทุกครั้ง ผ่านหรือพัง |
 
-`smoke.yml` ยกเลิกรอบเก่าให้อัตโนมัติถ้ามี push ใหม่เข้ามาที่ branch เดียวกัน (`concurrency`)
-และอัปโหลดรายงานทุกรอบ (artifact `smoke-report` = Playwright HTML, `allure-report` = Allure) พร้อมตารางสรุปผลในหน้า run และ annotation บน PR ถ้าอยากให้ PR ต้องผ่านก่อน merge ให้ตั้ง branch protection → Require status checks → เลือก `smoke`
+`smoke.yml` แยกเป็น job เพื่อให้รู้ผลเร็วและหยุดเร็วเมื่อพัง:
+
+```
+unit ─┐                       ┌─ characterization
+      ├─ ผ่านทั้งคู่ ─────────┤                      ──► smoke (check เดียว) + report (Allure รวม)
+contract┘                     └─ smoke-e2e
+```
+
+| job | รันอะไร | ต้องรอ |
+|---|---|---|
+| `unit` | `npm run test:unit` ไม่ใช้ browser | - |
+| `contract` | `@contract` (C1 localStorage, C4 JSON ของ API) | - |
+| `characterization` | `@characterization` รวม golden master | unit, contract |
+| `smoke-e2e` | `@smoke` เส้นทางหลักของผู้ใช้ | unit, contract |
+| `report` | รวม Allure ของทุก job (รันแม้เทสพัง) | job ที่ใช้ browser |
+| `smoke` | ตรวจว่าทุก job สำเร็จ | ทุก job เทส |
+
+- contract กับ characterization แยกกัน เพราะพังแล้วต้องรับมือคนละแบบ: contract พัง = โค้ดผิดข้อตกลง (หรือต้องเจรจาแก้ข้อตกลง), characterization พัง = พฤติกรรมเดิมเปลี่ยน ต้องดู diff แล้วตัดสินว่าบั๊กหรือตั้งใจ และ **ห้าม update golden master อัตโนมัติใน CI**
+- ตั้ง branch protection → Require status checks → เลือก **`smoke` ตัวเดียว** (ชื่อเดิม) มันรวมผลทุก job และนับ job ที่ถูกข้ามว่าไม่ผ่าน ไม่ต้องเลือก job ย่อย
+- ยกเลิกรอบเก่าให้อัตโนมัติถ้ามี push ใหม่เข้ามาที่ branch เดียวกัน (`concurrency`) ทุก job อัปโหลดรายงาน (`report-<job>` = Playwright HTML + trace, `allure-results-<job>`) และ `report` รวมเป็น `allure-report` พร้อมตารางสรุปผลในหน้า run ของแต่ละ job
+- **ยังไม่ได้รันบน GitHub จริง** ตรวจแล้วว่า YAML ถูกต้องและคำสั่งของแต่ละ job ผ่านในเครื่อง รอบแรกบน PR ให้ดูว่า cache ของ browser และชื่อ artifact ทำงานถูก
+
+อ่านละเอียด (หลักคิด, ตาราง "job ไหนแดงทำอะไร", สิ่งที่ยังไม่ได้ทำ): [docs/ci-pipeline.html](docs/ci-pipeline.html) · English: [docs/ci-pipeline.en.html](docs/ci-pipeline.en.html)
 
 ### Accessibility ด้วย axe
 

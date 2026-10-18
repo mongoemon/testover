@@ -1,6 +1,13 @@
 name: Smoke
 
-# Fast check (unit + contract, @smoke, and @characterization incl. golden master) on every push to main and every pull request.
+# Fast gate on every push to main and every pull request. The work is split into jobs so the
+# cheap ones fail first and the browser ones run side by side:
+#
+#   unit ─┐                      ┌─ characterization (legacy behaviour, golden master)
+#         ├─ both green ─────────┤
+# contract┘                      └─ smoke-e2e        (main user paths)
+#
+# `report` merges the Allure results of all jobs and `smoke` is the single required check.
 # The full regression runs on a schedule in weekend-e2e.yml.
 on:
   push:
@@ -17,58 +24,107 @@ concurrency:
   cancel-in-progress: true
 
 jobs:
-  smoke:
+  # No browser: node:test only (zod schemas, report and webhook contracts C2/C3, API unit tests).
+  unit:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+      - run: npm run test:unit
+
+  # The agreements at the boundaries: localStorage (C1) and the JSON the API sends (C4).
+  contract:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v4
-
-      - uses: actions/setup-node@v4
+      - uses: ./.github/actions/setup
         with:
-          node-version: 22
-          cache: npm
-
-      - run: npm ci
-
-      - name: Unit and contract tests
-        run: npm run test:unit
-
-      - run: npx playwright install --with-deps chromium
-
-      # One Playwright run (not two) so results.json, the HTML report and Allure results cover
-      # everything; a second run would overwrite the first run's report.
-      - name: Run smoke and characterization tests (incl. golden master)
-        run: npx playwright test --grep "@smoke|@characterization"
-
-      - name: Test summary
+          browser: 'true'
+      - name: Contract tests
+        run: npx playwright test --grep @contract
+      - uses: ./.github/actions/playwright-artifacts
         if: always()
-        run: node scripts/summary.mjs
-
-      # Always uploaded (not only on failure) so a green run can be inspected too.
-      - name: Upload Playwright report
-        if: always()
-        uses: actions/upload-artifact@v4
         with:
-          name: smoke-report
-          path: |
-            playwright-report/
-            test-results/
-          retention-days: 7
+          name: contract
+
+  # Pins today's behaviour of the legacy code. Only worth running once the contracts hold.
+  characterization:
+    needs: [unit, contract]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          browser: 'true'
+      - name: Characterization tests (incl. golden master)
+        run: npx playwright test --grep @characterization
+      - uses: ./.github/actions/playwright-artifacts
+        if: always()
+        with:
+          name: characterization
+
+  smoke-e2e:
+    needs: [unit, contract]
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+        with:
+          browser: 'true'
+      - name: Smoke tests
+        run: npx playwright test --grep @smoke
+      - uses: ./.github/actions/playwright-artifacts
+        if: always()
+        with:
+          name: smoke-e2e
+
+  # One Allure report for the whole run, built from every job's allure-results.
+  report:
+    needs: [contract, characterization, smoke-e2e]
+    if: always() && !cancelled()
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+      - uses: ./.github/actions/setup
+
+      - uses: actions/download-artifact@v4
+        with:
+          pattern: allure-results-*
+          path: allure-results
+          merge-multiple: true
 
       - uses: actions/setup-java@v4
-        if: always()
         with:
           distribution: temurin
           java-version: 21
 
       - name: Generate Allure report
-        if: always()
         run: npm run allure:generate
 
-      - name: Upload Allure report
-        if: always()
-        uses: actions/upload-artifact@v4
+      - uses: actions/upload-artifact@v4
         with:
           name: allure-report
           path: allure-report/
           retention-days: 7
+
+  # The one check to require in branch protection: it fails when any job above failed or was
+  # skipped because a job it needs failed, and it keeps the old name `smoke`.
+  smoke:
+    needs: [unit, contract, characterization, smoke-e2e]
+    if: always()
+    runs-on: ubuntu-latest
+    timeout-minutes: 2
+    steps:
+      - name: All test jobs passed
+        env:
+          RESULTS: ${{ join(needs.*.result, ' ') }}
+        run: |
+          echo "job results: $RESULTS"
+          for result in $RESULTS; do
+            [ "$result" = "success" ] || { echo "::error::a test job did not succeed ($result)"; exit 1; }
+          done

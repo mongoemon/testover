@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="th">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>ลำดับขั้นตอน CI ของ testover</title>
+  <meta name="description" content="workflow smoke.yml แยกเป็น unit, contract, characterization และ smoke-e2e: ลำดับที่ทำให้รู้ผลเร็วที่สุด ทำไมต้องแยก contract กับ characterization และต้องทำอะไรเมื่อ job ไหนแดง">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --fail: #b3261e; --tint: #e6efe9;
+      --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.75; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3rem 0 2rem; border-bottom: 2px solid var(--ink); }
+    .topbar { display: flex; justify-content: flex-end; gap: .5rem; }
+    .pill { text-decoration: none; background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; margin-top: 1rem; }
+    h1 { font-size: clamp(2rem, 1.1rem + 4.2vw, 3.5rem); line-height: 1.15; margin: .4rem 0 1rem; letter-spacing: -.01em; }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 60ch; margin: 0 0 1.25rem; }
+    .try { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600; padding: .55rem 1.2rem; border-radius: 999px; }
+    .try:hover { filter: brightness(1.08); }
+    .try-note { color: var(--muted); font-size: .9rem; margin-left: .75rem; }
+
+    h2.sec { font-size: 1.55rem; margin: 3.75rem 0 .4rem; line-height: 1.3; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 64ch; }
+
+    .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .cap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; }
+    .cap:nth-child(3n+2) { margin-top: 1rem; }
+    .cap .n { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 700; color: var(--accent); line-height: 1.2; display: block; }
+    .cap h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
+    .cap p { margin: 0; font-size: .93rem; color: var(--muted); }
+
+    figure.chart { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1rem .75rem; }
+    figure.chart svg { display: block; width: 100%; max-width: 600px; height: auto; margin: 0 auto; }
+    figcaption { font-size: .88rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+    .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; justify-content: center; margin: .6rem 0 0; font-size: .82rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: .9rem; height: .9rem; vertical-align: -.15em; margin-right: .35rem; border: 1.5px solid var(--ink); border-radius: 3px; background: var(--surface); }
+    .legend .l-ok::before { background: var(--accent); border-color: var(--accent); }
+    .legend .l-bad::before { border-color: var(--fail); }
+    .legend .l-d::before { background: var(--tint); transform: rotate(45deg) scale(.8); border-radius: 1px; }
+
+    svg .n { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+    svg .n.ok { fill: var(--accent); stroke: var(--accent); }
+    svg .n.bad { stroke: var(--fail); }
+    svg .n.d { fill: var(--tint); }
+    svg text { fill: var(--ink); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+    svg text.ok { fill: var(--accent-ink); }
+    svg text.sub { font-size: 12px; font-weight: 400; fill: var(--muted); }
+    svg text.sub.ok { fill: var(--accent-ink); opacity: .9; }
+    svg text.lbl { font-size: 12px; font-weight: 700; fill: var(--accent); }
+    svg path.a { fill: none; stroke: var(--ink); stroke-width: 1.6; marker-end: url(#ah); }
+    svg path.a.plain { marker-end: none; }
+    svg path.a.both { marker-start: url(#ah); }
+    svg .ah { fill: var(--ink); }
+
+    details.alt { margin-top: .75rem; font-size: .95rem; }
+    details.alt summary { cursor: pointer; color: var(--accent); }
+    details.alt ol { margin: .5rem 0 0; padding-left: 1.3rem; }
+
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); font-size: .92rem; }
+    th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+    tr:last-child td { border-bottom: 0; }
+    td code { display: inline-block; margin: .05rem 0; }
+
+    ul.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
+    ul.rules li { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: .7rem 1rem; font-size: .96rem; }
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.5rem 0; font-size: .95rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .topnav .in { max-width: 980px; margin: 0 auto; padding: .45rem 16px; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; }
+    .topnav .in::-webkit-scrollbar { display: none; }
+    .topnav .brand { font-family: var(--font-mono); font-weight: 700; color: var(--accent); text-decoration: none; margin-right: .6rem; white-space: nowrap; }
+    .topnav a.l { color: var(--ink); text-decoration: none; font-size: .88rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .topnav a.l:hover { border-color: var(--line); background: var(--surface); }
+    .topnav a.l[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+    .topnav .sep { flex: 1 0 .8rem; }
+    h2.sec, section.next { scroll-margin-top: 3.4rem; }
+    @media print { .topnav { display: none; } }
+    @media (max-width: 680px) { .cap:nth-child(n) { margin-top: 0; } .try-note { display: block; margin: .6rem 0 0; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  
+    pre { background: #1d2320; color: #e9f1ec; padding: .9rem 1.1rem; border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.6; margin: .75rem 0; }
+    pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    pre .c { color: #8fa89b; }
+    .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: .9rem; }
+    .steps > li { min-width: 0; }
+    .steps > li { counter-increment: s; position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1.2rem .9rem 4rem; }
+    .steps > li::before { content: counter(s); position: absolute; left: 1rem; top: .8rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; }
+    .steps h3 { margin: 0 0 .25rem; font-size: 1.08rem; }
+    .steps p { margin: .3rem 0; }
+    .warn { border-left: 4px solid var(--fail); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    .ok-note { border-left: 4px solid var(--accent); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    h3.mini { font-size: 1.1rem; margin: 1.6rem 0 .3rem; }
+    ul.plain { margin: .4rem 0; padding-left: 1.3rem; }
+    @media (max-width: 680px) { .steps > li { padding-left: 3.4rem; } }
+  </style>
+</head>
+<body>
+<nav class="topnav" aria-label="สารบัญ"><div class="in"><a class="brand" href="#top">testover</a><a class="l" href="#top">CI</a><a class="l" href="#flow">ผัง</a><a class="l" href="#jobs">Job</a><a class="l" href="#split">แยกทำไม</a><a class="l" href="#red">เมื่อแดง</a><a class="l" href="#setup">ตั้งค่า</a><a class="l" href="#gaps">ยังไม่ทำ</a><span class="sep"></span><a class="l" href="overview.html">ภาพรวม</a><a class="l" href="testing-structure.html">โครงเทส</a><a class="l" href="automation-phases.html">Phase</a></div></nav>
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <div class="topbar">
+      <a class="pill" href="ci-pipeline.en.html" hreflang="en" lang="en">English</a>
+      <button class="pill" id="theme" type="button" aria-label="สลับโหมดสว่าง/มืด">Theme</button>
+    </div>
+    <div class="eyebrow">testover · ci</div>
+    <h1>ให้ CI บอกผลเร็วที่สุด</h1>
+    <p class="lead">smoke.yml เดิมรันทุกอย่างเรียงใน job เดียว ตอนนี้แยกเป็น unit, contract, characterization และ smoke-e2e เรียงจากถูกไปแพง รันขนานกันเมื่อทำได้ และมี check เดียวให้ตั้งเป็นเงื่อนไข merge</p>
+    <div class="ok-note" style="margin:0"><b>สั้นๆ:</b> สิ่งที่ถูกและเร็วรันก่อน ถ้าพังก็หยุดตรงนั้น ไม่เสียเวลารัน browser ที่เหลือ · contract กับ characterization แยกกัน เพราะพังแล้วต้องรับมือคนละแบบ</div>
+  </header>
+
+  <h2 class="sec" id="rules">หลักคิด 4 ข้อ</h2>
+  <ul class="rules">
+<li><b>ถูกและเร็วก่อน:</b> unit ไม่ใช้ browser ใช้ไม่กี่วินาที ถ้าพังตรงนี้ job แพงๆ จะไม่ถูกรันเลย (<code>needs</code>)</li>
+<li><b>ขนานด้วย job ไม่ใช่ step:</b> job ที่ไม่ต้องรอกันรันพร้อมกันบนเครื่องคนละเครื่อง ผลรวมจึงเท่ากับ job ที่ช้าที่สุด ไม่ใช่ผลบวก</li>
+<li><b>เทสที่ให้ข้อมูลมากสุดต่อวินาทีมาก่อน:</b> ข้อตกลงที่ขอบเขต (contract) บอกว่าฐานยังดีไหม ก่อนจะไปดูรายละเอียดพฤติกรรม (characterization)</li>
+<li><b>check เดียวสำหรับ merge:</b> job <code>smoke</code> รวมผลทุก job จะเพิ่มหรือเปลี่ยนชื่อ job ย่อยทีหลังก็ไม่ต้องไปแก้ branch protection</li>
+  </ul>
+
+  <h2 class="sec" id="flow">ผังลำดับ</h2>
+  <p class="sub">unit กับ contract รันพร้อมกัน ถ้าผ่านทั้งคู่ characterization กับ smoke-e2e จึงเริ่มและรันพร้อมกัน</p>
+  <figure class="chart"><svg viewBox="0 0 560 270" role="img" aria-labelledby="g-t g-d" xmlns="http://www.w3.org/2000/svg"><title id="g-t">ลำดับ job ใน smoke.yml</title><desc id="g-d">unit และ contract รันพร้อมกัน เมื่อผ่านแล้ว characterization และ smoke-e2e รันพร้อมกัน ผลทั้งหมดไปที่ job smoke ส่วน report รวมรายงาน Allure</desc>
+<g><rect class="n" x="10" y="30" width="130" height="56" rx="8"/><text x="75" y="49">unit</text><text class="sub" x="75" y="67">ไม่ใช้ browser</text></g>
+<g><rect class="n" x="10" y="110" width="130" height="56" rx="8"/><text x="75" y="129">contract</text><text class="sub" x="75" y="147">C1 · C4</text></g>
+<path class="a plain" d="M140 58 H177 V138 H140"/>
+<path class="a" d="M177 58 H213"/><path class="a" d="M177 138 H213"/>
+<g><rect class="n" x="215" y="30" width="150" height="56" rx="8"/><text x="290" y="49">characterization</text><text class="sub" x="290" y="67">golden master</text></g>
+<g><rect class="n" x="215" y="110" width="150" height="56" rx="8"/><text x="290" y="129">smoke-e2e</text><text class="sub" x="290" y="147">@smoke</text></g>
+<path class="a plain" d="M365 58 H397 V138 H365"/><path class="a" d="M397 98 H428"/>
+<g><rect class="n ok" x="430" y="70" width="120" height="56" rx="8"/><text class="ok" x="490" y="89">smoke</text><text class="sub ok" x="490" y="107">check เดียว</text></g>
+<g><rect class="n d" x="215" y="198" width="150" height="46" rx="8"/><text x="290" y="214">report</text><text class="sub" x="290" y="232">Allure</text></g>
+</svg>
+    <div class="legend" aria-hidden="true"><span class="l-ok">check ที่ต้องผ่าน</span><span class="l-d">รายงาน</span></div>
+  </figure>
+  <p>ตัว <code>smoke</code> ต้องการทุก job จึงแดงเมื่อมี job ใดแดงหรือถูกข้าม ส่วน <code>report</code> รันเสมอ (แม้เทสพัง) เพื่อให้มีรายงาน Allure รวมไว้ดู</p>
+
+  <h2 class="sec" id="jobs">แต่ละ job ทำอะไร</h2>
+  <p class="sub">จำนวนเคสนับเมื่อ 2026-10-18 ตัวเลขเปลี่ยนบ่อย นับใหม่ด้วยคำสั่งด้านล่างก่อนยกไปอ้างที่อื่น</p>
+  <div class="tablewrap"><table>
+<tr><th>job</th><th>รันอะไร</th><th>ต้องรอ</th><th>เคส</th><th>ทำไมอยู่ตรงนี้</th></tr>
+<tr><td><code>unit</code></td><td><code>npm run test:unit</code> (node:test: schema, contract C2/C3, API)</td><td>-</td><td>116</td><td>ไม่ใช้ browser ใช้ไม่กี่วินาที พังก็หยุดที่นี่</td></tr>
+<tr><td><code>contract</code></td><td><code>--grep @contract</code> (C1 localStorage, C4 JSON ของ API)</td><td>-</td><td>15</td><td>ข้อตกลงที่ขอบเขต ถูก และบอกก่อนว่าฐานยังดี</td></tr>
+<tr><td><code>characterization</code></td><td><code>--grep @characterization</code> (พฤติกรรม legacy + golden master)</td><td>unit, contract</td><td>46</td><td>รันเมื่อข้อตกลงยังเป็นจริง อ่านผลที่พังได้ตรงไปตรงมาขึ้น</td></tr>
+<tr><td><code>smoke-e2e</code></td><td><code>--grep @smoke</code> (เส้นทางหลักของผู้ใช้)</td><td>unit, contract</td><td>5</td><td>ขนานกับ characterization ไม่ต้องรอกัน</td></tr>
+<tr><td><code>report</code></td><td>รวม allure-results ของทุก job เป็นรายงานเดียว</td><td>job ที่ใช้ browser</td><td>-</td><td>รันแม้เทสพัง</td></tr>
+<tr><td><code>smoke</code></td><td>ตรวจว่าทุก job สำเร็จ</td><td>ทุก job เทส</td><td>-</td><td>check เดียวที่ตั้งเป็นเงื่อนไข merge</td></tr>
+  </table></div>
+  <p class="sub" style="margin-top:.8rem">นับใหม่ / รันแบบเดียวกับที่ CI รัน:</p>
+  <pre><code>npm run test:unit
+npx playwright test --grep @contract
+npx playwright test --grep @characterization
+npx playwright test --grep @smoke
+npx playwright test --grep @contract --list     # นับเคสโดยไม่รัน</code></pre>
+
+  <h2 class="sec" id="split">ทำไมแยก contract กับ characterization</h2>
+  <p class="sub">ทั้งคู่ต้องผ่านก่อน merge แต่ความหมายและวิธีรับมือเมื่อพังต่างกัน จึงแยก tag, job และรายงานออกจากกัน</p>
+  <div class="tablewrap"><table>
+<tr><th></th><th>contract</th><th>characterization</th></tr>
+<tr><td>ตอบคำถาม</td><td>ข้อตกลงที่ขอบเขตยังเป็นจริงไหม</td><td>พฤติกรรมเดิมเปลี่ยนไหม</td></tr>
+<tr><td>อายุ</td><td>ถาวร</td><td>ชั่วคราว เป็นนั่งร้านระหว่าง refactor แล้วเลื่อนขั้นเป็นเทสจริงหรือลบ</td></tr>
+<tr><td>สิ่งที่ pin</td><td>schema ที่ตกลงกัน (zod, OpenAPI)</td><td>สิ่งที่เกิดขึ้นจริง รวมถึงส่วนที่ผิด (golden master)</td></tr>
+<tr><td>เมื่อพัง</td><td>โค้ดผิดข้อตกลง หรือต้องเจรจาแก้ข้อตกลง</td><td>บั๊กที่เพิ่งใส่ หรือการเปลี่ยนที่ตั้งใจ ต้องดู diff แล้วตัดสิน</td></tr>
+  </table></div>
+  <div class="warn"><b>ห้าม update golden master อัตโนมัติใน CI</b> ให้ update ในเครื่อง (<code>--update-snapshots</code>) แล้วให้คนอื่นดู diff ของ snapshot ใน PR ถ้า CI แก้เองได้ มันจะเปลี่ยนให้ผ่านทุกครั้งและเทสหมดความหมาย</div>
+
+  <h2 class="sec" id="red">job ไหนแดง หมายความว่าอะไร</h2>
+  <p class="sub">เปิดแท็บ Actions ของ PR ดูว่า job ใดแดง แล้วทำตามตาราง</p>
+  <div class="tablewrap"><table>
+<tr><th>job</th><th>หมายความว่า</th><th>ทำอะไร</th></tr>
+<tr><td><code>unit</code></td><td>logic, schema, สัญญา report/webhook หรือ API เสีย</td><td>อ่านข้อความ assertion แล้วแก้โค้ด รันซ้ำด้วย <code>npm run test:unit</code> job ที่เหลือจะถูกข้าม</td></tr>
+<tr><td><code>contract</code></td><td>ข้อมูลที่ขอบเขตไม่ตรง schema</td><td>ถ้าโค้ดผิดก็แก้โค้ด ถ้าตั้งใจเปลี่ยนข้อตกลงให้แก้ <code>contracts/schemas.mjs</code> กับ <code>contracts/openapi.yaml</code> และบอกฝั่งที่ใช้ API</td></tr>
+<tr><td><code>characterization</code></td><td>พฤติกรรมเดิมเปลี่ยน</td><td>ดู diff ของ snapshot ถ้าเป็นบั๊กให้แก้โค้ด ถ้าตั้งใจให้ update ในเครื่องแล้วให้ reviewer ดู</td></tr>
+<tr><td><code>smoke-e2e</code></td><td>เส้นทางหลักของผู้ใช้ใช้ไม่ได้</td><td>โหลด artifact <code>report-smoke-e2e</code> แล้วเปิด trace: <code>npx playwright show-trace &lt;ไฟล์&gt;</code></td></tr>
+  </table></div>
+  <p>artifact ที่ได้ทุกรอบ (เก็บ 7 วัน): <code>report-&lt;job&gt;</code> = HTML report + trace/video, <code>allure-results-&lt;job&gt;</code> = ข้อมูลดิบ, <code>allure-report</code> = รายงาน Allure รวม ตารางสรุปผลอยู่ที่หน้า run ของแต่ละ job</p>
+
+  <h2 class="sec" id="setup">ตั้งค่าและดูแล</h2>
+  <ol class="steps">
+    <li><h3>ตั้ง check ที่ต้องผ่านก่อน merge</h3>
+      <p>GitHub → <b>Settings → Branches → Branch protection rules → Require status checks</b> แล้วเลือกเฉพาะ <code>smoke</code> ตัวเดียว (ชื่อเดิม ไม่ต้องตั้งใหม่) ไม่ต้องเลือก job ย่อย เพราะ job ที่ถูกข้ามเพราะ job ก่อนหน้าพังจะไม่ถูกนับว่าผ่าน แต่ <code>smoke</code> จับให้เอง ถ้าเลือก job ที่ถูกข้ามไว้ PR จะค้างรอตลอด</p></li>
+    <li><h3>ชิ้นส่วนที่ใช้ซ้ำ</h3>
+      <p><code>.github/actions/setup</code> = Node 22 + <code>npm ci</code> + (ถ้าขอ) Chromium พร้อม cache ตามรุ่น Playwright · <code>.github/actions/playwright-artifacts</code> = ตารางสรุป + อัปโหลดรายงาน ทั้งสองถูกเรียกจากทุก job จึงแก้ที่เดียว</p></li>
+    <li><h3>เพิ่ม job หรือกลุ่มเทสใหม่</h3>
+      <p>ติด tag ให้เทส (ดู <a href="tags.md">tags.md</a>) แล้วคัดลอก job <code>smoke-e2e</code> เปลี่ยน <code>--grep</code> กับ <code>name:</code> ของ artifact จากนั้นใส่ชื่อ job ใหม่ใน <code>needs</code> ของ <code>report</code> และ <code>smoke</code></p></li>
+  </ol>
+
+  <h2 class="sec" id="gaps">ยังไม่ได้ทำ / ควรรู้</h2>
+  <p class="sub">บอกตรงๆ ว่าอะไรตรวจแล้ว อะไรยัง</p>
+  <ul class="plain">
+<li><b>ยังไม่ได้รันบน GitHub จริง</b> ตรวจแล้วว่า YAML ถูกต้องและคำสั่งของแต่ละ job ผ่านในเครื่อง (15 / 46 / 5 เคส และ unit 116) รอบแรกบน PR ให้ดูว่า cache ของ browser ทำงาน (รอบที่สองควรเร็วขึ้น) และ artifact ชื่อถูกต้อง</li>
+<li><b>weekend-e2e.yml ยังเป็น job เดียว</b> และรัน Playwright ก่อน unit โดยตั้งใจ เพราะ contract C2 ต้องใช้ <code>results.json</code> จริงจากรอบ Playwright ถ้าช้าเกินไปค่อยแยกเป็น job และ shard</li>
+<li><b>ยังไม่ shard</b> ตอนนี้ทุก job สั้น พอ E2E เกินราว 10 นาทีค่อยใช้ matrix <code>--shard=1/4</code> ถึง <code>4/4</code> แล้วรวมด้วย <code>merge-reports</code></li>
+<li><b>visual regression ยังไม่อยู่ใน PR</b> เพราะ baseline สร้างจาก Linux/Docker เท่านั้น และ Prism (<code>npm run contract:prism</code>) ยังไม่ถูกต่อเข้า workflow</li>
+<li><b>ยังไม่ได้ใส่ paths-ignore</b> แก้ docs อย่างเดียวก็ยังรันทุก job ถ้าต้องการให้ข้าม ต้องระวังเรื่อง required check ที่ถูกข้าม</li>
+  </ul>
+
+  <section class="next" id="next">
+    <h2>อ่านต่อ</h2>
+    <ul>
+      <li>เทสแต่ละชั้นอยู่ที่ไหน: <a href="testing-structure.html">testing-structure.html</a></li>
+      <li>contract กับ characterization อยู่ phase ไหน และ Dev/QA ทำอะไร: <a href="automation-phases.html">automation-phases.html</a></li>
+      <li>ทำไมต้อง characterization: <a href="characterization-why.html">characterization-why.html</a></li>
+      <li>ตั้ง webhook, secret และ cron ของรอบสุดสัปดาห์: <a href="guide.html">guide.html</a></li>
+    </ul>
+  </section>
+
+  <footer>testover · อ้างอิงจาก .github/workflows/smoke.yml และ .github/actions/ · <a href="ci-pipeline.en.html" hreflang="en" lang="en">English</a></footer>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+</svg>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+<script>
+(function(){var links=[].slice.call(document.querySelectorAll('.topnav a.l[href^="#"]'));
+if(!('IntersectionObserver' in window))return;
+var map={};links.forEach(function(a){var el=document.getElementById(a.getAttribute('href').slice(1));if(el)map[el.id]=a});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.removeAttribute('aria-current')});map[e.target.id].setAttribute('aria-current','true')}})},{rootMargin:'-20% 0px -70% 0px'});
+Object.keys(map).forEach(function(id){io.observe(document.getElementById(id))})})();
+</script>
+</body>
+</html>

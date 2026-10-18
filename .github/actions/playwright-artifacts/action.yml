@@ -1,0 +1,32 @@
+name: Playwright artifacts
+description: Job summary table, then upload the HTML report and the Allure results of this job
+
+inputs:
+  name:
+    description: Short job name, used in the artifact names
+    required: true
+  retention-days:
+    description: How long GitHub keeps the artifacts
+    default: '7'
+
+runs:
+  using: composite
+  steps:
+    - name: Test summary
+      shell: bash
+      run: node scripts/summary.mjs
+
+    # Always uploaded (not only on failure) so a green run can be inspected too.
+    - uses: actions/upload-artifact@v4
+      with:
+        name: report-${{ inputs.name }}
+        path: |
+          playwright-report/
+          test-results/
+        retention-days: ${{ inputs.retention-days }}
+
+    - uses: actions/upload-artifact@v4
+      with:
+        name: allure-results-${{ inputs.name }}
+        path: allure-results/
+        retention-days: ${{ inputs.retention-days }}

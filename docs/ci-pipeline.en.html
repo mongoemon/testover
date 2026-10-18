@@ -1,0 +1,270 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>testover CI pipeline order</title>
+  <meta name="description" content="The smoke.yml workflow split into unit, contract, characterization and smoke-e2e: the order that gives the fastest answer, why contract and characterization tests are kept apart, and what to do when each job goes red.">
+  <style>
+    :root {
+      --bg: #f6f3ec; --surface: #fffdf8; --ink: #1d2320; --muted: #5d6a63; --line: #ddd6c6;
+      --accent: #0b6e4f; --accent-ink: #ffffff; --fail: #b3261e; --tint: #e6efe9;
+      --radius: 12px;
+      --font-body: "Segoe UI", "Noto Sans Thai", system-ui, sans-serif;
+      --font-mono: "Cascadia Mono", Consolas, "SF Mono", monospace;
+    }
+    @media (prefers-color-scheme: dark) {
+      :root:not([data-theme="light"]) {
+        color-scheme: dark;
+        --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+        --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+      }
+    }
+    :root[data-theme="dark"] {
+      color-scheme: dark;
+      --bg: #131816; --surface: #1b221f; --ink: #e8efe9; --muted: #9bada2; --line: #2e3a35;
+      --accent: #4cc79a; --accent-ink: #0c1612; --fail: #ff8a80; --tint: #21302a;
+    }
+    * { box-sizing: border-box; }
+    html { scroll-behavior: smooth; }
+    body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--font-body); line-height: 1.75; }
+    .wrap { max-width: 920px; margin: 0 auto; padding: 0 16px 5rem; }
+    a { color: var(--accent); }
+    code { font-family: var(--font-mono); font-size: .86em; background: color-mix(in srgb, var(--ink) 8%, transparent); padding: .1em .35em; border-radius: 4px; overflow-wrap: anywhere; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+    header.hero { padding: 3rem 0 2rem; border-bottom: 2px solid var(--ink); }
+    .topbar { display: flex; justify-content: flex-end; gap: .5rem; }
+    .pill { text-decoration: none; background: none; border: 1px solid var(--line); color: var(--ink); border-radius: 999px; padding: .3rem .9rem; cursor: pointer; font: inherit; font-size: .85rem; }
+    .pill:hover { border-color: var(--accent); color: var(--accent); }
+    .eyebrow { font-family: var(--font-mono); font-size: .78rem; letter-spacing: .1em; color: var(--accent); text-transform: uppercase; margin-top: 1rem; }
+    h1 { font-size: clamp(2rem, 1.1rem + 4.2vw, 3.5rem); line-height: 1.15; margin: .4rem 0 1rem; letter-spacing: -.01em; }
+    .lead { font-size: 1.12rem; color: var(--muted); max-width: 60ch; margin: 0 0 1.25rem; }
+    .try { display: inline-block; background: var(--accent); color: var(--accent-ink); text-decoration: none; font-weight: 600; padding: .55rem 1.2rem; border-radius: 999px; }
+    .try:hover { filter: brightness(1.08); }
+    .try-note { color: var(--muted); font-size: .9rem; margin-left: .75rem; }
+
+    h2.sec { font-size: 1.55rem; margin: 3.75rem 0 .4rem; line-height: 1.3; }
+    .sub { color: var(--muted); margin: 0 0 1.5rem; max-width: 64ch; }
+
+    .caps { display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 1rem; }
+    .cap { background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1.2rem; }
+    .cap:nth-child(3n+2) { margin-top: 1rem; }
+    .cap .n { font-family: var(--font-mono); font-size: 1.7rem; font-weight: 700; color: var(--accent); line-height: 1.2; display: block; }
+    .cap h3 { margin: 0 0 .2rem; font-size: 1.05rem; }
+    .cap p { margin: 0; font-size: .93rem; color: var(--muted); }
+
+    figure.chart { margin: 0; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: 1rem 1rem .75rem; }
+    figure.chart svg { display: block; width: 100%; max-width: 600px; height: auto; margin: 0 auto; }
+    figcaption { font-size: .88rem; color: var(--muted); margin-top: .5rem; text-align: center; }
+    .legend { display: flex; flex-wrap: wrap; gap: .4rem 1.1rem; justify-content: center; margin: .6rem 0 0; font-size: .82rem; color: var(--muted); }
+    .legend span::before { content: ""; display: inline-block; width: .9rem; height: .9rem; vertical-align: -.15em; margin-right: .35rem; border: 1.5px solid var(--ink); border-radius: 3px; background: var(--surface); }
+    .legend .l-ok::before { background: var(--accent); border-color: var(--accent); }
+    .legend .l-bad::before { border-color: var(--fail); }
+    .legend .l-d::before { background: var(--tint); transform: rotate(45deg) scale(.8); border-radius: 1px; }
+
+    svg .n { fill: var(--surface); stroke: var(--ink); stroke-width: 1.5; }
+    svg .n.ok { fill: var(--accent); stroke: var(--accent); }
+    svg .n.bad { stroke: var(--fail); }
+    svg .n.d { fill: var(--tint); }
+    svg text { fill: var(--ink); font-family: var(--font-body); font-size: 14px; font-weight: 600; text-anchor: middle; dominant-baseline: central; }
+    svg text.ok { fill: var(--accent-ink); }
+    svg text.sub { font-size: 12px; font-weight: 400; fill: var(--muted); }
+    svg text.sub.ok { fill: var(--accent-ink); opacity: .9; }
+    svg text.lbl { font-size: 12px; font-weight: 700; fill: var(--accent); }
+    svg path.a { fill: none; stroke: var(--ink); stroke-width: 1.6; marker-end: url(#ah); }
+    svg path.a.plain { marker-end: none; }
+    svg path.a.both { marker-start: url(#ah); }
+    svg .ah { fill: var(--ink); }
+
+    details.alt { margin-top: .75rem; font-size: .95rem; }
+    details.alt summary { cursor: pointer; color: var(--accent); }
+    details.alt ol { margin: .5rem 0 0; padding-left: 1.3rem; }
+
+    .tablewrap { overflow-x: auto; }
+    table { width: 100%; border-collapse: collapse; background: var(--surface); border: 1px solid var(--line); font-size: .92rem; }
+    th, td { text-align: left; padding: .6rem .9rem; border-bottom: 1px solid var(--line); vertical-align: top; }
+    th { font-family: var(--font-mono); font-size: .75rem; letter-spacing: .06em; text-transform: uppercase; color: var(--muted); background: color-mix(in srgb, var(--ink) 4%, var(--surface)); }
+    tr:last-child td { border-bottom: 0; }
+    td code { display: inline-block; margin: .05rem 0; }
+
+    ul.rules { margin: 0; padding: 0; list-style: none; display: grid; gap: .75rem; }
+    ul.rules li { background: var(--surface); border: 1px solid var(--line); border-left: 4px solid var(--accent); border-radius: 0 var(--radius) var(--radius) 0; padding: .7rem 1rem; font-size: .96rem; }
+    .note { border-left: 4px solid var(--fail); background: var(--surface); padding: .75rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1.5rem 0; font-size: .95rem; }
+    .next { background: var(--ink); color: var(--bg); border-radius: var(--radius); padding: 1.5rem 1.6rem; margin-top: 3rem; }
+    .next h2 { margin: 0 0 .5rem; font-size: 1.3rem; }
+    .next ul { margin: 0; padding-left: 1.2rem; }
+    .next a { color: inherit; font-weight: 600; }
+    footer { margin-top: 2.5rem; color: var(--muted); font-size: .85rem; }
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .topnav .in { max-width: 980px; margin: 0 auto; padding: .45rem 16px; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; }
+    .topnav .in::-webkit-scrollbar { display: none; }
+    .topnav .brand { font-family: var(--font-mono); font-weight: 700; color: var(--accent); text-decoration: none; margin-right: .6rem; white-space: nowrap; }
+    .topnav a.l { color: var(--ink); text-decoration: none; font-size: .88rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .topnav a.l:hover { border-color: var(--line); background: var(--surface); }
+    .topnav a.l[aria-current="true"] { border-color: var(--accent); color: var(--accent); }
+    .topnav .sep { flex: 1 0 .8rem; }
+    h2.sec, section.next { scroll-margin-top: 3.4rem; }
+    @media print { .topnav { display: none; } }
+    @media (max-width: 680px) { .cap:nth-child(n) { margin-top: 0; } .try-note { display: block; margin: .6rem 0 0; } }
+    @media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } }
+  
+    pre { background: #1d2320; color: #e9f1ec; padding: .9rem 1.1rem; border-radius: 8px; overflow-x: auto; font-family: var(--font-mono); font-size: .84rem; line-height: 1.6; margin: .75rem 0; }
+    pre code { background: none; padding: 0; font-size: inherit; overflow-wrap: normal; }
+    pre .c { color: #8fa89b; }
+    .steps { counter-reset: s; list-style: none; padding: 0; margin: 0; display: grid; grid-template-columns: minmax(0, 1fr); gap: .9rem; }
+    .steps > li { min-width: 0; }
+    .steps > li { counter-increment: s; position: relative; background: var(--surface); border: 1px solid var(--line); border-radius: var(--radius); padding: .9rem 1.2rem .9rem 4rem; }
+    .steps > li::before { content: counter(s); position: absolute; left: 1rem; top: .8rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; background: var(--accent); color: var(--accent-ink); display: grid; place-items: center; font-family: var(--font-mono); font-weight: 700; }
+    .steps h3 { margin: 0 0 .25rem; font-size: 1.08rem; }
+    .steps p { margin: .3rem 0; }
+    .warn { border-left: 4px solid var(--fail); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    .ok-note { border-left: 4px solid var(--accent); background: var(--surface); padding: .7rem 1rem; border-radius: 0 var(--radius) var(--radius) 0; margin: 1rem 0; font-size: .95rem; }
+    h3.mini { font-size: 1.1rem; margin: 1.6rem 0 .3rem; }
+    ul.plain { margin: .4rem 0; padding-left: 1.3rem; }
+    @media (max-width: 680px) { .steps > li { padding-left: 3.4rem; } }
+  </style>
+</head>
+<body>
+<nav class="topnav" aria-label="Contents"><div class="in"><a class="brand" href="#top">testover</a><a class="l" href="#top">CI</a><a class="l" href="#flow">Flow</a><a class="l" href="#jobs">Jobs</a><a class="l" href="#split">Why split</a><a class="l" href="#red">When red</a><a class="l" href="#setup">Setup</a><a class="l" href="#gaps">Not done</a><span class="sep"></span><a class="l" href="overview.en.html">Overview</a><a class="l" href="testing-structure.en.html">Test structure</a><a class="l" href="automation-phases.en.html">Phases</a></div></nav>
+<div class="wrap">
+
+  <header class="hero" id="top">
+    <div class="topbar">
+      <a class="pill" href="ci-pipeline.html" hreflang="th" lang="th">ภาษาไทย</a>
+      <button class="pill" id="theme" type="button" aria-label="Toggle light/dark mode">Theme</button>
+    </div>
+    <div class="eyebrow">testover · ci</div>
+    <h1>Make CI answer as fast as possible</h1>
+    <p class="lead">smoke.yml used to run everything in one job, one step after another. It is now split into unit, contract, characterization and smoke-e2e, ordered cheap to expensive, run side by side where possible, with a single check to require before merge.</p>
+    <div class="ok-note" style="margin:0"><b>In short:</b> cheap and fast first; if it fails, stop there and skip the browser jobs · contract and characterization are kept apart because a failure in each needs a different response.</div>
+  </header>
+
+  <h2 class="sec" id="rules">Four ideas behind it</h2>
+  <ul class="rules">
+<li><b>Cheap and fast first:</b> unit needs no browser and takes seconds. If it fails, the expensive jobs never start (<code>needs</code>).</li>
+<li><b>Parallel by job, not by step:</b> jobs that do not wait for each other run on separate machines at once, so the total is the slowest job, not the sum.</li>
+<li><b>Most information per second first:</b> the boundary agreements (contract) say whether the base is sound before you read the details of behaviour (characterization).</li>
+<li><b>One check for merging:</b> the <code>smoke</code> job gathers every result, so adding or renaming a job later does not touch branch protection.</li>
+  </ul>
+
+  <h2 class="sec" id="flow">The order</h2>
+  <p class="sub">unit and contract run together. When both pass, characterization and smoke-e2e start and run together.</p>
+  <figure class="chart"><svg viewBox="0 0 560 270" role="img" aria-labelledby="g-t g-d" xmlns="http://www.w3.org/2000/svg"><title id="g-t">Job order in smoke.yml</title><desc id="g-d">unit and contract run in parallel. Once both pass, characterization and smoke-e2e run in parallel. All of them feed the smoke job; report merges the Allure results.</desc>
+<g><rect class="n" x="10" y="30" width="130" height="56" rx="8"/><text x="75" y="49">unit</text><text class="sub" x="75" y="67">no browser</text></g>
+<g><rect class="n" x="10" y="110" width="130" height="56" rx="8"/><text x="75" y="129">contract</text><text class="sub" x="75" y="147">C1 · C4</text></g>
+<path class="a plain" d="M140 58 H177 V138 H140"/>
+<path class="a" d="M177 58 H213"/><path class="a" d="M177 138 H213"/>
+<g><rect class="n" x="215" y="30" width="150" height="56" rx="8"/><text x="290" y="49">characterization</text><text class="sub" x="290" y="67">golden master</text></g>
+<g><rect class="n" x="215" y="110" width="150" height="56" rx="8"/><text x="290" y="129">smoke-e2e</text><text class="sub" x="290" y="147">@smoke</text></g>
+<path class="a plain" d="M365 58 H397 V138 H365"/><path class="a" d="M397 98 H428"/>
+<g><rect class="n ok" x="430" y="70" width="120" height="56" rx="8"/><text class="ok" x="490" y="89">smoke</text><text class="sub ok" x="490" y="107">the one check</text></g>
+<g><rect class="n d" x="215" y="198" width="150" height="46" rx="8"/><text x="290" y="214">report</text><text class="sub" x="290" y="232">Allure</text></g>
+</svg>
+    <div class="legend" aria-hidden="true"><span class="l-ok">required check</span><span class="l-d">report</span></div>
+  </figure>
+  <p><code>smoke</code> needs every job, so it goes red when any job fails or is skipped. <code>report</code> always runs (even when tests fail) so there is a combined Allure report to open.</p>
+
+  <h2 class="sec" id="jobs">What each job does</h2>
+  <p class="sub">Test counts as of 2026-10-18. They change often, so recount with the commands below before quoting them elsewhere.</p>
+  <div class="tablewrap"><table>
+<tr><th>job</th><th>Runs</th><th>Waits for</th><th>Cases</th><th>Why it sits here</th></tr>
+<tr><td><code>unit</code></td><td><code>npm run test:unit</code> (node:test: schemas, contracts C2/C3, API)</td><td>-</td><td>116</td><td>No browser, seconds. If it fails, stop here.</td></tr>
+<tr><td><code>contract</code></td><td><code>--grep @contract</code> (C1 localStorage, C4 API JSON)</td><td>-</td><td>15</td><td>Boundary agreements: cheap, and tells you first whether the base is sound.</td></tr>
+<tr><td><code>characterization</code></td><td><code>--grep @characterization</code> (legacy behaviour + golden master)</td><td>unit, contract</td><td>46</td><td>Runs once the agreements hold, so a failure is easier to read.</td></tr>
+<tr><td><code>smoke-e2e</code></td><td><code>--grep @smoke</code> (the main user paths)</td><td>unit, contract</td><td>5</td><td>Parallel with characterization; they do not wait for each other.</td></tr>
+<tr><td><code>report</code></td><td>Merges every job's allure-results into one report</td><td>the browser jobs</td><td>-</td><td>Runs even when tests fail.</td></tr>
+<tr><td><code>smoke</code></td><td>Checks that every job succeeded</td><td>every test job</td><td>-</td><td>The one check to require before merge.</td></tr>
+  </table></div>
+  <p class="sub" style="margin-top:.8rem">Recount / run exactly what CI runs:</p>
+  <pre><code>npm run test:unit
+npx playwright test --grep @contract
+npx playwright test --grep @characterization
+npx playwright test --grep @smoke
+npx playwright test --grep @contract --list     # count cases without running</code></pre>
+
+  <h2 class="sec" id="split">Why contract and characterization are separate</h2>
+  <p class="sub">Both must pass before merge, but they mean different things and a failure needs a different response, so they get separate tags, jobs and reports.</p>
+  <div class="tablewrap"><table>
+<tr><th></th><th>contract</th><th>characterization</th></tr>
+<tr><td>Answers</td><td>Do the agreements at the boundary still hold?</td><td>Did the existing behaviour change?</td></tr>
+<tr><td>Lifetime</td><td>Permanent</td><td>Temporary scaffolding during a refactor; promoted to real tests or deleted afterwards</td></tr>
+<tr><td>What it pins</td><td>The agreed schema (zod, OpenAPI)</td><td>What really happens, including the wrong parts (golden master)</td></tr>
+<tr><td>When it fails</td><td>The code broke the agreement, or the agreement must be renegotiated</td><td>A bug just introduced, or an intended change: read the diff and decide</td></tr>
+  </table></div>
+  <div class="warn"><b>Never auto-update a golden master in CI.</b> Update it locally (<code>--update-snapshots</code>) and let someone else review the snapshot diff in the PR. If CI could fix it itself it would turn green every time and the tests would mean nothing.</div>
+
+  <h2 class="sec" id="red">What each red job means</h2>
+  <p class="sub">Open the PR's Actions tab, see which job is red, then follow the table.</p>
+  <div class="tablewrap"><table>
+<tr><th>job</th><th>It means</th><th>What to do</th></tr>
+<tr><td><code>unit</code></td><td>Logic, a schema, the report/webhook contract or the API broke</td><td>Read the assertion message and fix the code; rerun with <code>npm run test:unit</code>. The other jobs are skipped.</td></tr>
+<tr><td><code>contract</code></td><td>Data at a boundary no longer matches its schema</td><td>If the code is wrong, fix it. If you meant to change the agreement, edit <code>contracts/schemas.mjs</code> and <code>contracts/openapi.yaml</code> and tell whoever uses the API.</td></tr>
+<tr><td><code>characterization</code></td><td>Existing behaviour changed</td><td>Read the snapshot diff. A bug: fix the code. Intended: update locally and have a reviewer look.</td></tr>
+<tr><td><code>smoke-e2e</code></td><td>A main user path is broken</td><td>Download the <code>report-smoke-e2e</code> artifact and open the trace: <code>npx playwright show-trace &lt;file&gt;</code></td></tr>
+  </table></div>
+  <p>Artifacts every run (kept 7 days): <code>report-&lt;job&gt;</code> = HTML report + traces/videos, <code>allure-results-&lt;job&gt;</code> = raw data, <code>allure-report</code> = the combined Allure report. The summary table is on each job's run page.</p>
+
+  <h2 class="sec" id="setup">Setup and upkeep</h2>
+  <ol class="steps">
+    <li><h3>Make the check required before merge</h3>
+      <p>GitHub → <b>Settings → Branches → Branch protection rules → Require status checks</b>, then pick only <code>smoke</code> (the old name, nothing to reconfigure). Do not pick the individual jobs: a job skipped because an earlier one failed does not count as passed, but <code>smoke</code> catches that for you. If you require a job that gets skipped, the PR waits forever.</p></li>
+    <li><h3>Reusable pieces</h3>
+      <p><code>.github/actions/setup</code> = Node 22 + <code>npm ci</code> + (on request) Chromium cached per Playwright version · <code>.github/actions/playwright-artifacts</code> = summary table + report upload. Every job calls both, so a change happens in one place.</p></li>
+    <li><h3>Add a job or a new group of tests</h3>
+      <p>Tag the tests (see <a href="tags.md">tags.md</a>), copy the <code>smoke-e2e</code> job, change <code>--grep</code> and the artifact <code>name:</code>, then add the new job to <code>needs</code> of <code>report</code> and <code>smoke</code>.</p></li>
+  </ol>
+
+  <h2 class="sec" id="gaps">Not done yet / good to know</h2>
+  <p class="sub">What was checked and what was not.</p>
+  <ul class="plain">
+<li><b>Not run on GitHub yet.</b> Checked: the YAML parses and each job's command passes locally (15 / 46 / 5 cases, unit 116). On the first PR, check that the browser cache works (the second run should be faster) and that the artifact names are right.</li>
+<li><b>weekend-e2e.yml is still one job</b> and runs Playwright before unit on purpose, because contract C2 needs the real <code>results.json</code> from the Playwright run. Split and shard it only if it becomes too slow.</li>
+<li><b>No sharding yet.</b> Every job is short today. Once E2E passes about 10 minutes, use a matrix of <code>--shard=1/4</code> to <code>4/4</code> and join with <code>merge-reports</code>.</li>
+<li><b>Visual regression is not in PRs</b> because baselines come from Linux/Docker only, and Prism (<code>npm run contract:prism</code>) is not wired into a workflow.</li>
+<li><b>No paths-ignore.</b> A docs-only change still runs every job. If you want it skipped, mind the required check that would be skipped.</li>
+  </ul>
+
+  <section class="next" id="next">
+    <h2>Read next</h2>
+    <ul>
+      <li>Where each test layer lives: <a href="testing-structure.en.html">testing-structure.en.html</a></li>
+      <li>Which phase contract and characterization belong to, and who does what: <a href="automation-phases.en.html">automation-phases.en.html</a></li>
+      <li>Why characterization at all: <a href="characterization-why.en.html">characterization-why.en.html</a></li>
+      <li>Webhook, secrets and cron for the weekend run: <a href="guide.html">guide.html</a></li>
+    </ul>
+  </section>
+
+  <footer>testover · based on .github/workflows/smoke.yml and .github/actions/ · <a href="ci-pipeline.html" hreflang="th" lang="th">ภาษาไทย</a></footer>
+</div>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs><marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path class="ah" d="M0 0 L10 5 L0 10 z"/></marker></defs>
+</svg>
+
+<script>
+  (function () {
+    var root = document.documentElement;
+    var btn = document.getElementById('theme');
+    try {
+      var saved = localStorage.getItem('theme');
+      if (saved) root.setAttribute('data-theme', saved);
+    } catch (e) { /* storage unavailable */ }
+    btn.addEventListener('click', function () {
+      var dark = root.getAttribute('data-theme') === 'dark' ||
+        (!root.getAttribute('data-theme') && matchMedia('(prefers-color-scheme: dark)').matches);
+      var next = dark ? 'light' : 'dark';
+      root.setAttribute('data-theme', next);
+      try { localStorage.setItem('theme', next); } catch (e) { /* ignore */ }
+    });
+  })();
+</script>
+<script>
+(function(){var links=[].slice.call(document.querySelectorAll('.topnav a.l[href^="#"]'));
+if(!('IntersectionObserver' in window))return;
+var map={};links.forEach(function(a){var el=document.getElementById(a.getAttribute('href').slice(1));if(el)map[el.id]=a});
+var io=new IntersectionObserver(function(es){es.forEach(function(e){if(e.isIntersecting){links.forEach(function(a){a.removeAttribute('aria-current')});map[e.target.id].setAttribute('aria-current','true')}})},{rootMargin:'-20% 0px -70% 0px'});
+Object.keys(map).forEach(function(id){io.observe(document.getElementById(id))})})();
+</script>
+</body>
+</html>
