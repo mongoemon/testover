@@ -1,0 +1,278 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Characterization แบบดูภาพ</title>
+<meta name="description" content="อธิบาย characterization test ด้วยภาพที่กดเล่นได้: ลองรื้อโค้ดแล้วดูว่า E2E กับ characterization จับอะไรได้บ้าง, ลำดับการทำงาน 5 ขั้น และใครทำช่วงไหน">
+<style>
+:root{--bg:#f6f3ec;--surface:#fffdf8;--ink:#1d2320;--muted:#5d6a63;--line:#ddd6c6;--accent:#0b6e4f;
+--c-contract:#b7791f;--c-char:#8a4fa0;--c-qa:#3b6ea5;--c-dev:#b3541e;--ok:#1f7a4d;--bad:#b3261e;--radius:12px;
+--font-body:"Segoe UI","Noto Sans Thai",system-ui,sans-serif;--font-mono:"Cascadia Mono",Consolas,monospace}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273;--ok:#5fd39a;--bad:#ff8a80}}
+:root[data-theme="dark"]{--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--c-contract:#e6b75c;--c-char:#c79be0;--c-qa:#7fb0e6;--c-dev:#f0a273;--ok:#5fd39a;--bad:#ff8a80}
+*{box-sizing:border-box}html{scroll-behavior:smooth}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.65}
+.wrap{max-width:980px;margin:0 auto;padding:0 16px 5rem}a{color:var(--accent)}
+code{font-family:var(--font-mono);font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.1em .35em;border-radius:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header.hero{padding:3rem 0 1.6rem;border-bottom:2px solid var(--ink)}
+.topbar{float:right;margin-top:.6rem;display:flex;gap:.5rem}
+.pill{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:.3rem .9rem;cursor:pointer;font:inherit;font-size:.85rem;text-decoration:none}
+.pill:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pill:disabled{opacity:.4;cursor:default}
+.eyebrow{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(2rem,1.1rem + 4vw,3.3rem);line-height:1.15;margin:.4rem 0 .8rem;letter-spacing:-.02em}
+.lead{font-size:1.1rem;color:var(--muted);max-width:60ch;margin:0}
+h2.sec{font-size:1.5rem;margin:3rem 0 .3rem;line-height:1.25}
+h2.sec .no{font-family:var(--font-mono);color:var(--accent);font-size:1rem;margin-right:.5rem}
+.sub{color:var(--muted);margin:0 0 1.2rem;max-width:62ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem}
+
+/* lab */
+.opts{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1rem}
+.opt{cursor:pointer;user-select:none;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.4rem 1rem;font:inherit;font-size:.92rem;transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--c-char)}
+.opt[aria-pressed="true"]{border-color:var(--c-char);background:color-mix(in srgb,var(--c-char) 14%,var(--surface));font-weight:600}
+.opt[aria-pressed="true"]::before{content:"✓ "}
+.nets{display:grid;grid-template-columns:1fr 1fr;gap:1rem;margin-bottom:1rem}
+.net{border:2px solid var(--line);border-radius:var(--radius);padding:.8rem 1rem;background:var(--surface);transition:border-color .2s,background .2s}
+.net h3{margin:0;font-size:1rem}
+.net .meta{color:var(--muted);font-size:.85rem}
+.net .badge{font-family:var(--font-mono);font-size:1.5rem;font-weight:700;margin-top:.3rem}
+.net.e2e{border-top:5px solid var(--c-qa)}.net.char{border-top:5px solid var(--c-char)}
+.net.pass{border-color:var(--ok);background:color-mix(in srgb,var(--ok) 9%,var(--surface))}
+.net.fail{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 9%,var(--surface))}
+.net.pass .badge{color:var(--ok)}.net.fail .badge{color:var(--bad)}
+.tw{overflow-x:auto}
+table.io{width:100%;border-collapse:collapse;background:var(--surface);border:1px solid var(--line);font-size:.9rem}
+table.io th,table.io td{text-align:left;padding:.45rem .7rem;border-bottom:1px solid var(--line)}
+table.io th{font-family:var(--font-mono);font-size:.76rem;letter-spacing:.04em;background:color-mix(in srgb,var(--ink) 6%,transparent)}
+table.io td{font-family:var(--font-mono);font-size:.84rem}
+table.io tr:last-child td{border-bottom:0}
+table.io tr.diff td{background:color-mix(in srgb,var(--bad) 10%,transparent)}
+table.io td.st{width:2.2rem;text-align:center;font-size:1rem}
+.seen{font-family:var(--font-body);font-size:.74rem;color:var(--c-qa);border:1px solid var(--c-qa);border-radius:999px;padding:0 .45rem;margin-left:.4rem;white-space:nowrap}
+.verdict{margin:1rem 0 0;padding:.7rem 1rem;border-left:5px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:0 8px 8px 0;font-weight:600}
+.verdict.warn{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 9%,transparent)}
+
+/* stepper */
+.stage{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:1.2rem;align-items:center}
+svg.rings{width:100%;height:auto;max-height:320px}
+.rg{fill:none;stroke-width:3;transition:stroke .3s,fill .3s,stroke-dasharray .3s}
+.rg.o,.rg.i{stroke:var(--line);stroke-dasharray:6 6}
+.rg.o.on{stroke:var(--c-qa);stroke-dasharray:0;fill:color-mix(in srgb,var(--c-qa) 9%,transparent)}
+.rg.i.on{stroke:var(--c-char);stroke-dasharray:0;fill:color-mix(in srgb,var(--c-char) 12%,transparent)}
+.rg.core{fill:var(--surface);stroke:var(--ink);stroke-width:2.5}
+.rg.core.new{stroke:var(--ok);fill:color-mix(in srgb,var(--ok) 12%,var(--surface))}
+svg text{font-family:var(--font-body);fill:var(--ink)}
+svg .lbl{font-size:12px;font-weight:700}svg .lbl.q{fill:var(--c-qa)}svg .lbl.c{fill:var(--c-char)}
+svg .core-t{font-size:13px;font-weight:700;text-anchor:middle}
+svg .tag{font-size:11px;fill:var(--bad);font-weight:700;opacity:0;transition:opacity .3s}svg .tag.on{opacity:1}
+svg .chk{font-size:18px;font-weight:700;fill:var(--ok);opacity:0;transition:opacity .3s}svg .chk.on{opacity:1}
+.stepno{display:flex;gap:.4rem;flex-wrap:wrap;margin-bottom:.8rem}
+.dot{width:2.4rem;height:2.4rem;border-radius:50%;border:2px solid var(--line);background:var(--surface);color:var(--ink);font:700 1rem var(--font-mono);cursor:pointer}
+.dot.done{border-color:var(--c-char);color:var(--c-char)}
+.dot[aria-current="step"]{border-color:var(--c-char);background:var(--c-char);color:#fff}
+.cap h3{margin:.2rem 0 .3rem;font-size:1.2rem}.cap p{margin:0;color:var(--muted)}
+.nav2{display:flex;gap:.5rem;margin-top:1rem}
+
+/* who */
+.timeline{display:grid;grid-template-columns:repeat(3,1fr);gap:.8rem}
+.col h3{margin:0 0 .5rem;font-size:.85rem;font-family:var(--font-mono);color:var(--muted);letter-spacing:.04em}
+.chip{display:block;border:1.5px solid var(--line);border-left-width:6px;border-radius:8px;background:var(--surface);padding:.45rem .7rem;margin:.45rem 0;font-size:.9rem;transition:opacity .2s,filter .2s}
+.chip[data-who="dev"]{border-left-color:var(--c-dev)}.chip[data-who="qa"]{border-left-color:var(--c-qa)}
+.chip[data-who="both"]{border-left-color:var(--c-char)}
+.chip.dim{opacity:.22;filter:grayscale(1)}
+.chip small{display:block;color:var(--muted)}
+.legend{display:flex;gap:1rem;flex-wrap:wrap;margin-top:.8rem;font-size:.85rem;color:var(--muted)}
+.legend i{display:inline-block;width:.8rem;height:.8rem;border-radius:3px;margin-right:.3rem;vertical-align:-1px}
+.note{border-left:4px solid var(--c-contract);background:color-mix(in srgb,var(--c-contract) 8%,transparent);padding:.6rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+@media(max-width:760px){.nets,.stage,.timeline{grid-template-columns:1fr}.topbar{float:none;margin:0 0 1rem}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+    html { scroll-padding-top: 3.4rem; }
+    .topnav { position: sticky; top: 0; z-index: 20; background: color-mix(in srgb, var(--bg) 88%, transparent); backdrop-filter: blur(8px); border-bottom: 1px solid var(--line); }
+    .topnav .in { max-width: 980px; margin: 0 auto; padding: .45rem 16px; display: flex; align-items: center; gap: .3rem; overflow-x: auto; scrollbar-width: none; }
+    .topnav .in::-webkit-scrollbar { display: none; }
+    .topnav .brand { font-family: var(--font-mono, ui-monospace, Consolas, monospace); font-weight: 700; color: var(--accent); text-decoration: none; margin-right: .6rem; white-space: nowrap; }
+    .topnav a.l { color: var(--ink); text-decoration: none; font-size: .88rem; padding: .25rem .7rem; border-radius: 999px; border: 1px solid transparent; white-space: nowrap; }
+    .topnav a.l:hover { border-color: var(--line); background: var(--surface, var(--card)); }
+    .topnav a.l:focus-visible, .topnav .brand:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+    .topnav a.l[aria-current="page"] { border-color: var(--accent); color: var(--accent); }
+    @media print { .topnav { display: none; } }
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="เมนูหลัก"><div class="in"><a class="brand" href="../">testover</a><a class="l" href="overview.html">ภาพรวม</a><a class="l" href="testing-structure.html">โครงสร้างเทส</a><a class="l" href="automation-phases.html">ทีละ Phase</a><a class="l" href="characterization-why.html">Characterization</a><a class="l" href="guide.html">คู่มือ</a></div></nav>
+<div class="wrap">
+<header class="hero">
+  <div class="topbar"><a class="pill" href="characterization-visual.en.html" hreflang="en">English</a><button class="pill" id="theme" type="button">ธีม</button></div>
+  <div class="eyebrow">testover · Characterization Testing</div>
+  <h1>Characterization<br>แบบดูภาพ กดเล่นได้</h1>
+  <p class="lead">ไม่ต้องอ่านยาว ลองกดดูทีละส่วนแล้วจะเห็นว่าทำไมต้องมี characterization ใครทำ และทำตอนไหน ฉบับเต็มอยู่ที่ <a href="characterization-why.html">ทำไมต้องทำ Characterization</a></p>
+</header>
+<main>
+
+<h2 class="sec" id="lab"><span class="no">01</span>ลองรื้อโค้ดดู ใครจับได้บ้าง</h2>
+<p class="sub">ฟังก์ชันตรวจ “ชื่องาน” เดิมทำงานแบบหนึ่งอยู่ เลือกว่าตอนรื้อโค้ดคุณทำอะไรพลาดไปบ้าง แล้วดูว่าตาข่ายไหนแดง</p>
+<div class="opts" id="opts" role="group" aria-label="สิ่งที่เปลี่ยนตอนรื้อโค้ด"></div>
+<div class="nets" aria-live="polite">
+  <div class="net e2e" id="netE2e"><h3>E2E smoke</h3><div class="meta">เปิดแอป เพิ่มงาน “Buy milk” แล้วดูว่าขึ้น</div><div class="badge" id="bE2e"></div></div>
+  <div class="net char" id="netChar"><h3>Characterization</h3><div class="meta">ยิง input 6 แบบ เทียบผลทุกแบบกับของเดิม</div><div class="badge" id="bChar"></div></div>
+</div>
+<div class="tw"><table class="io"><thead><tr><th>input</th><th>ของเดิมตอบ</th><th>หลังรื้อตอบ</th><th></th></tr></thead><tbody id="rows"></tbody></table></div>
+<p class="verdict" id="verdict" aria-live="polite"></p>
+
+<h2 class="sec" id="flow"><span class="no">02</span>ลำดับ 5 ขั้น ดูทีละภาพ</h2>
+<p class="sub">กดตัวเลขหรือปุ่มถัดไป เส้นประคือตาข่ายที่ยังไม่วาง เส้นทึบคือวางแล้ว</p>
+<div class="card">
+<div class="stepno" id="dots" role="group" aria-label="ขั้นตอน"></div>
+<div class="stage">
+<svg class="rings" viewBox="0 0 360 250" role="img" aria-label="ตาข่ายสองชั้นรอบโมดูล">
+  <rect class="rg o" id="rgO" x="8" y="8" width="344" height="234" rx="18"/>
+  <rect class="rg i" id="rgI" x="58" y="58" width="244" height="134" rx="14"/>
+  <rect class="rg core" id="rgC" x="115" y="98" width="130" height="54" rx="10"/>
+  <text class="lbl q" x="22" y="30">ตาข่ายนอก · E2E</text>
+  <text class="lbl c" x="72" y="80">ตาข่ายใน · Characterization</text>
+  <text class="core-t" id="coreT" x="180" y="130">โมดูลเก่า</text>
+  <text class="tag" id="tagQ" x="180" y="172" text-anchor="middle">QUIRK: ตัดช่องว่างหัวท้าย</text>
+  <text class="chk" id="chkI" x="280" y="82">✓</text>
+  <text class="chk" id="chkO" x="326" y="32">✓</text>
+</svg>
+<div class="cap" aria-live="polite"><h3 id="capT"></h3><p id="capP"></p>
+<div class="nav2"><button class="pill" id="prev" type="button">← ก่อนหน้า</button><button class="pill" id="next" type="button">ถัดไป →</button></div></div>
+</div>
+</div>
+
+<h2 class="sec" id="who"><span class="no">03</span>ใครทำช่วงไหน</h2>
+<p class="sub">กดเลือก Dev หรือ QA เพื่อดูเฉพาะงานของฝั่งนั้น</p>
+<div class="opts" id="whoOpts" role="group" aria-label="กรองตามบทบาท">
+  <button class="opt" type="button" data-f="all" aria-pressed="true">ทั้งหมด</button>
+  <button class="opt" type="button" data-f="dev" aria-pressed="false">Dev</button>
+  <button class="opt" type="button" data-f="qa" aria-pressed="false">QA</button>
+</div>
+<div class="timeline" id="timeline">
+  <div class="col"><h3>1 · ก่อนแตะโค้ด</h3>
+    <span class="chip" data-who="qa">ตั้ง E2E smoke<small>ตาข่ายนอก</small></span>
+    <span class="chip" data-who="qa">ออกแบบ input และ edge case<small>boundary, ข้อมูลเสีย</small></span>
+    <span class="chip" data-who="dev">เขียน characterization ระดับ function<small>เจาะ seam ด้วย DI/mock</small></span>
+    <span class="chip" data-who="qa">เขียน characterization ระดับ API/UI<small>ใน testover QA เขียนเอง</small></span>
+    <span class="chip" data-who="both">ตัดสินส่วนที่แปลก: ตั้งใจหรือบั๊ก<small>ตั้งชื่อ QUIRK</small></span></div>
+  <div class="col"><h3>2 · ระหว่าง refactor</h3>
+    <span class="chip" data-who="dev">รัน characterization ถี่ ๆ<small>ต้องเขียว 100% ทุกครั้ง</small></span></div>
+  <div class="col"><h3>3 · หลัง refactor</h3>
+    <span class="chip" data-who="qa">รัน E2E เต็มชุดใน CI + triage ผล</span>
+    <span class="chip" data-who="both">เมื่อแดง: แก้ app หรือแก้ expectation?<small>Dev แก้ app, QA อัปเดต master</small></span>
+    <span class="chip" data-who="dev">แปลงนั่งร้านเป็น unit test ที่อ่านรู้เรื่อง</span></div>
+</div>
+<div class="legend"><span><i style="background:var(--c-dev)"></i>Dev</span><span><i style="background:var(--c-qa)"></i>QA</span><span><i style="background:var(--c-char)"></i>ทั้งสองฝ่าย</span></div>
+<p class="note"><b>จำสั้น ๆ:</b> E2E คือตาข่ายหยาบชั้นนอก Characterization คือตาข่ายละเอียดชั้นใน สองอย่างเสริมกัน ไม่ได้แทนกัน เขียวแปลว่า “เหมือนเดิม” ไม่ใช่ “ถูก”</p>
+</main>
+<footer>อ่านต่อ: <a href="characterization-why.html">ทำไมต้องทำ Characterization (ฉบับเต็ม)</a> · <a href="automation-phases.html">Automation ทีละ Phase</a> · <a href="characterization-visual.en.html">English</a></footer>
+</div>
+<script>
+(function(){
+var T={
+ opts:[
+  {id:'rename',t:'เปลี่ยนชื่อตัวแปรเฉย ๆ'},
+  {id:'notrim',t:'ลบ trim ทิ้ง'},
+  {id:'limit',t:'ขยายเพดาน 100 → 120'},
+  {id:'msg',t:'เปลี่ยนข้อความ error'},
+  {id:'broke',t:'ทำให้เพิ่มงานไม่ได้เลย'}],
+ broken:'พัง: ไม่มีอะไรตอบ',
+ empty:'กรอกชื่องาน',tooLong:'ยาวเกิน 100',empty2:'ต้องมีชื่องาน',tooLong2:'ชื่อยาวไป',
+ pass:'ผ่าน',fail:'แดง',seen:'E2E ตรวจแค่แถวนี้',
+ v0:'ยังไม่ได้เปลี่ยนอะไร ทั้งสองตาข่ายเขียว เลือกสิ่งที่เปลี่ยนด้านบนเพื่อลองดู',
+ vRename:'รื้อโค้ดโดยพฤติกรรมไม่เปลี่ยน ทั้งสองเขียว นี่คือผลที่ต้องการ',
+ vHidden:function(n){return 'E2E เขียว แต่พฤติกรรมเปลี่ยนไป '+n+' จุดโดยไม่มีใครรู้ Characterization จับได้ทุกจุด'},
+ vBoth:function(n){return 'ทั้งสองตาข่ายแดง ('+n+' จุดต่างจากเดิม) ต้องตัดสินว่าตั้งใจหรือบั๊ก'},
+ steps:[
+  {t:'วางตาข่ายนอกด้วย E2E',p:'ครอบ critical flow ก่อนแตะโค้ด ตรวจแบบหยาบว่าผู้ใช้ยังใช้งานหลักได้',o:1,i:0,tag:0,core:'โมดูลเก่า',nw:0,co:0,ci:0},
+  {t:'วางตาข่ายในด้วย characterization',p:'ยิง input หลากหลายเข้าโมดูลที่จะรื้อ แล้วบันทึกผลตามจริง รวมส่วนที่แปลก',o:1,i:1,tag:0,core:'โมดูลเก่า',nw:0,co:0,ci:0},
+  {t:'ตัดสินส่วนที่แปลก',p:'พฤติกรรมไหนแปลก ให้เจ้าของตัดสินว่าตั้งใจหรือบั๊ก แล้วตั้งชื่อ QUIRK ให้ค้นง่าย',o:1,i:1,tag:1,core:'โมดูลเก่า',nw:0,co:0,ci:0},
+  {t:'Refactor แล้วรันถี่ ๆ',p:'แก้โค้ดทีละนิด รันทุกครั้ง ต้องเขียว 100% ถ้าแดงคือพฤติกรรมเปลี่ยน หยุดตัดสินก่อนไปต่อ',o:1,i:1,tag:1,core:'โมดูลใหม่',nw:1,co:0,ci:1},
+  {t:'ปิดท้ายด้วย E2E เต็มชุด',p:'ยืนยันว่าชิ้นที่รื้อยังต่อกับส่วนอื่นได้ ก่อนปล่อย',o:1,i:1,tag:1,core:'โมดูลใหม่',nw:1,co:1,ci:1}],
+ stepLabel:'ขั้น '
+};
+var LONG100=new Array(101).join('x'),LONG101=LONG100+'x';
+var INPUTS=[
+ {label:'"Buy milk"',v:'Buy milk',e2e:true},
+ {label:'"  Buy milk  "',v:'  Buy milk  '},
+ {label:'"" (ว่าง)',v:''},
+ {label:'"   " (เว้นวรรคล้วน)',v:'   '},
+ {label:'"x" × 100',v:LONG100},
+ {label:'"x" × 101',v:LONG101}];
+function run(v,o){
+ if(o.broke)return '✗ '+T.broken;
+ var s=o.notrim?v:v.trim(),max=o.limit?120:100;
+ if(s==='')return '✗ '+(o.msg?T.empty2:T.empty);
+ if(s.length>max)return '✗ '+(o.msg?T.tooLong2:T.tooLong);
+ return '✓ "'+(s.length>14?s.slice(0,6)+'…('+s.length+')':s)+'"';
+}
+var on={rename:false,notrim:true,limit:false,msg:false,broke:false};
+var optsEl=document.getElementById('opts'),rowsEl=document.getElementById('rows');
+T.opts.forEach(function(o){
+ var b=document.createElement('button');b.type='button';b.className='opt';b.textContent=o.t;
+ b.setAttribute('aria-pressed',String(on[o.id]));
+ b.addEventListener('click',function(){on[o.id]=!on[o.id];b.setAttribute('aria-pressed',String(on[o.id]));render()});
+ optsEl.appendChild(b)});
+function setNet(el,badge,pass){el.classList.toggle('pass',pass);el.classList.toggle('fail',!pass);badge.textContent=(pass?'✓ ':'✗ ')+(pass?T.pass:T.fail)}
+function render(){
+ var base={},cur={notrim:on.notrim,limit:on.limit,msg:on.msg,broke:on.broke},diffs=0,e2eDiff=false;
+ rowsEl.textContent='';
+ INPUTS.forEach(function(i){
+  var a=run(i.v,base),b=run(i.v,cur),d=a!==b;
+  if(d){diffs++;if(i.e2e)e2eDiff=true}
+  var tr=document.createElement('tr');if(d)tr.className='diff';
+  var c0=document.createElement('td');c0.textContent=i.label;
+  if(i.e2e){var s=document.createElement('span');s.className='seen';s.textContent=T.seen;c0.appendChild(s)}
+  var c1=document.createElement('td');c1.textContent=a;
+  var c2=document.createElement('td');c2.textContent=b;
+  var c3=document.createElement('td');c3.className='st';c3.textContent=d?'≠':'=';
+  tr.append(c0,c1,c2,c3);rowsEl.appendChild(tr)});
+ setNet(document.getElementById('netE2e'),document.getElementById('bE2e'),!e2eDiff);
+ setNet(document.getElementById('netChar'),document.getElementById('bChar'),diffs===0);
+ var v=document.getElementById('verdict'),msg;
+ if(diffs===0)msg=on.rename?T.vRename:T.v0;
+ else msg=e2eDiff?T.vBoth(diffs):T.vHidden(diffs);
+ v.textContent=msg;v.className='verdict'+(diffs?' warn':'');
+}
+render();
+
+var STEPS=T.steps,cur=0,dots=document.getElementById('dots');
+STEPS.forEach(function(s,k){
+ var b=document.createElement('button');b.type='button';b.className='dot';b.textContent=k+1;b.setAttribute('aria-label',T.stepLabel+(k+1)+': '+s.t);
+ b.addEventListener('click',function(){go(k)});dots.appendChild(b)});
+function tog(id,cls,v){document.getElementById(id).classList.toggle(cls,!!v)}
+function go(k){
+ cur=Math.max(0,Math.min(STEPS.length-1,k));var s=STEPS[cur];
+ tog('rgO','on',s.o);tog('rgI','on',s.i);tog('tagQ','on',s.tag);
+ tog('rgC','new',s.nw);tog('chkI','on',s.ci);tog('chkO','on',s.co);
+ document.getElementById('coreT').textContent=s.core;
+ document.getElementById('capT').textContent=(cur+1)+'. '+s.t;
+ document.getElementById('capP').textContent=s.p;
+ Array.prototype.forEach.call(dots.children,function(d,j){
+  d.classList.toggle('done',j<=cur);
+  if(j===cur)d.setAttribute('aria-current','step');else d.removeAttribute('aria-current')});
+ document.getElementById('prev').disabled=cur===0;document.getElementById('next').disabled=cur===STEPS.length-1;
+}
+document.getElementById('prev').addEventListener('click',function(){go(cur-1)});
+document.getElementById('next').addEventListener('click',function(){go(cur+1)});
+go(0);
+
+var chips=document.querySelectorAll('#timeline .chip'),fb=document.querySelectorAll('#whoOpts .opt');
+Array.prototype.forEach.call(fb,function(b){b.addEventListener('click',function(){
+ var f=b.getAttribute('data-f');
+ Array.prototype.forEach.call(fb,function(x){x.setAttribute('aria-pressed',String(x===b))});
+ Array.prototype.forEach.call(chips,function(c){var w=c.getAttribute('data-who');
+  c.classList.toggle('dim',f!=='all'&&w!==f&&w!=='both')})})});
+
+var tb=document.getElementById('theme'),r=document.documentElement;
+try{var sv=localStorage.getItem('docs.theme');if(sv)r.setAttribute('data-theme',sv)}catch(e){}
+tb.addEventListener('click',function(){var c=r.getAttribute('data-theme');var dark=c?c==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+var n=dark?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('docs.theme',n)}catch(e){}});
+})();
+</script>
+</body>
+</html>
