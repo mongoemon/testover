@@ -29,13 +29,13 @@ async function expectError(response: APIResponse, status: number, code: string):
 }
 
 test.describe('API contract @contract @api', () => {
-  test('GET /api/health', async ({ request }) => {
+  test('GET /api/health', { tag: '@p0' }, async ({ request }) => {
     const response = await request.get('/api/health');
     expect(response.status()).toBe(200);
     expect(await response.json()).toEqual({ status: 'ok' });
   });
 
-  test('registering answers 201 with a session and the public user', async ({ request }) => {
+  test('registering answers 201 with a session and the public user', { tag: '@p0' }, async ({ request }) => {
     const response = await request.post('/api/users', { data: NEW_USER });
     expect(response.status()).toBe(201);
     const body = sessionResponseSchema.parse(await response.json());
@@ -43,7 +43,7 @@ test.describe('API contract @contract @api', () => {
     expect(JSON.stringify(body)).not.toContain(NEW_USER.password);
   });
 
-  test('signing in answers 201 with a session; GET /api/me returns the same user', async ({ request }) => {
+  test('signing in answers 201 with a session; GET /api/me returns the same user', { tag: '@p0' }, async ({ request }) => {
     const login = await request.post('/api/sessions', { data: { username: 'DEMO ', password: 'demo1234' } });
     expect(login.status()).toBe(201);
     const session = sessionResponseSchema.parse(await login.json());
@@ -52,7 +52,7 @@ test.describe('API contract @contract @api', () => {
     expect(userSchema.parse(await me.json())).toEqual(session.user);
   });
 
-  test('tasks: create, list, update, delete and clear completed', async ({ request }) => {
+  test('tasks: create, list, update, delete and clear completed', { tag: '@p0' }, async ({ request }) => {
     const headers = bearer(await signIn(request));
 
     const created = await request.post('/api/tasks', { headers, data: { title: '  write contract  ', priority: 'high' } });
@@ -74,7 +74,7 @@ test.describe('API contract @contract @api', () => {
     expect(tasksResponseSchema.parse(await (await request.get('/api/tasks', { headers })).json()).tasks).toEqual([]);
   });
 
-  test('profile: rename, change password, delete account', async ({ request }) => {
+  test('profile: rename, change password, delete account', { tag: '@p1' }, async ({ request }) => {
     const token = await signIn(request);
     const headers = bearer(token);
 
@@ -93,7 +93,7 @@ test.describe('API contract @contract @api', () => {
     await expectError(await request.get('/api/me', { headers }), 401, 'unauthenticated');
   });
 
-  test('signing out ends that token only', async ({ request }) => {
+  test('signing out ends that token only', { tag: '@p1' }, async ({ request }) => {
     const first = await signIn(request);
     const second = await signIn(request);
     expect((await request.delete('/api/sessions', { headers: bearer(first) })).status()).toBe(204);
@@ -101,7 +101,7 @@ test.describe('API contract @contract @api', () => {
     expect((await request.get('/api/me', { headers: bearer(second) })).status()).toBe(200);
   });
 
-  test('errors share one shape', async ({ request }) => {
+  test('errors share one shape', { tag: '@p1' }, async ({ request }) => {
     const headers = bearer(await signIn(request));
     await expectError(await request.post('/api/sessions', { data: { username: 'demo', password: 'nope' } }), 401, 'invalid_credentials');
     await expectError(await request.post('/api/users', { data: { username: 'demo', displayName: 'X', password: 'longenough1' } }), 409, 'username_taken');
@@ -113,7 +113,7 @@ test.describe('API contract @contract @api', () => {
     await expectError(await request.put('/api/tasks', { headers, data: {} }), 405, 'method_not_allowed');
   });
 
-  test('two users never share a task list', async ({ request }) => {
+  test('two users never share a task list', { tag: '@p0' }, async ({ request }) => {
     const demo = bearer(await signIn(request));
     const alice = bearer(
       sessionResponseSchema.parse(await (await request.post('/api/users', { data: NEW_USER })).json()).token,
@@ -127,7 +127,7 @@ test.describe('API contract @contract @api', () => {
     expect(await titles(alice)).toEqual(['alice task']);
   });
 
-  test('a token is useless in another tenant', async ({ request, playwright, baseURL }) => {
+  test('a token is useless in another tenant', { tag: '@p1' }, async ({ request, playwright, baseURL }) => {
     const token = await signIn(request);
     const elsewhere = await playwright.request.newContext({ baseURL, extraHTTPHeaders: { 'X-Tenant': 'someone-else' } });
     await expectError(await elsewhere.get('/api/me', { headers: bearer(token) }), 401, 'unauthenticated');

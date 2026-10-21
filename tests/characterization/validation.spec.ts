@@ -5,7 +5,7 @@ import { expect, test } from '../support/evidence';
 import { AuthPage, ProfilePage, TasksPage, signIn, DEMO, type Account } from '../support/pages';
 import { loginStatus, serverTasks } from '../support/server';
 
-test.describe('Registration boundaries @characterization @validation', () => {
+test.describe('Registration boundaries @characterization @validation', { tag: '@p1' }, () => {
   const account = (username: string, password = 'longenough1'): Account => ({
     username,
     password,
@@ -96,7 +96,7 @@ test.describe('Registration boundaries @characterization @validation', () => {
   });
 });
 
-test.describe('Login boundaries @characterization @auth', () => {
+test.describe('Login boundaries @characterization @auth', { tag: '@p1' }, () => {
   test('username is case-insensitive and trimmed, the password is not', async ({ page }) => {
     const auth = new AuthPage(page);
     await auth.gotoLogin();
@@ -127,7 +127,7 @@ test.describe('Login boundaries @characterization @auth', () => {
   });
 });
 
-test.describe('Task title boundaries @characterization @tasks @validation', () => {
+test.describe('Task title boundaries @characterization @tasks @validation', { tag: '@p1' }, () => {
   test.beforeEach(async ({ page }) => {
     await signIn(page, DEMO);
   });
@@ -169,7 +169,7 @@ test.describe('Task title boundaries @characterization @tasks @validation', () =
   });
 });
 
-test.describe('Profile boundaries @characterization @profile', () => {
+test.describe('Profile boundaries @characterization @profile', { tag: '@p1' }, () => {
   test('checks current password, then length, then confirmation', async ({ page }) => {
     await signIn(page, DEMO);
     const profile = new ProfilePage(page);

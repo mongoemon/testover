@@ -10,13 +10,13 @@ test.describe('Task board', { tag: '@tasks' }, () => {
   });
 
   test.describe('adding', () => {
-    test('starts with an empty state and zero remaining', async () => {
+    test('starts with an empty state and zero remaining', { tag: '@p1' }, async () => {
       await expect(tasks.emptyMessage).toHaveText('No tasks yet. Add your first task above.');
       await expect(tasks.count).toHaveText('0 tasks left');
       await expect(tasks.clearCompletedButton).toBeDisabled();
     });
 
-    test('adds a task with the default Medium priority', { tag: '@smoke' }, async () => {
+    test('adds a task with the default Medium priority', { tag: ['@smoke', '@p0'] }, async () => {
       await tasks.add('Write QA report');
 
       await tasks.expectTitles(['Write QA report']);
@@ -25,7 +25,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.emptyMessage).toBeHidden();
     });
 
-    test('keeps the chosen priority for each task', async () => {
+    test('keeps the chosen priority for each task', { tag: '@p1' }, async () => {
       await tasks.add('Quick win', 'Low');
       await tasks.add('Fire drill', 'High');
 
@@ -34,13 +34,13 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.item('Fire drill').locator('.badge')).toHaveAttribute('data-priority', 'high');
     });
 
-    test('trims surrounding whitespace from the title', { tag: '@validation' }, async () => {
+    test('trims surrounding whitespace from the title', { tag: ['@validation', '@p1'] }, async () => {
       await tasks.add('   Padded title   ');
 
       await tasks.expectTitles(['Padded title']);
     });
 
-    test('submits with the Enter key and resets the form', { tag: '@a11y' }, async ({ page }) => {
+    test('submits with the Enter key and resets the form', { tag: ['@a11y', '@p1'] }, async ({ page }) => {
       const input = page.getByLabel('New task', { exact: true });
       await input.fill('Enter key task');
       await input.press('Enter');
@@ -51,7 +51,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
     });
 
     for (const blank of ['', '    ']) {
-      test(`rejects a blank title (${JSON.stringify(blank)})`, { tag: '@validation' }, async () => {
+      test(`rejects a blank title (${JSON.stringify(blank)})`, { tag: ['@validation', '@p1'] }, async () => {
         await tasks.add(blank);
 
         await expect(tasks.alert).toHaveText('Task title is required');
@@ -59,7 +59,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       });
     }
 
-    test('rejects a title longer than 80 characters but accepts exactly 80', { tag: '@validation' }, async () => {
+    test('rejects a title longer than 80 characters but accepts exactly 80', { tag: ['@validation', '@p1'] }, async () => {
       await tasks.add('x'.repeat(81));
       await expect(tasks.alert).toHaveText('Task title must be 80 characters or fewer');
       await tasks.expectTitles([]);
@@ -69,7 +69,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await tasks.expectTitles(['y'.repeat(80)]);
     });
 
-    test('clears the validation error after a successful add', { tag: '@validation' }, async () => {
+    test('clears the validation error after a successful add', { tag: ['@validation', '@p2'] }, async () => {
       await tasks.add('');
       await expect(tasks.alert).toBeVisible();
 
@@ -78,7 +78,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.alert).toBeHidden();
     });
 
-    test('renders special characters as text, not markup', { tag: '@security' }, async ({ page }) => {
+    test('renders special characters as text, not markup', { tag: ['@security', '@p0'] }, async ({ page }) => {
       await tasks.add('<b>bold</b> & "quotes"');
 
       await tasks.expectTitles(['<b>bold</b> & "quotes"']);
@@ -87,7 +87,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
   });
 
   test.describe('completing, editing, deleting', () => {
-    test('completes and reopens a task, updating the remaining count', async () => {
+    test('completes and reopens a task, updating the remaining count', { tag: '@p0' }, async () => {
       await tasks.add('Review PR');
       await tasks.add('Deploy');
       await expect(tasks.count).toHaveText('2 tasks left');
@@ -101,7 +101,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.item('Review PR')).not.toHaveClass(/done/);
     });
 
-    test('edits a task title', async () => {
+    test('edits a task title', { tag: '@p1' }, async () => {
       await tasks.add('Draft plan');
 
       await tasks.rename('Draft plan', 'Final plan');
@@ -110,7 +110,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.alert).toBeHidden();
     });
 
-    test('keeps the original title when an edit is cancelled', async ({ page }) => {
+    test('keeps the original title when an edit is cancelled', { tag: '@p2' }, async ({ page }) => {
       await tasks.add('Original');
       await tasks.startEdit('Original');
       await page.getByLabel('Edit title', { exact: true }).fill('Changed my mind');
@@ -120,7 +120,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await tasks.expectTitles(['Original']);
     });
 
-    test('rejects an empty title while editing and stays in edit mode', { tag: '@validation' }, async ({ page }) => {
+    test('rejects an empty title while editing and stays in edit mode', { tag: ['@validation', '@p1'] }, async ({ page }) => {
       await tasks.add('Keep me');
       await tasks.startEdit('Keep me');
 
@@ -130,7 +130,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(page.getByLabel('Edit title', { exact: true })).toBeVisible();
     });
 
-    test('deletes only the targeted task', async () => {
+    test('deletes only the targeted task', { tag: '@p0' }, async () => {
       await tasks.add('Keep A');
       await tasks.add('Remove me');
       await tasks.add('Keep B');
@@ -141,7 +141,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.count).toHaveText('2 tasks left');
     });
 
-    test('returns to the empty state after the last task is deleted', async () => {
+    test('returns to the empty state after the last task is deleted', { tag: '@p2' }, async () => {
       await tasks.add('Only one');
       await tasks.remove('Only one');
 
@@ -157,12 +157,12 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await tasks.complete('Buy eggs');
     });
 
-    test('shows everything by default and marks "All" as pressed', async () => {
+    test('shows everything by default and marks "All" as pressed', { tag: '@p2' }, async () => {
       await tasks.expectTitles(['Buy milk', 'Buy eggs', 'Pay rent']);
       await expect(tasks.filterButton('All')).toHaveAttribute('aria-pressed', 'true');
     });
 
-    test('filters to active tasks only', async () => {
+    test('filters to active tasks only', { tag: '@p1' }, async () => {
       await tasks.filter('Active');
 
       await tasks.expectTitles(['Buy milk', 'Pay rent']);
@@ -170,19 +170,19 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.filterButton('All')).toHaveAttribute('aria-pressed', 'false');
     });
 
-    test('filters to completed tasks only', async () => {
+    test('filters to completed tasks only', { tag: '@p1' }, async () => {
       await tasks.filter('Completed');
 
       await tasks.expectTitles(['Buy eggs']);
     });
 
-    test('keeps the overall remaining count while a filter is active', async () => {
+    test('keeps the overall remaining count while a filter is active', { tag: '@p2' }, async () => {
       await tasks.filter('Completed');
 
       await expect(tasks.count).toHaveText('2 tasks left');
     });
 
-    test('searches case-insensitively and restores the list when cleared', async () => {
+    test('searches case-insensitively and restores the list when cleared', { tag: '@p1' }, async () => {
       await tasks.search('BUY');
       await tasks.expectTitles(['Buy milk', 'Buy eggs']);
 
@@ -190,7 +190,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await tasks.expectTitles(['Buy milk', 'Buy eggs', 'Pay rent']);
     });
 
-    test('combines search with the status filter', async () => {
+    test('combines search with the status filter', { tag: '@p2' }, async () => {
       await tasks.search('buy');
       await tasks.filter('Active');
       await tasks.expectTitles(['Buy milk']);
@@ -203,7 +203,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.emptyMessage).toHaveText('No matching tasks');
     });
 
-    test('shows "No matching tasks" when a search finds nothing', async () => {
+    test('shows "No matching tasks" when a search finds nothing', { tag: '@p2' }, async () => {
       await tasks.search('zzz');
 
       await expect(tasks.emptyMessage).toHaveText('No matching tasks');
@@ -211,7 +211,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
   });
 
   test.describe('clearing and persistence', () => {
-    test('clears only completed tasks', async () => {
+    test('clears only completed tasks', { tag: '@p1' }, async () => {
       await tasks.add('Done 1');
       await tasks.add('Open');
       await tasks.add('Done 2');
@@ -225,7 +225,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.clearCompletedButton).toBeDisabled();
     });
 
-    test('uses singular and plural wording for the remaining count', async () => {
+    test('uses singular and plural wording for the remaining count', { tag: '@p2' }, async () => {
       await tasks.add('One');
       await expect(tasks.count).toHaveText('1 task left');
 
@@ -233,7 +233,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.count).toHaveText('2 tasks left');
     });
 
-    test('keeps tasks, completion state, and priority after a reload', { tag: '@persistence' }, async ({ page }) => {
+    test('keeps tasks, completion state, and priority after a reload', { tag: ['@persistence', '@p1'] }, async ({ page }) => {
       await tasks.add('Persist me', 'High');
       await tasks.add('Persist me too');
       await tasks.complete('Persist me too');
@@ -246,7 +246,7 @@ test.describe('Task board', { tag: '@tasks' }, () => {
       await expect(tasks.count).toHaveText('1 task left');
     });
 
-    test('does not reuse the id of a deleted task after a reload', { tag: '@persistence' }, async ({ page }) => {
+    test('does not reuse the id of a deleted task after a reload', { tag: ['@persistence', '@p1'] }, async ({ page }) => {
       await tasks.add('First');
       await tasks.add('Second');
       await tasks.remove('Second');

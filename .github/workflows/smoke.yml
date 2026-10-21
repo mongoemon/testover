@@ -32,6 +32,8 @@ jobs:
       - uses: actions/checkout@v4
       - uses: ./.github/actions/setup
       - run: npm run test:unit
+      # Every Playwright case must carry exactly one @p0/@p1/@p2 (it lists the cases, runs none).
+      - run: npm run check:tags
 
   # The agreements at the boundaries: localStorage (C1) and the JSON the API sends (C4).
   contract:

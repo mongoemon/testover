@@ -12,7 +12,7 @@ import { DEMO, ProfilePage, TasksPage, signIn } from '../support/pages';
 const HAR_PATH = 'tests/har/fixtures/demo-journey.har';
 const recording = process.env.HAR_RECORD === '1';
 
-test.describe('HAR replay of the demo journey @har', () => {
+test.describe('HAR replay of the demo journey @har', { tag: '@p2' }, () => {
   test.beforeEach(async ({ page, request }) => {
     if (recording) {
       // Prepare the server state the recording should see. These calls are not part of the HAR:

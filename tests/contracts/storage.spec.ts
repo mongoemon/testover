@@ -16,7 +16,7 @@ async function expectStorageHonoursContract(page: Page): Promise<void> {
   if (dump[storageKeys.theme] !== undefined) themeSchema.parse(JSON.parse(dump[storageKeys.theme]));
 }
 
-test.describe('localStorage contract @contract @persistence', () => {
+test.describe('localStorage contract @contract @persistence', { tag: '@p1' }, () => {
   test('a first load writes nothing', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();

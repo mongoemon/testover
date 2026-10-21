@@ -12,13 +12,13 @@ test.describe('Profile', { tag: '@profile' }, () => {
     await profile.open();
   });
 
-  test('shows the signed-in username and marks the nav link as current', async ({ page }) => {
+  test('shows the signed-in username and marks the nav link as current', { tag: '@p1' }, async ({ page }) => {
     await expect(page.locator('#profile-username')).toHaveText('demo');
     await expect(page.getByRole('link', { name: 'Profile' })).toHaveAttribute('aria-current', 'page');
   });
 
   test.describe('display name', () => {
-    test('updates the display name in the header and keeps it after a reload', { tag: '@persistence' }, async ({ page }) => {
+    test('updates the display name in the header and keeps it after a reload', { tag: ['@persistence', '@p1'] }, async ({ page }) => {
       await profile.saveDisplayName('Demo Renamed');
 
       await expect(profile.status).toHaveText('Profile updated');
@@ -28,7 +28,7 @@ test.describe('Profile', { tag: '@profile' }, () => {
       await expect(page.locator('#greeting')).toHaveText('Hello, Demo Renamed');
     });
 
-    test('rejects a blank display name and leaves the header unchanged', { tag: '@validation' }, async ({ page }) => {
+    test('rejects a blank display name and leaves the header unchanged', { tag: ['@validation', '@p1'] }, async ({ page }) => {
       await profile.saveDisplayName('   ');
 
       await expect(profile.alert).toHaveText('Display name is required');
@@ -44,14 +44,14 @@ test.describe('Profile', { tag: '@profile' }, () => {
     ] as const;
 
     for (const { name, args, message } of rejected) {
-      test(`rejects ${name}`, { tag: ['@validation', '@security'] }, async () => {
+      test(`rejects ${name}`, { tag: ['@validation', '@security', '@p1'] }, async () => {
         await profile.changePassword(...(args as [string, string, string?]));
 
         await expect(profile.alert).toHaveText(message);
       });
     }
 
-    test('changes the password: old one stops working, new one works, form clears', { tag: ['@smoke', '@security'] }, async ({ page }) => {
+    test('changes the password: old one stops working, new one works, form clears', { tag: ['@smoke', '@security', '@p0'] }, async ({ page }) => {
       await profile.changePassword(DEMO.password, 'brandnew99');
 
       await expect(profile.status).toHaveText('Password changed');
@@ -67,7 +67,7 @@ test.describe('Profile', { tag: '@profile' }, () => {
   });
 
   test.describe('appearance', () => {
-    test('toggles dark mode and remembers it after a reload', { tag: '@persistence' }, async ({ page }) => {
+    test('toggles dark mode and remembers it after a reload', { tag: ['@persistence', '@p2'] }, async ({ page }) => {
       const html = page.locator('html');
       await expect(html).toHaveAttribute('data-theme', 'light');
 
@@ -84,7 +84,7 @@ test.describe('Profile', { tag: '@profile' }, () => {
   });
 
   test.describe('delete account', () => {
-    test('keeps the account when the confirmation is dismissed', { tag: '@destructive' }, async ({ page }) => {
+    test('keeps the account when the confirmation is dismissed', { tag: ['@destructive', '@p2'] }, async ({ page }) => {
       const message = await profile.deleteAccount(false);
 
       expect(message).toBe('Delete your account and all tasks?');
@@ -92,7 +92,7 @@ test.describe('Profile', { tag: '@profile' }, () => {
       await expect(page.locator('#greeting')).toHaveText('Hello, Demo User');
     });
 
-    test('removes the account and its tasks once confirmed', { tag: '@destructive' }, async ({ page }) => {
+    test('removes the account and its tasks once confirmed', { tag: ['@destructive', '@p1'] }, async ({ page }) => {
       const tasks = new TasksPage(page);
       await page.getByRole('link', { name: 'Tasks' }).click();
       await tasks.add('Secret task');
