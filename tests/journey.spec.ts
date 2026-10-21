@@ -2,7 +2,7 @@ import { test, expect } from './support/evidence';
 import { ALICE, AuthPage, DEMO, ProfilePage, TasksPage, signIn } from './support/pages';
 
 test.describe('User journeys', { tag: '@journey' }, () => {
-  test('a new user goes from sign-up to account deletion', async ({ page }) => {
+  test('a new user goes from sign-up to account deletion', { tag: '@p1' }, async ({ page }) => {
     const auth = new AuthPage(page);
     const tasks = new TasksPage(page);
     const profile = new ProfilePage(page);
@@ -82,7 +82,7 @@ test.describe('User journeys', { tag: '@journey' }, () => {
     });
   });
 
-  test('a returning user finishes a quick daily routine', { tag: '@smoke' }, async ({ page }) => {
+  test('a returning user finishes a quick daily routine', { tag: ['@smoke', '@p0'] }, async ({ page }) => {
     const auth = new AuthPage(page);
     const tasks = new TasksPage(page);
 
@@ -96,7 +96,7 @@ test.describe('User journeys', { tag: '@journey' }, () => {
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   });
 
-  test('two users on the same browser never see each other’s tasks', { tag: '@security' }, async ({ page }) => {
+  test('two users on the same browser never see each other’s tasks', { tag: ['@security', '@p0'] }, async ({ page }) => {
     const auth = new AuthPage(page);
     const tasks = new TasksPage(page);
 
@@ -114,7 +114,7 @@ test.describe('User journeys', { tag: '@journey' }, () => {
     await tasks.expectTitles(['Alice private task']);
   });
 
-  test('keeps working on a phone-sized screen without horizontal scrolling', { tag: '@responsive' }, async ({ page }) => {
+  test('keeps working on a phone-sized screen without horizontal scrolling', { tag: ['@responsive', '@p2'] }, async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 667 });
     const tasks = new TasksPage(page);
 
@@ -127,7 +127,7 @@ test.describe('User journeys', { tag: '@journey' }, () => {
     expect(overflows).toBe(false);
   });
 
-  test.describe('resilience to bad stored data', { tag: '@resilience' }, () => {
+  test.describe('resilience to bad stored data', { tag: ['@resilience', '@p1'] }, () => {
     test('recovers from a corrupted session value and stays usable', async ({ page }) => {
       const tasks = new TasksPage(page);
       await page.goto('/');

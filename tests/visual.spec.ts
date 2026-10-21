@@ -14,7 +14,7 @@ const SEED_TASKS = [
   { title: 'Water the plants', priority: 'Low' as const },
 ];
 
-test.describe('Visual snapshots @visual', () => {
+test.describe('Visual snapshots @visual', { tag: '@p2' }, () => {
   test('login page', async ({ page }) => {
     await new AuthPage(page).gotoLogin();
     await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();

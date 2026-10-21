@@ -9,7 +9,7 @@ import { dumpStorage, readRaw, seedStorage } from '../support/storage';
 
 const UNKNOWN_TOKEN = '3f1c0d0e-0000-4000-8000-000000000000';
 
-test.describe('Boot from unexpected storage @characterization @resilience', () => {
+test.describe('Boot from unexpected storage @characterization @resilience', { tag: '@p1' }, () => {
   test('a first load stores nothing', async ({ page }) => {
     await seedStorage(page, {});
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
@@ -65,7 +65,7 @@ test.describe('Boot from unexpected storage @characterization @resilience', () =
   });
 });
 
-test.describe('Task ids @characterization @tasks', () => {
+test.describe('Task ids @characterization @tasks', { tag: '@p1' }, () => {
   test('ids keep counting up after a delete, not the count of tasks left', async ({ page }) => {
     await signIn(page, DEMO);
     const tasks = new TasksPage(page);
@@ -88,7 +88,7 @@ test.describe('Task ids @characterization @tasks', () => {
   });
 });
 
-test.describe('Routing rules @characterization @auth', () => {
+test.describe('Routing rules @characterization @auth', { tag: '@p1' }, () => {
   test('"/" goes to login when signed out', async ({ page }) => {
     await page.goto('/#/');
     await expect(page).toHaveURL(/#\/login$/);
@@ -131,7 +131,7 @@ test.describe('Routing rules @characterization @auth', () => {
   });
 });
 
-test.describe('When the server cannot be reached @characterization @resilience', () => {
+test.describe('When the server cannot be reached @characterization @resilience', { tag: '@p1' }, () => {
   test('a failing API shows a retry page instead of a blank screen', async ({ page }) => {
     await signIn(page, DEMO);
     await page.route('**/api/tasks', (route) => route.abort('connectionrefused'));

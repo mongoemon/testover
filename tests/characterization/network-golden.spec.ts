@@ -35,7 +35,7 @@ const ownApiOnly = (log: string): boolean =>
     .filter((line) => /\[(fetch|xhr)\]$/.test(line))
     .every((line) => /^[A-Z]+ \/api\//.test(line));
 
-test.describe('Golden master of network traffic @characterization @golden', () => {
+test.describe('Golden master of network traffic @characterization @golden', { tag: '@p1' }, () => {
   test('server responses for known and unknown routes', async ({ request }) => {
     expect(await snapshotResponses(request, PROBES)).toMatchSnapshot('server-responses.json');
   });

@@ -9,7 +9,7 @@ import { ALICE, AuthPage, DEMO, ProfilePage, TasksPage, signIn } from '../suppor
 import { maskVolatile, snapshotState } from '../support/golden';
 import { loginStatus } from '../support/server';
 
-test.describe('Golden master of persisted state @characterization @golden', () => {
+test.describe('Golden master of persisted state @characterization @golden', { tag: '@p1' }, () => {
   test('first load seeds only the demo account', async ({ page }) => {
     await page.goto('/');
     await expect(page.getByRole('button', { name: 'Login' })).toBeVisible();

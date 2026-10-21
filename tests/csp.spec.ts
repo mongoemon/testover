@@ -3,7 +3,7 @@
 import { expect, test } from './support/evidence';
 import { ALICE, AuthPage, DEMO, TasksPage, signIn } from './support/pages';
 
-test.describe('Content-Security-Policy', { tag: '@security' }, () => {
+test.describe('Content-Security-Policy', { tag: ['@security', '@p1'] }, () => {
   test('the app page carries a hash-based policy that forbids unsafe-inline scripts', async ({ request }) => {
     const response = await request.get('/');
     const policy = response.headers()['content-security-policy'] ?? '';

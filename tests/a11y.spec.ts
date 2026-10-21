@@ -18,7 +18,7 @@ async function expectAccessible(page: Page): Promise<void> {
   expect(await violationsOf(page)).toEqual([]);
 }
 
-test.describe('Accessibility (axe, WCAG 2.1 A/AA)', { tag: '@a11y' }, () => {
+test.describe('Accessibility (axe, WCAG 2.1 A/AA)', { tag: ['@a11y', '@p2'] }, () => {
   test.describe('signed out', () => {
     test('login page has no violations', async ({ page }) => {
       await new AuthPage(page).gotoLogin();

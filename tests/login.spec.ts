@@ -9,7 +9,7 @@ test.describe('Registration', { tag: '@auth' }, () => {
     await auth.gotoRegister();
   });
 
-  test('creates an account and lands on an empty task board', { tag: '@smoke' }, async ({ page }) => {
+  test('creates an account and lands on an empty task board', { tag: ['@smoke', '@p0'] }, async ({ page }) => {
     await auth.register(ALICE);
 
     await expect(page).toHaveURL(/#\/tasks$/);
@@ -28,7 +28,7 @@ test.describe('Registration', { tag: '@auth' }, () => {
   ];
 
   for (const { name, account, message } of invalidRegistrations) {
-    test(`rejects ${name}`, { tag: '@validation' }, async ({ page }) => {
+    test(`rejects ${name}`, { tag: ['@validation', '@p1'] }, async ({ page }) => {
       await auth.register(account);
 
       await expect(auth.alert).toContainText(message);
@@ -36,14 +36,14 @@ test.describe('Registration', { tag: '@auth' }, () => {
     });
   }
 
-  test('rejects mismatched password confirmation', { tag: '@validation' }, async ({ page }) => {
+  test('rejects mismatched password confirmation', { tag: ['@validation', '@p1'] }, async ({ page }) => {
     await auth.register(ALICE, 'something-else');
 
     await expect(auth.alert).toHaveText('Passwords do not match');
     await expect(page).toHaveURL(/#\/register$/);
   });
 
-  test('lists every problem at once when the form is empty', { tag: '@validation' }, async ({ page }) => {
+  test('lists every problem at once when the form is empty', { tag: ['@validation', '@p1'] }, async ({ page }) => {
     await page.getByRole('button', { name: 'Create account' }).click();
 
     await expect(auth.alert.getByRole('listitem')).toHaveText([
@@ -54,14 +54,14 @@ test.describe('Registration', { tag: '@auth' }, () => {
   });
 
   for (const taken of ['demo', 'DEMO']) {
-    test(`rejects the already-registered username "${taken}"`, { tag: '@validation' }, async () => {
+    test(`rejects the already-registered username "${taken}"`, { tag: ['@validation', '@p1'] }, async () => {
       await auth.register({ ...ALICE, username: taken });
 
       await expect(auth.alert).toHaveText('Username is already taken');
     });
   }
 
-  test('treats usernames as case-insensitive when signing in later', async ({ page }) => {
+  test('treats usernames as case-insensitive when signing in later', { tag: '@p1' }, async ({ page }) => {
     await auth.register({ ...ALICE, username: 'Alice_QA' });
     await expect(page.getByRole('heading', { name: 'Tasks' })).toBeVisible();
     await auth.logout();
@@ -70,7 +70,7 @@ test.describe('Registration', { tag: '@auth' }, () => {
     await expect(page.locator('#greeting')).toHaveText('Hello, Alice Tester');
   });
 
-  test('links to the login page and back', async ({ page }) => {
+  test('links to the login page and back', { tag: '@p2' }, async ({ page }) => {
     await page.getByRole('link', { name: 'Back to login' }).click();
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
 
@@ -87,7 +87,7 @@ test.describe('Login and logout', { tag: '@auth' }, () => {
     await auth.gotoLogin();
   });
 
-  test('signs in with valid credentials', { tag: '@smoke' }, async ({ page }) => {
+  test('signs in with valid credentials', { tag: ['@smoke', '@p0'] }, async ({ page }) => {
     await auth.login(DEMO.username, DEMO.password);
 
     await expect(page).toHaveURL(/#\/tasks$/);
@@ -95,7 +95,7 @@ test.describe('Login and logout', { tag: '@auth' }, () => {
     await expect(page.getByRole('link', { name: 'Tasks' })).toHaveAttribute('aria-current', 'page');
   });
 
-  test('accepts the username in any letter case', async ({ page }) => {
+  test('accepts the username in any letter case', { tag: '@p1' }, async ({ page }) => {
     await auth.login('DEMO', DEMO.password);
 
     await expect(page).toHaveURL(/#\/tasks$/);
@@ -107,7 +107,7 @@ test.describe('Login and logout', { tag: '@auth' }, () => {
   ];
 
   for (const { name, username, password } of badCredentials) {
-    test(`shows one generic error for ${name}`, { tag: ['@validation', '@security'] }, async ({ page }) => {
+    test(`shows one generic error for ${name}`, { tag: ['@validation', '@security', '@p1'] }, async ({ page }) => {
       await auth.login(username, password);
 
       await expect(auth.alert).toHaveText('Username and password do not match');
@@ -115,19 +115,19 @@ test.describe('Login and logout', { tag: '@auth' }, () => {
     });
   }
 
-  test('requires a username', { tag: '@validation' }, async () => {
+  test('requires a username', { tag: ['@validation', '@p1'] }, async () => {
     await auth.login('', DEMO.password);
 
     await expect(auth.alert).toHaveText('Username is required');
   });
 
-  test('requires a password', { tag: '@validation' }, async () => {
+  test('requires a password', { tag: ['@validation', '@p1'] }, async () => {
     await auth.login(DEMO.username, '');
 
     await expect(auth.alert).toHaveText('Password is required');
   });
 
-  test('logs out, confirms it, and blocks the board afterwards', { tag: '@security' }, async ({ page }) => {
+  test('logs out, confirms it, and blocks the board afterwards', { tag: ['@security', '@p0'] }, async ({ page }) => {
     await auth.login(DEMO.username, DEMO.password);
     await auth.logout();
 
@@ -143,7 +143,7 @@ test.describe('Login and logout', { tag: '@auth' }, () => {
 
 test.describe('Routing and session', { tag: '@auth' }, () => {
   for (const route of ['/tasks', '/profile']) {
-    test(`redirects anonymous visitors from ${route} to the login page`, { tag: '@security' }, async ({ page }) => {
+    test(`redirects anonymous visitors from ${route} to the login page`, { tag: ['@security', '@p0'] }, async ({ page }) => {
       await page.goto(`/#${route}`);
 
       await expect(page).toHaveURL(/#\/login$/);
@@ -152,7 +152,7 @@ test.describe('Routing and session', { tag: '@auth' }, () => {
     });
   }
 
-  test('sends signed-in users away from the login and register pages', async ({ page }) => {
+  test('sends signed-in users away from the login and register pages', { tag: '@p1' }, async ({ page }) => {
     await signIn(page, DEMO);
 
     await page.goto('/#/login');
@@ -161,7 +161,7 @@ test.describe('Routing and session', { tag: '@auth' }, () => {
     await expect(page).toHaveURL(/#\/tasks$/);
   });
 
-  test('keeps the session after a full page reload', { tag: '@persistence' }, async ({ page }) => {
+  test('keeps the session after a full page reload', { tag: ['@persistence', '@p1'] }, async ({ page }) => {
     await signIn(page, DEMO);
 
     await page.reload();
@@ -170,7 +170,7 @@ test.describe('Routing and session', { tag: '@auth' }, () => {
     await expect(page.locator('#greeting')).toHaveText('Hello, Demo User');
   });
 
-  test('treats a session for a missing user as signed out', { tag: ['@security', '@resilience'] }, async ({ page }) => {
+  test('treats a session for a missing user as signed out', { tag: ['@security', '@resilience', '@p1'] }, async ({ page }) => {
     await page.goto('/');
     await page.evaluate(() => localStorage.setItem('tb.session', JSON.stringify('ghost')));
 
@@ -181,7 +181,7 @@ test.describe('Routing and session', { tag: '@auth' }, () => {
     await expect(page.getByRole('heading', { name: 'Sign in' })).toBeVisible();
   });
 
-  test('shows a not-found page for unknown routes', async ({ page }) => {
+  test('shows a not-found page for unknown routes', { tag: '@p2' }, async ({ page }) => {
     await page.goto('/#/does-not-exist');
     await expect(page.getByRole('heading', { name: 'Page not found' })).toBeVisible();
 
@@ -189,7 +189,7 @@ test.describe('Routing and session', { tag: '@auth' }, () => {
     await expect(page).toHaveURL(/#\/login$/);
   });
 
-  test('sets a descriptive page title per route', { tag: '@a11y' }, async ({ page }) => {
+  test('sets a descriptive page title per route', { tag: ['@a11y', '@p2'] }, async ({ page }) => {
     await page.goto('/#/login');
     await expect(page).toHaveTitle(/Login/);
     await page.goto('/#/register');
@@ -201,7 +201,7 @@ test.describe('Routing and session', { tag: '@auth' }, () => {
     await expect(page).toHaveTitle(/Profile/);
   });
 
-  test('supports browser back and forward between pages', async ({ page }) => {
+  test('supports browser back and forward between pages', { tag: '@p2' }, async ({ page }) => {
     await signIn(page, DEMO);
     await page.getByRole('link', { name: 'Profile' }).click();
     await expect(page.getByRole('heading', { name: 'Profile' })).toBeVisible();

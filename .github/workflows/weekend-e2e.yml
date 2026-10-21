@@ -10,7 +10,7 @@ on:
         description: 'Run only tests with this tag (empty = everything)'
         type: choice
         default: ''
-        options: ['', '@smoke', '@security', '@contract', '@characterization']
+        options: ['', '@smoke', '@p0', '@p0|@p1', '@security', '@contract', '@characterization']
 
 jobs:
   e2e:
