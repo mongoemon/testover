@@ -1,0 +1,543 @@
+<!doctype html>
+<html lang="th">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>QA ใน Pipeline</title>
+<meta name="description" content="แผนที่ pipeline ตาม SDLC ที่กดเล่นได้: QA ควรเข้าไปตรวจขั้นไหน ตรวจอะไร ประตูผ่านคืออะไร และลำดับขั้นของ pipeline ที่ดีควรเรียงแบบไหน">
+<style>
+:root{--bg:#f6f3ec;--surface:#fffdf8;--ink:#1d2320;--muted:#5d6a63;--line:#ddd6c6;--accent:#0b6e4f;
+--c-must:#b3261e;--c-should:#b7791f;--c-opt:#3b6ea5;--c-qa:#3b6ea5;--c-dev:#b3541e;--ok:#1f7a4d;--bad:#b3261e;--run:#8a4fa0;--radius:12px;
+--r-po:#8a4fa0;--r-dev:#b3541e;--r-qa:#2f62a0;--r-ops:#0b7a6e;--r-sec:#a8325e;
+--font-body:"Segoe UI","Noto Sans Thai",system-ui,sans-serif;--font-mono:"Cascadia Mono",Consolas,monospace}
+@media(prefers-color-scheme:dark){:root:not([data-theme="light"]){--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--c-must:#ff8a80;--c-should:#e6b75c;--c-opt:#7fb0e6;--c-qa:#7fb0e6;--c-dev:#f0a273;--ok:#5fd39a;--bad:#ff8a80;--run:#c79be0;--r-po:#c79be0;--r-dev:#f0a273;--r-qa:#7fb0e6;--r-ops:#5fcfbf;--r-sec:#f08fb4;color-scheme:dark}}
+:root[data-theme="dark"]{--bg:#131816;--surface:#1b221f;--ink:#e8efe9;--muted:#9bada2;--line:#2e3a35;--accent:#4cc79a;--c-must:#ff8a80;--c-should:#e6b75c;--c-opt:#7fb0e6;--c-qa:#7fb0e6;--c-dev:#f0a273;--ok:#5fd39a;--bad:#ff8a80;--run:#c79be0;--r-po:#c79be0;--r-dev:#f0a273;--r-qa:#7fb0e6;--r-ops:#5fcfbf;--r-sec:#f08fb4;color-scheme:dark}
+*{box-sizing:border-box}html{scroll-behavior:smooth;scroll-padding-top:3.4rem}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:var(--font-body);line-height:1.65}
+.wrap{max-width:1020px;margin:0 auto;padding:0 16px 5rem}a{color:var(--accent)}
+code{font-family:var(--font-mono);font-size:.86em;background:color-mix(in srgb,var(--ink) 8%,transparent);padding:.1em .35em;border-radius:4px}
+:focus-visible{outline:3px solid var(--accent);outline-offset:2px}
+header.hero{padding:3rem 0 1.6rem;border-bottom:2px solid var(--ink)}
+.topbar{float:right;margin-top:.6rem;display:flex;gap:.5rem}
+.pill{background:none;border:1px solid var(--line);color:var(--ink);border-radius:999px;padding:.3rem .9rem;cursor:pointer;font:inherit;font-size:.85rem;text-decoration:none}
+.pill:hover:not(:disabled){border-color:var(--accent);color:var(--accent)}
+.pill:disabled{opacity:.4;cursor:default}
+.eyebrow{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.1em;color:var(--accent);text-transform:uppercase}
+h1{font-size:clamp(2rem,1.1rem + 4vw,3.3rem);line-height:1.15;margin:.4rem 0 .8rem;letter-spacing:-.02em;text-wrap:balance}
+.lead{font-size:1.1rem;color:var(--muted);max-width:62ch;margin:0}
+h2.sec{font-size:1.5rem;margin:3rem 0 .3rem;line-height:1.25;text-wrap:balance}
+h2.sec .no{font-family:var(--font-mono);color:var(--accent);font-size:1rem;margin-right:.5rem}
+.sub{color:var(--muted);margin:0 0 1.2rem;max-width:64ch}
+.card{background:var(--surface);border:1px solid var(--line);border-radius:var(--radius);padding:1rem 1.2rem}
+
+/* level legend */
+.legend{display:flex;gap:1rem;flex-wrap:wrap;font-size:.85rem;color:var(--muted);margin:0 0 .8rem}
+.legend i{display:inline-block;width:.8rem;height:.8rem;border-radius:50%;margin-right:.35rem;vertical-align:-1px}
+.lv-must{background:var(--c-must)}.lv-should{background:var(--c-should)}.lv-opt{background:var(--c-opt)}
+
+/* SDLC map */
+.mapx{overflow-x:auto;padding:.3rem 0 .4rem}
+.map{display:grid;grid-template-columns:repeat(8,minmax(108px,1fr));min-width:880px}
+.phase-band{grid-row:1;font-family:var(--font-mono);font-size:.72rem;letter-spacing:.06em;color:var(--muted);text-transform:uppercase;padding:0 .4rem .35rem;border-bottom:2px solid var(--line);margin:0 .25rem .6rem}
+.phase-band.b2{border-bottom-color:var(--accent);color:var(--accent)}
+.st{grid-row:2;position:relative;margin:0 .25rem;background:var(--surface);border:1.5px solid var(--line);border-radius:10px;padding:.6rem .55rem .55rem;text-align:left;cursor:pointer;font:inherit;color:var(--ink);transition:border-color .15s,transform .15s,background .15s}
+.st:hover{border-color:var(--accent)}
+.st[aria-pressed="true"]{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface));transform:translateY(-3px)}
+.st .n{font-family:var(--font-mono);font-size:.72rem;color:var(--muted)}
+.st b{display:block;font-size:.92rem;line-height:1.3;margin:.1rem 0 .35rem}
+.st .lv{display:inline-flex;align-items:center;gap:.3rem;font-size:.74rem;color:var(--muted)}
+.st .lv i{width:.6rem;height:.6rem;border-radius:50%}
+.st .prog{display:block;margin-top:.35rem;height:4px;border-radius:2px;background:var(--line);overflow:hidden}
+.st .prog span{display:block;height:100%;width:0;background:var(--ok);transition:width .25s}
+.st:not(:last-child)::after{content:"";position:absolute;right:-.62rem;top:50%;width:.5rem;height:2px;background:var(--line)}
+
+.detail{margin-top:1rem;display:grid;grid-template-columns:minmax(0,1.25fr) minmax(0,1fr);gap:1.2rem}
+.detail h3{margin:0 0 .2rem;font-size:1.3rem}
+.detail .what{color:var(--muted);margin:0 0 .8rem}
+.kv{display:grid;gap:.7rem}
+.kv>div{border-left:4px solid var(--line);padding:.1rem 0 .1rem .8rem}
+.kv .k{font-family:var(--font-mono);font-size:.74rem;letter-spacing:.06em;color:var(--muted);text-transform:uppercase}
+.kv .gate{border-left-color:var(--accent)}.kv .smell{border-left-color:var(--bad)}.kv .here{border-left-color:var(--c-dev)}
+.kv p{margin:.1rem 0 0}
+.checks h4{margin:0 0 .4rem;font-size:1rem;display:flex;justify-content:space-between;gap:.5rem;align-items:baseline}
+.checks h4 small{font-family:var(--font-mono);font-weight:400;color:var(--muted);font-variant-numeric:tabular-nums}
+.checks ul{list-style:none;margin:0;padding:0;display:grid;gap:.35rem}
+.checks label{display:flex;gap:.55rem;align-items:flex-start;padding:.4rem .55rem;border:1px solid var(--line);border-radius:8px;background:var(--surface);cursor:pointer;font-size:.93rem;line-height:1.45}
+.checks input{margin-top:.25rem;accent-color:var(--ok);flex:none}
+.checks label:has(input:checked){border-color:color-mix(in srgb,var(--ok) 55%,var(--line));background:color-mix(in srgb,var(--ok) 8%,var(--surface))}
+.checks label:has(input:checked) span{color:var(--muted);text-decoration:line-through;text-decoration-color:color-mix(in srgb,var(--muted) 50%,transparent)}
+.mini{display:flex;gap:.5rem;margin-top:.8rem;flex-wrap:wrap}
+
+/* pipeline order */
+.lanes{display:grid;gap:.5rem}
+.lane{display:grid;grid-template-columns:2.4rem minmax(0,1fr) auto;gap:.8rem;align-items:center;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:.55rem .8rem}
+.lane .ix{font-family:var(--font-mono);font-weight:700;color:var(--muted);text-align:center}
+.lane b{display:block;font-size:.97rem}
+.lane small{color:var(--muted);display:block;line-height:1.4}
+.lane .t{font-family:var(--font-mono);font-size:.8rem;color:var(--muted);white-space:nowrap;font-variant-numeric:tabular-nums}
+.qa{font-size:.72rem;color:var(--c-qa);border:1px solid var(--c-qa);border-radius:999px;padding:0 .45rem;margin-left:.35rem;white-space:nowrap;vertical-align:1px;font-weight:600}
+.lane{transition:opacity .2s,filter .2s}.lane.dim{opacity:.25;filter:grayscale(1)}
+.roles{display:flex;flex-wrap:wrap;gap:.3rem;margin-top:.3rem}
+.rc{--rc:var(--muted);font-size:.72rem;line-height:1.5;border:1px solid var(--rc);color:var(--rc);border-radius:999px;padding:0 .5rem;white-space:nowrap}
+.rc.own{background:color-mix(in srgb,var(--rc) 16%,transparent);font-weight:700}
+.rc.own::before{content:"● "}
+[data-r="po"]{--rc:var(--r-po)}[data-r="dev"]{--rc:var(--r-dev)}[data-r="qa"]{--rc:var(--r-qa)}[data-r="ops"]{--rc:var(--r-ops)}[data-r="sec"]{--rc:var(--r-sec)}
+.rkey{display:flex;flex-wrap:wrap;gap:.6rem 1rem;font-size:.82rem;color:var(--muted);margin:.2rem 0 1rem}
+.team ul{list-style:none;margin:.3rem 0 0;padding:0;display:grid;gap:.3rem}
+.team li{display:grid;grid-template-columns:4.6rem minmax(0,1fr);gap:.5rem;align-items:baseline;font-size:.92rem;line-height:1.45}
+.team li .rc{justify-self:start}
+.kv .team{border-left-color:var(--r-po)}.kv .collab{border-left-color:var(--r-qa)}
+.kv .collab p b{color:var(--r-qa)}
+/* collaboration */
+.cgrid{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:.8rem}
+.cbox{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:.75rem 1rem}
+.cbox h4{margin:0 0 .3rem;font-size:.82rem;font-family:var(--font-mono);letter-spacing:.05em;color:var(--muted);text-transform:uppercase}
+.cbox ul{margin:0;padding-left:1.1rem}.cbox li{margin:.15rem 0}
+.cbox.give{border-top:4px solid var(--r-qa)}.cbox.need{border-top:4px solid var(--rc,var(--muted))}
+.cbox.rit{border-top:4px solid var(--ok)}.cbox.anti{border-top:4px solid var(--bad)}
+.say{margin:.8rem 0 0;font-size:.95rem;padding:.6rem .9rem;border-radius:8px;background:color-mix(in srgb,var(--r-qa) 9%,transparent)}
+.say b{color:var(--r-qa)}
+.cadence{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:.6rem;margin-top:1rem}
+.cad{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:.65rem .75rem;display:flex;flex-direction:column;gap:.3rem}
+.cad .when{font-family:var(--font-mono);font-size:.72rem;color:var(--muted);letter-spacing:.04em}
+.cad b{font-size:.95rem;line-height:1.3}
+.cad p{margin:0;font-size:.86rem;color:var(--muted);line-height:1.45}
+.grp{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.02em;color:var(--accent);text-transform:uppercase;margin:.9rem 0 .1rem}
+.grp:first-child{margin-top:0}
+
+/* simulator */
+.opts{display:flex;flex-wrap:wrap;gap:.5rem;margin:0 0 1rem}
+.opt{cursor:pointer;user-select:none;border:1.5px solid var(--line);background:var(--surface);color:var(--ink);border-radius:999px;padding:.4rem 1rem;font:inherit;font-size:.92rem;transition:border-color .15s,background .15s}
+.opt:hover{border-color:var(--run)}
+.opt[aria-pressed="true"]{border-color:var(--run);background:color-mix(in srgb,var(--run) 14%,var(--surface));font-weight:600}
+.sim{display:grid;grid-template-columns:1fr 1fr;gap:1rem}
+.track h3{margin:0 0 .1rem;font-size:1rem}
+.track .meta{color:var(--muted);font-size:.85rem;margin-bottom:.6rem}
+.track ol{list-style:none;margin:0;padding:0;display:grid;gap:.3rem}
+.track li{display:flex;justify-content:space-between;gap:.5rem;font-size:.88rem;padding:.3rem .6rem;border-radius:6px;border:1px solid var(--line);background:var(--surface);transition:background .2s,border-color .2s,opacity .2s}
+.track li .m{font-family:var(--font-mono);font-size:.78rem;color:var(--muted);font-variant-numeric:tabular-nums}
+.track li.pass{border-color:color-mix(in srgb,var(--ok) 45%,var(--line));background:color-mix(in srgb,var(--ok) 8%,var(--surface))}
+.track li.pass::before{content:"✓";color:var(--ok);font-weight:700;margin-right:.35rem}
+.track li.fail{border-color:var(--bad);background:color-mix(in srgb,var(--bad) 13%,var(--surface));font-weight:700}
+.track li.fail::before{content:"✗";color:var(--bad);margin-right:.35rem}
+.track li.skip{opacity:.35}
+.track li.running{border-color:var(--run);background:color-mix(in srgb,var(--run) 10%,var(--surface))}
+.track li span:first-child{flex:1}
+.clock{font-family:var(--font-mono);font-size:1.6rem;font-weight:700;margin-top:.6rem;font-variant-numeric:tabular-nums}
+.clock small{font-size:.8rem;font-weight:400;color:var(--muted)}
+.good .clock{color:var(--ok)}.bad .clock{color:var(--bad)}
+.verdict{margin:1rem 0 0;padding:.7rem 1rem;border-left:5px solid var(--accent);background:color-mix(in srgb,var(--accent) 8%,transparent);border-radius:0 8px 8px 0;font-weight:600}
+
+/* principles */
+.rules{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:.8rem}
+.rule{border:1px solid var(--line);border-radius:10px;background:var(--surface);padding:.8rem 1rem}
+.rule h3{margin:0 0 .25rem;font-size:1rem}
+.rule p{margin:0;color:var(--muted);font-size:.93rem}
+.rule .avoid{display:block;margin-top:.45rem;font-size:.85rem;color:var(--bad)}
+/* sources */
+.src{margin:-.7rem 0 1rem;font-size:.82rem;color:var(--muted)}
+.src a{font-family:var(--font-mono);text-decoration:none;padding:0 .1rem}
+.src a:hover{text-decoration:underline}
+.refgrp{font-family:var(--font-mono);font-size:.78rem;letter-spacing:.02em;color:var(--accent);text-transform:uppercase;margin:1.4rem 0 .4rem}
+.refs{list-style:none;margin:0;padding:0;display:grid;gap:.45rem}
+.refs li{display:grid;grid-template-columns:2.4rem minmax(0,1fr);gap:.6rem;padding:.55rem .8rem;border:1px solid var(--line);border-radius:10px;background:var(--surface);transition:border-color .3s,background .3s}
+.refs li:target{border-color:var(--accent);background:color-mix(in srgb,var(--accent) 10%,var(--surface))}
+.refs .rn{font-family:var(--font-mono);font-weight:700;color:var(--muted)}
+.refs .rt{font-weight:600;overflow-wrap:anywhere}
+.refs .ra{color:var(--muted);font-size:.86rem}
+.refs .ru{display:block;font-size:.9rem;margin-top:.15rem;line-height:1.45}
+.refs .ru i{font-style:normal;font-family:var(--font-mono);font-size:.74rem;color:var(--accent);border:1px solid color-mix(in srgb,var(--accent) 45%,transparent);border-radius:4px;padding:0 .3rem;margin-left:.3rem;white-space:nowrap}
+.note{border-left:4px solid var(--c-should);background:color-mix(in srgb,var(--c-should) 8%,transparent);padding:.6rem 1rem;border-radius:0 8px 8px 0;margin:1.2rem 0}
+footer{margin-top:4rem;padding-top:1rem;border-top:1px solid var(--line);color:var(--muted);font-size:.88rem}
+
+@media(max-width:860px){.cadence{grid-template-columns:repeat(2,minmax(0,1fr))}}
+@media(max-width:760px){.detail,.sim,.rules,.cgrid{grid-template-columns:1fr}.topbar{float:none;margin:0 0 1rem}.lane{grid-template-columns:1.8rem minmax(0,1fr)}.lane .t{grid-column:2}}
+@media(prefers-reduced-motion:reduce){html{scroll-behavior:auto}*{transition:none!important}}
+.topnav{position:sticky;top:0;z-index:20;background:color-mix(in srgb,var(--bg) 88%,transparent);backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.topnav .in{max-width:1020px;margin:0 auto;padding:.45rem 16px;display:flex;align-items:center;gap:.3rem;overflow-x:auto;scrollbar-width:none}
+.topnav .in::-webkit-scrollbar{display:none}
+.topnav .brand{font-family:var(--font-mono);font-weight:700;color:var(--accent);text-decoration:none;margin-right:.6rem;white-space:nowrap}
+.topnav a.l{color:var(--ink);text-decoration:none;font-size:.88rem;padding:.25rem .7rem;border-radius:999px;border:1px solid transparent;white-space:nowrap}
+.topnav a.l:hover{border-color:var(--line);background:var(--surface)}
+.topnav a.l:focus-visible,.topnav .brand:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+@media print{.topnav{display:none}}
+</style>
+</head>
+<body>
+<nav class="topnav" aria-label="เมนูหลัก"><div class="in"><a class="brand" href="../">testover</a><a class="l" href="overview.html">ภาพรวม</a><a class="l" href="testing-structure.html">โครงสร้างเทส</a><a class="l" href="automation-phases.html">ทีละ Phase</a><a class="l" href="ci-pipeline.html">CI pipeline</a><a class="l" href="characterization-why.html">Characterization</a><a class="l" href="guide.html">คู่มือ</a></div></nav>
+<div class="wrap">
+<header class="hero">
+  <div class="topbar"><a class="pill" href="qa-pipeline-checkpoints.en.html" hreflang="en" lang="en">English</a><button class="pill" id="theme" type="button">ธีม</button></div>
+  <div class="eyebrow">testover · QA checkpoints</div>
+  <h1>QA ควรเข้าไปตรวจ<br>ตรงไหนของ pipeline</h1>
+  <p class="lead">กดแต่ละขั้นของ SDLC เพื่อดูว่า pipeline ทำอะไรอยู่ QA ต้องตรวจอะไร และต้องผ่านอะไรก่อนไปขั้นต่อไป จากนั้นลองดูว่า pipeline ที่เรียงลำดับดีกับเรียงไม่ดี บอกผลเร็วต่างกันแค่ไหน</p>
+</header>
+<main>
+
+<h2 class="sec" id="map"><span class="no">01</span>แผนที่ SDLC กับจุดตรวจของ QA</h2>
+<p class="sub">QA ไม่ได้เริ่มที่ขั้น Test ยิ่งเข้าเร็ว บั๊กยิ่งแก้ถูก จุดสีบอกว่าขั้นนั้น QA ต้องตรวจเองแค่ไหน checklist ติ๊กได้ และจำไว้ในเบราว์เซอร์นี้</p>
+<p class="src">ที่มา: <a href="#ref-1">[1]</a><a href="#ref-2">[2]</a><a href="#ref-3">[3]</a><a href="#ref-17">[17]</a><a href="#ref-18">[18]</a></p>
+<div class="legend"><span><i class="lv-must"></i>ต้องตรวจ (เป็น gate)</span><span><i class="lv-should"></i>ควรเข้าไปดู</span><span><i class="lv-opt"></i>ร่วมรีวิว / ติดตาม</span></div>
+<div class="mapx"><div class="map" id="map-grid">
+  <div class="phase-band" style="grid-column:1/3">ก่อนเขียนโค้ด</div>
+  <div class="phase-band b2" style="grid-column:3/5">CI · ทุก push / PR</div>
+  <div class="phase-band b2" style="grid-column:5/8">CD · ก่อนถึงผู้ใช้</div>
+  <div class="phase-band" style="grid-column:8/9">หลังปล่อย</div>
+</div></div>
+<div class="card detail" id="detail" aria-live="polite">
+  <div>
+    <h3 id="dT"></h3>
+    <p class="what" id="dW"></p>
+    <div class="kv">
+      <div class="gate"><div class="k">ประตูผ่าน (exit criteria)</div><p id="dG"></p></div>
+      <div class="smell"><div class="k">สัญญาณว่ามีปัญหา</div><p id="dS"></p></div>
+      <div class="team"><div class="k">ใครทำอะไรในขั้นนี้</div><ul id="dR"></ul></div>
+      <div class="collab"><div class="k">QA ร่วมงานกับทีมยังไง</div><p id="dX"></p></div>
+      <div class="here"><div class="k">ใน testover</div><p id="dH"></p></div>
+    </div>
+  </div>
+  <div class="checks">
+    <h4>QA ตรวจอะไร <small id="dC"></small></h4>
+    <ul id="dL"></ul>
+    <div class="mini"><button class="pill" id="prev" type="button">← ขั้นก่อน</button><button class="pill" id="next" type="button">ขั้นถัดไป →</button><button class="pill" id="reset" type="button">ล้างที่ติ๊กทั้งหมด</button></div>
+  </div>
+</div>
+
+<h2 class="sec" id="order"><span class="no">02</span>โครงสร้าง pipeline ที่ดี เรียงยังไง</h2>
+<p class="sub">หลักคือ <b>ถูกและเร็วไว้ก่อน แพงและช้าไว้หลัง</b> แต่ละชั้นเป็น gate ถ้าแดงก็หยุด ไม่เสียเวลารันชั้นที่แพงกว่า เวลาเป็นตัวเลขประมาณสำหรับโปรเจกต์ขนาดเล็กถึงกลาง กดเลือก role เพื่อดูว่าใครอยู่ชั้นไหน</p>
+<p class="src">ที่มา: <a href="#ref-5">[5]</a><a href="#ref-6">[6]</a><a href="#ref-7">[7]</a><a href="#ref-8">[8]</a><a href="#ref-9">[9]</a><a href="#ref-10">[10]</a><a href="#ref-11">[11]</a><a href="#ref-12">[12]</a><a href="#ref-16">[16]</a></p>
+<div class="opts" id="roleF" role="group" aria-label="กรองตาม role"></div>
+<div class="rkey"><span><span class="rc own" data-r="qa">QA</span> ทึบ = เจ้าของ ทำให้เขียวและดูแล</span><span><span class="rc" data-r="qa">QA</span> เส้น = ร่วมทำ / รีวิว</span></div>
+<div class="lanes" id="lanes"></div>
+
+<h2 class="sec" id="team"><span class="no">03</span>QA ทำงานร่วมกับแต่ละ role ยังไง</h2>
+<p class="sub">QA ที่ดีไม่ได้เป็นด่านสุดท้ายที่คอยจับผิด แต่ทำให้ทั้งทีมเห็นความเสี่ยงตรงกันตั้งแต่ต้น เลือก role เพื่อดูว่า QA ให้อะไร ต้องการอะไร และใช้กิจกรรมไหนร่วมกัน</p>
+<p class="src">ที่มา: <a href="#ref-2">[2]</a><a href="#ref-3">[3]</a><a href="#ref-4">[4]</a><a href="#ref-17">[17]</a><a href="#ref-18">[18]</a></p>
+<div class="opts" id="collabF" role="group" aria-label="เลือก role"></div>
+<div class="cgrid" id="collab" aria-live="polite">
+  <div class="cbox give"><h4>QA ให้อะไร</h4><ul id="cGive"></ul></div>
+  <div class="cbox need" id="cNeedBox"><h4>QA ต้องการอะไรจากเขา</h4><ul id="cNeed"></ul></div>
+  <div class="cbox rit"><h4>ทำร่วมกันตอนไหน</h4><ul id="cRit"></ul></div>
+  <div class="cbox anti"><h4>อาการที่ความร่วมมือพัง</h4><ul id="cAnti"></ul></div>
+</div>
+<p class="say" id="cSay"></p>
+<h3 style="margin:2rem 0 .2rem;font-size:1.1rem">จังหวะร่วมงานใน 1 sprint</h3>
+<p class="sub" style="margin-bottom:0">เรียงตามเวลาที่เกิดจริงใน sprint ป้ายสีบอกว่าใครต้องอยู่</p>
+<div class="cadence" id="cadence"></div>
+
+<h2 class="sec" id="sim"><span class="no">04</span>ลองปล่อยบั๊กเข้า pipeline</h2>
+<p class="sub">เลือกชนิดบั๊ก แล้วดูว่า pipeline สองแบบใช้เวลากี่นาทีกว่าจะแดง ซ้ายเรียงตามข้อ 02 ขวาเรียงแบบที่เจอบ่อย คือ build แล้ว deploy แล้วรัน E2E ก่อน unit</p>
+<p class="src">ที่มา: <a href="#ref-5">[5]</a><a href="#ref-8">[8]</a> · ตัวเลขนาทีเป็นค่าสมมติสำหรับเปรียบเทียบ</p>
+<div class="opts" id="bugs" role="group" aria-label="ชนิดบั๊ก"></div>
+<div class="sim">
+  <div class="card track good"><h3>เรียงดี · fail fast</h3><div class="meta">ถูกก่อน แพงทีหลัง</div><ol id="tGood"></ol><div class="clock" id="cGood"></div></div>
+  <div class="card track bad"><h3>เรียงไม่ดี · แพงก่อน</h3><div class="meta">deploy แล้วรัน E2E ก่อนเทสเล็ก</div><ol id="tBad"></ol><div class="clock" id="cBad"></div></div>
+</div>
+<p class="verdict" id="simV" aria-live="polite"></p>
+<div class="mini"><button class="pill" id="replay" type="button">รันอีกครั้ง</button></div>
+
+<h2 class="sec" id="rules"><span class="no">05</span>หลักที่ QA ใช้ตรวจ pipeline ทั้งเส้น</h2>
+<p class="sub">ใช้เป็นคำถามตอนรีวิวไฟล์ workflow หรือตอนทีมขอเพิ่มหรือลด job</p>
+<p class="src">ที่มา: <a href="#ref-5">[5]</a><a href="#ref-7">[7]</a><a href="#ref-9">[9]</a><a href="#ref-13">[13]</a><a href="#ref-14">[14]</a><a href="#ref-15">[15]</a></p>
+<div class="rules">
+  <div class="rule"><h3>Build ครั้งเดียว โปรโมตตัวเดิม</h3><p>ตัวที่เทสผ่านใน test และ staging ต้องเป็น artifact เดียวกับที่ขึ้น production ระบุด้วย commit SHA หรือ version</p><span class="avoid">ไม่ควร: build ใหม่ตอน deploy prod</span></div>
+  <div class="rule"><h3>Gate ต้องบังคับจริง</h3><p>check ที่สำคัญต้องตั้งเป็น required check ใน branch protection ไม่ใช่แค่โชว์สีแดงแล้วยัง merge ได้</p><span class="avoid">ไม่ควร: ใส่ <code>continue-on-error</code> ให้เทสหลัก</span></div>
+  <div class="rule"><h3>Flaky test ต้องมีเจ้าของ</h3><p>เทสที่ผ่านบ้างไม่ผ่านบ้าง ให้กักไว้ (quarantine) พร้อม ticket และกำหนดวันแก้ ไม่ใช่กด re-run จนเขียว</p><span class="avoid">ไม่ควร: retry 3 รอบเงียบ ๆ ทุกเทส</span></div>
+  <div class="rule"><h3>ผลต้องอ่านได้โดยไม่ต้องเปิด log</h3><p>มี report รวม เช่น Allure พร้อม screenshot, trace และ video ตอน fail เก็บย้อนหลังพอเทียบแนวโน้มได้</p><span class="avoid">ไม่ควร: ไล่ log 3,000 บรรทัดหาว่าอะไรพัง</span></div>
+  <div class="rule"><h3>ข้อมูลเทสและ environment ควบคุมได้</h3><p>seed ข้อมูลใหม่ทุกรอบ ไม่พึ่งข้อมูลค้างจากรอบก่อน และ config ของแต่ละ env ต้องตรวจย้อนได้</p><span class="avoid">ไม่ควร: เทสผ่านเพราะมีข้อมูลที่ใครสร้างไว้เมื่อวาน</span></div>
+  <div class="rule"><h3>ห้ามทำให้เขียวด้วยการลบเทส</h3><p>PR ที่ลบหรือ skip เทส ต้องเขียนเหตุผลไว้และให้ QA รีวิว เทสที่หายไปคือ coverage ที่หายไป</p><span class="avoid">ไม่ควร: <code>test.skip</code> โดยไม่มี ticket</span></div>
+</div>
+<p class="note"><b>จำสั้น ๆ:</b> QA ตรวจ pipeline 3 อย่าง คือ <b>ลำดับ</b> (ถูกก่อนแพง) <b>ประตู</b> (แดงแล้วหยุดจริง) และ <b>หลักฐาน</b> (report บอกได้ว่าเทสอะไร กับ version ไหน ผลเป็นยังไง)</p>
+
+<h2 class="sec" id="refs"><span class="no">06</span>ที่มาและอ่านเพิ่ม</h2>
+<p class="sub">เนื้อหาในหน้านี้สรุปจากแหล่งด้านล่าง ป้ายท้ายแต่ละรายการบอกว่าใช้อ้างอิงใน section ไหน กดเลข [n] ใต้หัวข้อแต่ละส่วนเพื่อกระโดดมาที่นี่</p>
+<p class="note" style="margin-top:0"><b>ส่วนที่ไม่ได้ยกมาจากแหล่งใดโดยตรง:</b> ตัวเลขเวลาของแต่ละชั้น การแบ่งว่า role ไหนเป็นเจ้าของชั้นไหน ตัวอย่างประโยค และจังหวะใน sprint เป็นการสรุปจากแนวปฏิบัติข้างล่างรวมกับประสบการณ์ทั่วไป แต่ละองค์กรอาจแบ่งต่างออกไป ให้ปรับตามทีมของคุณ</p>
+
+<div class="refgrp">SDLC และบทบาทของ QA</div>
+<ol class="refs">
+ <li id="ref-1"><span class="rn">[1]</span><div><span class="rt">ISTQB Certified Tester Foundation Level Syllabus v4.0</span> <span class="ra">· ISTQB, 2023</span><span class="ru">ระดับการเทส, กระบวนการเทส, entry / exit criteria และบทบาทการเทสตลอด SDLC <a href="https://www.istqb.org/certifications/certified-tester-foundation-level">istqb.org</a><i>01</i></span></div></li>
+ <li id="ref-2"><span class="rn">[2]</span><div><span class="rt">Agile Testing และ More Agile Testing</span> <span class="ra">· Lisa Crispin, Janet Gregory · Addison-Wesley, 2009 / 2014</span><span class="ru">แนวคิด whole-team quality, QA ทำงานร่วมกับ PO และ Dev ตั้งแต่ก่อนเขียนโค้ด <a href="https://agiletester.ca/">agiletester.ca</a><i>01</i><i>03</i></span></div></li>
+ <li id="ref-3"><span class="rn">[3]</span><div><span class="rt">Three Amigos</span> <span class="ra">· Agile Alliance Glossary</span><span class="ru">การคุย story ร่วมกันของ business, development และ testing ก่อนเริ่มงาน <a href="https://www.agilealliance.org/glossary/three-amigos/">agilealliance.org</a><i>01</i><i>03</i></span></div></li>
+ <li id="ref-4"><span class="rn">[4]</span><div><span class="rt">Introducing Example Mapping</span> <span class="ra">· Matt Wynne · Cucumber, 2015</span><span class="ru">เทคนิคแปลง rule เป็นตัวอย่างที่กลายเป็น test case ในวง Three Amigos <a href="https://cucumber.io/blog/bdd/example-mapping-introduction/">cucumber.io</a><i>03</i></span></div></li>
+</ol>
+
+<div class="refgrp">โครงสร้างและลำดับของ pipeline</div>
+<ol class="refs">
+ <li id="ref-5"><span class="rn">[5]</span><div><span class="rt">Continuous Integration</span> <span class="ra">· Martin Fowler · martinfowler.com (ปรับปรุง 2024)</span><span class="ru">build ที่เทสตัวเองได้, ให้ผลเร็ว, ทำแดงต้องแก้ทันที <a href="https://martinfowler.com/articles/continuousIntegration.html">martinfowler.com</a><i>02</i><i>04</i><i>05</i></span></div></li>
+ <li id="ref-6"><span class="rn">[6]</span><div><span class="rt">Deployment Pipeline</span> <span class="ra">· Martin Fowler · bliki, 2013</span><span class="ru">แบ่ง pipeline เป็น stage จากเร็วไปช้า แต่ละ stage เป็นประตูของ stage ถัดไป <a href="https://martinfowler.com/bliki/DeploymentPipeline.html">martinfowler.com</a><i>02</i></span></div></li>
+ <li id="ref-7"><span class="rn">[7]</span><div><span class="rt">Continuous Delivery</span> <span class="ra">· Jez Humble, David Farley · Addison-Wesley, 2010</span><span class="ru">build ครั้งเดียวแล้วโปรโมต artifact เดิม, deployment pipeline, การควบคุม environment <a href="https://continuousdelivery.com/">continuousdelivery.com</a><i>02</i><i>05</i></span></div></li>
+ <li id="ref-8"><span class="rn">[8]</span><div><span class="rt">The Practical Test Pyramid</span> <span class="ra">· Ham Vocke · martinfowler.com, 2018</span><span class="ru">สัดส่วนเทสแต่ละชั้น ทำไมเทสเล็กและเร็วควรมีมากและรันก่อน <a href="https://martinfowler.com/articles/practical-test-pyramid.html">martinfowler.com</a><i>02</i><i>04</i></span></div></li>
+ <li id="ref-9"><span class="rn">[9]</span><div><span class="rt">DORA Capabilities: Continuous integration, Test automation, Test data management</span> <span class="ra">· DORA (Google Cloud)</span><span class="ru">ข้อมูลวิจัยว่า practice ไหนสัมพันธ์กับทีมที่ส่งงานได้ดี <a href="https://dora.dev/capabilities/continuous-integration/">CI</a> · <a href="https://dora.dev/capabilities/test-automation/">Test automation</a> · <a href="https://dora.dev/capabilities/test-data-management/">Test data</a><i>02</i><i>05</i></span></div></li>
+ <li id="ref-10"><span class="rn">[10]</span><div><span class="rt">Contract Test</span> <span class="ra">· Martin Fowler · bliki, 2011</span><span class="ru">ตรวจรอยต่อกับบริการอื่นโดยไม่ต้องรันทั้งระบบ <a href="https://martinfowler.com/bliki/ContractTest.html">martinfowler.com</a><i>02</i></span></div></li>
+ <li id="ref-11"><span class="rn">[11]</span><div><span class="rt">Working Effectively with Legacy Code</span> <span class="ra">· Michael Feathers · Prentice Hall, 2004</span><span class="ru">ต้นทางของ characterization test สรุปภาษาไทยใน <a href="characterization-why.html">ทำไมต้องทำ Characterization</a><i>02</i></span></div></li>
+ <li id="ref-12"><span class="rn">[12]</span><div><span class="rt">Canary Release และ Blue Green Deployment</span> <span class="ra">· Danilo Sato, Martin Fowler · bliki, 2014 / 2010</span><span class="ru">วิธีปล่อยขึ้น production ทีละส่วนและย้อนกลับได้เร็ว <a href="https://martinfowler.com/bliki/CanaryRelease.html">Canary</a> · <a href="https://martinfowler.com/bliki/BlueGreenDeployment.html">Blue-green</a><i>02</i></span></div></li>
+</ol>
+
+<div class="refgrp">ความน่าเชื่อถือของเทสและ gate</div>
+<ol class="refs">
+ <li id="ref-13"><span class="rn">[13]</span><div><span class="rt">Eradicating Non-Determinism in Tests</span> <span class="ra">· Martin Fowler · 2011</span><span class="ru">ต้นเหตุของ flaky test และการกักเทส (quarantine) <a href="https://martinfowler.com/articles/nonDeterminism.html">martinfowler.com</a><i>05</i></span></div></li>
+ <li id="ref-14"><span class="rn">[14]</span><div><span class="rt">Flaky Tests at Google and How We Mitigate Them</span> <span class="ra">· John Micco · Google Testing Blog, 2016</span><span class="ru">ข้อมูลจริงว่า flaky test เกิดบ่อยแค่ไหน และทำไม re-run อย่างเดียวไม่พอ <a href="https://testing.googleblog.com/2016/05/flaky-tests-at-google-and-how-we.html">testing.googleblog.com</a><i>05</i></span></div></li>
+ <li id="ref-15"><span class="rn">[15]</span><div><span class="rt">About protected branches (required status checks)</span> <span class="ra">· GitHub Docs</span><span class="ru">วิธีตั้ง check ให้เป็นประตูบังคับจริงก่อน merge <a href="https://docs.github.com/en/repositories/configuring-branches-and-merges-in-your-repository/managing-protected-branches/about-protected-branches">docs.github.com</a><i>05</i></span></div></li>
+</ol>
+
+<div class="refgrp">Security และ Operations</div>
+<ol class="refs">
+ <li id="ref-16"><span class="rn">[16]</span><div><span class="rt">OWASP DevSecOps Guideline</span> <span class="ra">· OWASP</span><span class="ru">ตำแหน่งของ secret scan, SAST, SCA และ DAST ใน pipeline <a href="https://owasp.org/www-project-devsecops-guideline/">owasp.org</a><i>02</i></span></div></li>
+ <li id="ref-17"><span class="rn">[17]</span><div><span class="rt">Threat Modeling</span> <span class="ra">· OWASP Community</span><span class="ru">วิเคราะห์ภัยคุกคามตั้งแต่ขั้นออกแบบ ซึ่ง QA ใช้เป็นที่มาของเคส abuse <a href="https://owasp.org/www-community/Threat_Modeling">owasp.org</a><i>01</i><i>03</i></span></div></li>
+ <li id="ref-18"><span class="rn">[18]</span><div><span class="rt">Postmortem Culture: Learning from Failure</span> <span class="ra">· Site Reliability Engineering, Google · O'Reilly, 2016</span><span class="ru">postmortem แบบไม่โทษใคร และการเปลี่ยน incident เป็นสิ่งที่ป้องกันไม่ให้เกิดซ้ำ <a href="https://sre.google/sre-book/postmortem-culture/">sre.google</a><i>01</i><i>03</i></span></div></li>
+</ol>
+
+<div class="refgrp">ของจริงใน testover</div>
+<ol class="refs">
+ <li><span class="rn">—</span><div><span class="rt">Workflow ของ repo</span><span class="ru"><code>.github/workflows/smoke.yml</code>, <code>weekend-e2e.yml</code>, <code>cloudflare-pages.yml</code> ซึ่งเป็นที่มาของกล่อง “ใน testover” ทุกขั้น อธิบายใน <a href="ci-pipeline.html">ลำดับขั้นตอน CI</a> และ <a href="release-guide.html">คู่มือ release</a><i>01</i></span></div></li>
+</ol>
+</main>
+<footer><a href="#refs">ที่มาและอ่านเพิ่ม</a> · อ่านต่อ: <a href="ci-pipeline.html">ลำดับขั้นตอน CI ของ testover</a> · <a href="testing-structure.html">โครงสร้างการเทส</a> · <a href="release-guide.html">คู่มือ release</a> · <a href="automation-phases.html">Automation ทีละ Phase</a> · <a href="qa-pipeline-checkpoints.en.html" hreflang="en" lang="en">English</a></footer>
+</div>
+<script>
+(function(){
+var STAGES=[
+ {n:'Plan',t:'Requirement',lv:'must',
+  w:'ทีมตกลงว่าจะทำอะไร ยังไม่มี pipeline รัน แต่ทุกอย่างที่ pipeline จะเทสในภายหลังเริ่มจากตรงนี้',
+  c:['Acceptance criteria ทุกข้อวัดผลได้ ไม่ใช่ “ใช้งานง่าย”','จัดลำดับความเสี่ยง: ฟีเจอร์ไหนพังแล้วเสียหายมาก','ตกลงว่าแต่ละ criteria จะเทสด้วยชั้นไหน (unit / API / E2E / manual)','ระบุ non-functional: ความเร็ว, accessibility, security, browser ที่รองรับ','ร่าง test case ผูกกับ ticket'],
+  g:'Definition of Ready ผ่าน: ทุก story มี acceptance criteria ที่ QA อ่านแล้วเขียนเทสได้',
+  s:'Story มีแค่หัวข้อ, ไม่มีใครรู้ว่า “เสร็จ” แปลว่าอะไร, QA เห็นงานครั้งแรกตอนขึ้น staging',
+  h:'แท็กเทส <code>@smoke</code> / <code>@regression</code> กำหนดว่าเทสไปอยู่รอบไหน ดู <a href="tags.md">tags.md</a>'},
+ {n:'Design',t:'ออกแบบ',lv:'should',
+  w:'ออกแบบ API, หน้าจอ และข้อมูล ส่วนที่ pipeline จะใช้ภายหลังคือสัญญา API และวิธีจำลองระบบภายนอก',
+  c:['รีวิว API contract (OpenAPI) ว่าครอบทุก status code และ error','ออกแบบ test data และวิธี seed / reset','ขอ test id บน element สำคัญ เช่น data-testid','ตกลง environment: test กับ staging ใช้ config อะไร','ระบุ seam ที่ต้อง mock: บริการภายนอก, เวลา, การส่งอีเมล'],
+  g:'มี contract ที่ commit ไว้ใน repo และรู้ว่าจะจำลองบริการภายนอกด้วยอะไร',
+  s:'E2E ต้องหา element ด้วย CSS selector ยาว ๆ, ไม่มี spec API ให้เทียบ, เอาข้อมูลจริงจาก production มาเทส',
+  h:'ลองจำลอง API ด้วย Prism, Playwright HAR replay และ Mockoon ดู <a href="traffic-recording.md">traffic-recording.md</a>'},
+ {n:'Code',t:'Commit / PR',lv:'opt',
+  w:'Dev เขียนโค้ดและ unit test, pre-commit hook รัน lint และ format แล้วเปิด PR',
+  c:['PR มีเทสใหม่หรือแก้เทสตามฟีเจอร์ที่เปลี่ยน','ไม่มี test.skip หรือ test.only หลุดเข้ามา','ถ้าลบเทส มีเหตุผลเขียนไว้ใน PR','เทสใหม่ตรวจผลจริง ไม่ใช่แค่ “ไม่ throw”','เปลี่ยน API แล้วอัปเดต spec ด้วย'],
+  g:'PR template มีช่อง “เทสอะไรไปบ้าง” และ QA เป็น reviewer ของไฟล์เทส',
+  s:'Coverage ลดลงเรื่อย ๆ โดยไม่มีใครเห็น, เทสถูก comment ทิ้ง, PR ใหญ่เกินจะรีวิว',
+  h:'โฟลเดอร์ <code>unit/</code> เก็บ unit test ของ server และ app'},
+ {n:'CI',t:'Build + Test',lv:'must',
+  w:'ทุก push และ PR: ติดตั้ง, lint, unit, build, contract, characterization และ smoke E2E แล้วรวมผลเป็น report',
+  c:['ทุก job สำคัญเป็น required check ใน branch protection','ลำดับ job ถูกก่อนแพง (ดูข้อ 02)','report รวมเปิดดูได้ มี screenshot / trace ตอน fail','จำนวน flaky test และอัตรา retry ไม่เพิ่มขึ้น','ไม่มี continue-on-error ในเทสหลัก','เวลารวมยังอยู่ในงบ เช่นไม่เกิน 10–15 นาที'],
+  g:'Smoke ผ่าน 100%, ไม่มีเทสถูก skip โดยไม่มี ticket, report ถูกสร้างและเก็บไว้',
+  s:'คนกด re-run จนเขียว, merge ทั้งที่แดง, CI ช้าจนคนเลิกรอผล',
+  h:'<code>smoke.yml</code> รัน unit กับ contract ก่อน แล้ว characterization กับ smoke-e2e ขนานกัน job <code>smoke</code> เป็น required check เดียว ดู <a href="ci-pipeline.html">ci-pipeline.html</a>'},
+ {n:'Deploy',t:'Test env',lv:'must',
+  w:'นำ artifact ที่ build แล้วขึ้น environment สำหรับเทส รัน migration และ seed ข้อมูล',
+  c:['version ที่ขึ้นตรงกับ commit ที่ต้องเทส (ดู SHA บนหน้าเว็บหรือ health endpoint)','config และ env var ถูกชุด ไม่ชี้ไป production','migration รันครบ และ seed ข้อมูลเทสแล้ว','smoke หลัง deploy ผ่านบน env จริง','ระบบภายนอกถูก mock หรือชี้ไป sandbox'],
+  g:'Health check ผ่าน, smoke หลัง deploy เขียว, บอกได้ชัดว่ากำลังเทส version ไหน',
+  s:'“บนเครื่องผ่าน แต่บน test ไม่ผ่าน”, เทสชนข้อมูลกันเอง, ไม่รู้ว่าตอนนี้ env อยู่ version ไหน',
+  h:'หน้า <code>/status/</code> แสดง SHA ของเว็บและ SHA ที่ใช้สร้าง report แยกกัน'},
+ {n:'Verify',t:'Staging / UAT',lv:'must',
+  w:'รัน regression เต็มชุด, cross-browser, non-functional และให้คนเทสแบบสำรวจ (exploratory) รวมถึง UAT',
+  c:['Full regression ผ่าน หรือทุกข้อที่แดงถูก triage แล้ว','ทดสอบ browser และอุปกรณ์ที่ตกลงไว้','Performance, accessibility และ security scan (DAST) ไม่ถอยหลัง','Exploratory testing ในส่วนที่เปลี่ยนรอบนี้','UAT sign-off จากเจ้าของงาน','ไม่มีบั๊ก severity 1–2 ค้าง'],
+  g:'Exit criteria ครบ: regression ผ่าน, ไม่มี Sev1/Sev2 เปิดอยู่, sign-off เป็นลายลักษณ์อักษร',
+  s:'Regression นานจนต้องข้าม, report ไม่บอกว่าเทสกับ build ไหน, sign-off ในแชทแล้วหาไม่เจอ',
+  h:'<code>weekend-e2e.yml</code> รัน regression ตามรอบ แล้วเผยแพร่ Allure และ Playwright report ขึ้น Cloudflare Pages'},
+ {n:'Release',t:'Production',lv:'must',
+  w:'โปรโมต artifact เดิมขึ้น production ผ่าน approval gate อาจใช้ canary หรือ feature flag',
+  c:['ตัวที่ขึ้นคือ artifact เดียวกับที่ผ่าน staging','Release note ตรงกับขอบเขตที่เทสจริง','มีแผน rollback และเคยลองแล้ว','Feature flag ตั้งค่าตามแผน','Smoke บน production หลังปล่อยผ่าน'],
+  g:'Approval จากคนที่มีสิทธิ์ และ post-deploy smoke เขียวภายในเวลาที่กำหนด',
+  s:'Build ใหม่ตอนขึ้น prod, ไม่มีใครรู้วิธี rollback, ปล่อยวันศุกร์เย็นโดยไม่มีคนเฝ้า',
+  h:'ขั้นตอนและ checklist อยู่ใน <a href="release-guide.html">release-guide.html</a>'},
+ {n:'Operate',t:'Monitor',lv:'should',
+  w:'เฝ้าระบบจริง: error rate, latency, log, synthetic check และ feedback จากผู้ใช้',
+  c:['Synthetic check วิ่งเส้นทางหลักบน production เป็นระยะ','Error rate และ latency หลังปล่อยไม่สูงกว่าก่อนปล่อย','บั๊กที่เจอบน production ถูกแปลงเป็นเทส regression','ทบทวนเทสที่ไม่เคยจับบั๊กได้ ว่ายังควรเก็บไหม','ส่งสิ่งที่เรียนรู้กลับไปขั้น Plan รอบถัดไป'],
+  g:'ทุก incident มีเทสใหม่ที่กันไม่ให้เกิดซ้ำ',
+  s:'ผู้ใช้เจอบั๊กก่อนทีม, บั๊กเดิมกลับมาซ้ำ, alert ดังจนคนปิดเสียง',
+  h:'Backend บน Render อยู่หลัง Cloudflare และ rate-limit ด้วย header IP ที่เชื่อถือได้ จุดแบบนี้ควรมี synthetic check คอยดู'}
+];
+var ROLE={po:'PO / BA',dev:'Dev',qa:'QA',ops:'DevOps',sec:'Security'};
+function chip(r,own){var s=document.createElement('span');s.className='rc'+(own?' own':'');s.setAttribute('data-r',r);s.textContent=ROLE[r];return s}
+// Per SDLC stage: who does what, and how QA works with them.
+var TEAM=[
+ {r:[['po','เขียน story และ acceptance criteria จัดลำดับความสำคัญ'],['dev','ประเมินว่าทำได้ไหม เสนอทางเลือกที่ง่ายกว่า'],['qa','ถาม “ถ้า…ล่ะ?” หา edge case ระบุความเสี่ยงและชั้นเทส']],
+  x:'จัด <b>Three Amigos</b> (PO + Dev + QA) ก่อนเริ่ม story ใช้ example mapping แปลงกฎเป็นตัวอย่างจริง ตัวอย่างที่ได้คือ test case ชุดแรก'},
+ {r:[['dev','ออกแบบ API, schema, โครงสร้างโค้ด'],['ops','วาง environment, config, secret'],['sec','ทำ threat model ของส่วนที่เปลี่ยน'],['qa','รีวิวว่าเทสได้ไหม ขอ test id, seam สำหรับ mock และแผน test data']],
+  x:'เข้า <b>design review</b> พร้อมคำถามเรื่อง testability ตกลง contract ให้เสร็จก่อนเขียนโค้ด เพื่อให้ Dev กับ QA ทำงานคู่ขนานจาก spec เดียวกันได้'},
+ {r:[['dev','เขียนโค้ด unit test และเปิด PR'],['qa','เขียน E2E / API test คู่ขนานจาก acceptance criteria รีวิวไฟล์เทสใน PR'],['ops','ดูแล pre-commit hook และ template']],
+  x:'<b>Pair</b> กับ Dev ตอนออกแบบ test case ของ logic ยาก QA ไม่ต้องรอให้ Dev เสร็จ เขียนเทสจาก spec ไปพร้อมกัน แล้วรวมใน PR เดียวกัน'},
+ {r:[['ops','ดูแล workflow, runner, cache, secret'],['dev','ใครทำแดงคนนั้นแก้ทันที'],['qa','ดูแลคุณภาพชุดเทส กัก flaky test และอ่าน report'],['sec','ตั้งกฎ security scan และเกณฑ์ที่ยอมรับได้']],
+  x:'ตกลงกติกา <b>“ทำแดงต้องแก้ก่อนงานอื่น”</b> มีบอร์ด flaky test ร่วมกัน QA เป็นคน triage แต่เจ้าของโค้ดเป็นคนแก้'},
+ {r:[['ops','deploy, migration, ดูแล env'],['dev','ช่วยเมื่อ migration หรือ config พัง'],['qa','ยืนยัน version, seed ข้อมูล, รัน smoke']],
+  x:'มี <b>ช่องแจ้ง deploy</b> ที่บอก version และ SHA ทุกครั้ง ตกลงว่าใครเป็นเจ้าของ env เพื่อไม่ให้ deploy ทับกันระหว่างที่ QA กำลังเทส'},
+ {r:[['qa','นำ regression, exploratory, cross-browser'],['po','ทำ UAT และตัดสินว่าบั๊กไหนต้องแก้ก่อนปล่อย'],['dev','แก้บั๊กตามลำดับที่ตกลง'],['sec','รัน DAST หรือ pen test ตามรอบ']],
+  x:'ประชุม <b>bug triage</b> สั้น ๆ (PO + Dev + QA) ตกลง severity ร่วมกัน QA เสนอความเสี่ยงพร้อมหลักฐาน ส่วน PO เป็นคนตัดสินใจทางธุรกิจ'},
+ {r:[['ops','deploy production และพร้อม rollback'],['po','ตัดสิน go / no-go'],['qa','สรุปหลักฐาน: เทสอะไร ผลเป็นยังไง ความเสี่ยงที่เหลือ'],['dev','on-call ช่วงปล่อย']],
+  x:'ประชุม <b>go / no-go</b> โดย QA ส่ง <b>test summary</b> หน้าเดียว เช่นผ่านกี่ % บั๊กค้างอะไรบ้าง ความเสี่ยงที่ยอมรับ QA ให้ข้อมูล แต่ไม่ได้เป็นคนเดียวที่กดปุ่มปล่อย'},
+ {r:[['ops','ดู dashboard, alert, SLO'],['dev','แก้ incident และหาต้นเหตุ'],['qa','แปลง incident เป็นเทส regression ทบทวนว่าทำไมเทสไม่จับ'],['po','จัดลำดับงานแก้ในรอบถัดไป']],
+  x:'เข้า <b>postmortem แบบไม่โทษใคร (blameless)</b> ทุกครั้ง QA ถามว่า “เทสชั้นไหนควรจับได้” แล้วเพิ่มเทสตรงนั้น ไม่ใช่เพิ่ม E2E ไปเรื่อย ๆ'}
+];
+var LV={must:'ต้องตรวจ',should:'ควรเข้าไปดู',opt:'ร่วมรีวิว'};
+var KEY='qa-pipeline.checks',saved={};
+try{saved=JSON.parse(localStorage.getItem(KEY)||'{}')||{}}catch(e){saved={}}
+function save(){try{localStorage.setItem(KEY,JSON.stringify(saved))}catch(e){}}
+var grid=document.getElementById('map-grid'),btns=[],cur=3;
+STAGES.forEach(function(s,k){
+ var b=document.createElement('button');b.type='button';b.className='st';b.setAttribute('aria-pressed','false');
+ b.innerHTML='<span class="n">'+(k<9?'0':'')+(k+1)+' · '+s.n+'</span><b>'+s.t+'</b><span class="lv"><i class="lv-'+s.lv+'"></i>'+LV[s.lv]+'</span><span class="prog"><span></span></span>';
+ b.addEventListener('click',function(){show(k)});grid.appendChild(b);btns.push(b)});
+function count(k){var n=0;STAGES[k].c.forEach(function(_,j){if(saved[k+'.'+j])n++});return n}
+function paintProg(k){btns[k].querySelector('.prog span').style.width=(count(k)/STAGES[k].c.length*100)+'%'}
+function paintCount(){document.getElementById('dC').textContent=count(cur)+'/'+STAGES[cur].c.length}
+function show(k){
+ cur=Math.max(0,Math.min(STAGES.length-1,k));var s=STAGES[cur];
+ btns.forEach(function(b,j){b.setAttribute('aria-pressed',String(j===cur))});
+ document.getElementById('dT').textContent=(cur+1)+'. '+s.n+' · '+s.t;
+ document.getElementById('dW').textContent=s.w;
+ document.getElementById('dG').textContent=s.g;
+ document.getElementById('dS').textContent=s.s;
+ document.getElementById('dH').innerHTML=s.h;
+ var ur=document.getElementById('dR');ur.textContent='';
+ TEAM[cur].r.forEach(function(p){var li=document.createElement('li'),t=document.createElement('span');t.textContent=p[1];li.append(chip(p[0],p[0]==='qa'),t);ur.appendChild(li)});
+ document.getElementById('dX').innerHTML=TEAM[cur].x;
+ var ul=document.getElementById('dL');ul.textContent='';
+ s.c.forEach(function(txt,j){
+  var id='chk-'+cur+'-'+j,key=cur+'.'+j,li=document.createElement('li'),lb=document.createElement('label'),cb=document.createElement('input'),sp=document.createElement('span');
+  cb.type='checkbox';cb.id=id;cb.checked=!!saved[key];lb.htmlFor=id;sp.textContent=txt;
+  cb.addEventListener('change',function(){if(cb.checked)saved[key]=1;else delete saved[key];save();paintCount();paintProg(cur)});
+  lb.append(cb,sp);li.appendChild(lb);ul.appendChild(li)});
+ paintCount();
+ document.getElementById('prev').disabled=cur===0;document.getElementById('next').disabled=cur===STAGES.length-1;
+}
+document.getElementById('prev').addEventListener('click',function(){show(cur-1)});
+document.getElementById('next').addEventListener('click',function(){show(cur+1)});
+document.getElementById('reset').addEventListener('click',function(){saved={};save();STAGES.forEach(function(_,k){paintProg(k)});show(cur)});
+STAGES.forEach(function(_,k){paintProg(k)});show(cur);
+
+/* 02 ordered layers */
+var LAYERS=[
+ {g:'ชั้น 1 · ตอบใน 1–3 นาที'},
+ {t:'Trigger, checkout, ติดตั้ง dependency (มี cache)',d:'เริ่มจาก push / PR และยกเลิกรอบเก่าของ branch เดียวกัน',m:'~1 นาที',o:['ops'],h:['dev']},
+ {t:'Static checks',d:'lint, format, type check, secret scan',m:'~1 นาที',o:['dev'],h:['ops','sec']},
+ {t:'Unit test',d:'logic ล้วน ไม่มี network ไม่มี browser',m:'~1–2 นาที',o:['dev'],h:['qa']},
+ {g:'ชั้น 2 · ตรวจรอยต่อ'},
+ {t:'Build artifact ครั้งเดียว',d:'ติด version / SHA แล้วใช้ตัวนี้ไปจนถึง production',m:'~2 นาที',o:['ops'],h:['dev']},
+ {t:'Contract / integration test',d:'API ตรงกับ spec และต่อ DB หรือ mock ได้ถูก',m:'~2 นาที',o:['dev','qa'],h:[]},
+ {t:'Characterization (เมื่อมีงาน refactor)',d:'ยืนยันว่าพฤติกรรมเดิมไม่เปลี่ยน',m:'~3 นาที',o:['qa','dev'],h:[]},
+ {t:'Security scan',d:'dependency (SCA), SAST, license',m:'~2–3 นาที',o:['sec'],h:['ops','dev']},
+ {g:'ชั้น 3 · บน environment จริง'},
+ {t:'Deploy ขึ้น test env, รัน migration, seed ข้อมูล',d:'health check ต้องผ่านก่อนเทสต่อ',m:'~3 นาที',o:['ops'],h:['qa','dev']},
+ {t:'Smoke E2E',d:'เส้นทางหลักไม่กี่เส้น ต้องผ่าน 100% และเป็น required check',m:'~4–5 นาที',o:['qa'],h:['dev']},
+ {t:'Report รวม',d:'Allure / HTML report พร้อม screenshot และ trace ตอน fail',m:'~1 นาที',o:['qa'],h:['ops']},
+ {g:'ชั้น 4 · ตามรอบ หรือก่อนปล่อย'},
+ {t:'Full regression และ cross-browser',d:'รันกลางคืน สุดสัปดาห์ หรือก่อน release',m:'~20–40 นาที',o:['qa'],h:['dev']},
+ {t:'Non-functional',d:'performance, accessibility, DAST',m:'~10–30 นาที',o:['qa','ops'],h:['sec','dev']},
+ {t:'Approval gate และ UAT sign-off',d:'คนตัดสินจากหลักฐานใน report',m:'ตามคน',o:['po'],h:['qa']},
+ {g:'ชั้น 5 · Production'},
+ {t:'Deploy แบบ canary / blue-green / feature flag',d:'โปรโมต artifact เดิม ไม่ build ใหม่',m:'~5 นาที',o:['ops'],h:['dev','po']},
+ {t:'Post-deploy smoke, monitoring, rollback',d:'แดงเมื่อไหร่ย้อนกลับได้ทันที',m:'ต่อเนื่อง',o:['ops'],h:['qa','dev']}];
+var lanes=document.getElementById('lanes'),ix=0,laneEls=[];
+LAYERS.forEach(function(l){
+ if(l.g){var h=document.createElement('div');h.className='grp';h.textContent=l.g;lanes.appendChild(h);return}
+ ix++;var d=document.createElement('div');d.className='lane';
+ var n=document.createElement('span');n.className='ix';n.textContent=ix;
+ var body=document.createElement('div'),b=document.createElement('b'),sm=document.createElement('small'),rs=document.createElement('div');
+ b.textContent=l.t;sm.textContent=l.d;rs.className='roles';
+ l.o.forEach(function(r){rs.appendChild(chip(r,true))});l.h.forEach(function(r){rs.appendChild(chip(r,false))});
+ body.append(b,sm,rs);
+ var t=document.createElement('span');t.className='t';t.textContent=l.m;
+ d.append(n,body,t);lanes.appendChild(d);laneEls.push({el:d,all:l.o.concat(l.h)})});
+var rf=document.getElementById('roleF');
+['all'].concat(Object.keys(ROLE)).forEach(function(r){
+ var b=document.createElement('button');b.type='button';b.className='opt';b.textContent=r==='all'?'ทุก role':ROLE[r];b.setAttribute('aria-pressed',String(r==='all'));
+ b.addEventListener('click',function(){Array.prototype.forEach.call(rf.children,function(x){x.setAttribute('aria-pressed',String(x===b))});
+  laneEls.forEach(function(x){x.el.classList.toggle('dim',r!=='all'&&x.all.indexOf(r)<0)})});
+ rf.appendChild(b)});
+
+/* 03 collaboration */
+var COLLAB={
+ po:{give:['คำถาม “ถ้า…ล่ะ?” ที่ทำให้ acceptance criteria ชัดก่อนเริ่มงาน','ภาพความเสี่ยงที่เข้าใจได้โดยไม่ต้องรู้เทคนิค','test summary สำหรับตัดสินใจ go / no-go'],
+  need:['acceptance criteria ที่วัดผลได้ พร้อมตัวอย่าง','ลำดับความสำคัญ: ฟีเจอร์ไหนพังไม่ได้เด็ดขาด','คำตัดสินเรื่อง severity และความเสี่ยงที่ยอมรับได้'],
+  rit:['Three Amigos / example mapping ก่อนเริ่ม story','Bug triage ทุก 2–3 วัน','UAT และ go / no-go ก่อนปล่อย'],
+  anti:['QA เห็น story ครั้งแรกตอนขึ้น staging','ถกกันว่า “บั๊กหรือฟีเจอร์” ทุกครั้งที่เจอ','PO ขอปล่อยโดยไม่รู้ว่ามีความเสี่ยงอะไรค้าง'],
+  say:'“ถ้าผู้ใช้กรอกชื่องานยาว 101 ตัว เราอยากให้เกิดอะไรครับ ตัด แจ้ง error หรือยอมให้ผ่าน?”'},
+ dev:{give:['test case และ edge case ตั้งแต่ก่อนเขียนโค้ด','bug report ที่ทำซ้ำได้: ขั้นตอน, version, log, screenshot','รีวิวไฟล์เทสใน PR และดูแลชุด E2E / API ให้เสถียร'],
+  need:['test id บน element และ seam สำหรับ mock','unit test ครอบ logic ก่อนส่งต่อ','แจ้งล่วงหน้าเมื่อเปลี่ยน API หรือพฤติกรรม'],
+  rit:['Pair testing ตอนทำ logic ยาก','Dev-box test: QA ลองบนเครื่อง Dev ก่อน merge 10 นาที','ทบทวน flaky test ทุกสัปดาห์'],
+  anti:['โยนงานข้ามกำแพง: “เสร็จแล้ว ฝาก QA เทสนะ”','นับจำนวนบั๊กเป็นคะแนนแข่งกัน','Dev ไม่เคยรันเทส E2E เอง'],
+  say:'“ผมเขียนเทส edge case ของฟังก์ชันนี้ไว้ 6 เคสจาก AC แล้ว ลองรันก่อน push ได้ไหมครับ จะได้ไม่ต้องรอ CI”'},
+ ops:{give:['รายการ env ที่เทสต้องใช้ และ config ที่ต่างกันในแต่ละ env','ข้อมูลว่าเทสไหนช้าหรือ flaky เพื่อปรับ runner / cache','post-deploy smoke และ synthetic check ที่พร้อมใช้'],
+  need:['env ที่ deploy ได้เองหรือมีคิวชัดเจน','version / SHA ที่ดูได้จากหน้าเว็บหรือ health endpoint','report และ artifact ของเทสถูกเก็บไว้ให้เปิดดูได้'],
+  rit:['ช่องแจ้ง deploy ร่วมกัน','รีวิวไฟล์ workflow เมื่อเพิ่มหรือลด job','ซ้อม rollback อย่างน้อยไตรมาสละครั้ง'],
+  anti:['deploy ทับ env ระหว่างที่ QA เทสอยู่','ไม่มีใครรู้ว่า env ตอนนี้เป็น version ไหน','CI ช้าขึ้นทุกเดือนแต่ไม่มีใครเป็นเจ้าของ'],
+  say:'“Smoke ใช้ 9 นาทีแล้ว เกินงบ 5 นาที ขอแยก browser ไปรันขนานกันได้ไหมครับ ผมส่งรายชื่อเทสที่ช้าที่สุดให้”'},
+ sec:{give:['เคส abuse เช่น input แปลก การยิงซ้ำ การข้ามสิทธิ์','ผลเทสสิทธิ์ (role / permission) ใน regression','ช่วยยืนยันว่าช่องโหว่ที่แก้แล้วไม่กลับมา'],
+  need:['เกณฑ์ว่า finding ระดับไหนต้องหยุด pipeline','ผล threat model ของฟีเจอร์ใหม่','ข้อมูลเทสที่ปลอดภัย ไม่ใช่ข้อมูลจริงของลูกค้า'],
+  rit:['Threat modeling ตอน design','รีวิวผล security scan ร่วมกันใน triage','เพิ่ม security regression หลังแก้ช่องโหว่'],
+  anti:['security scan แดงตลอดจนทุกคนเลิกดู','เจอช่องโหว่ตอน pen test ครั้งเดียวก่อนปล่อย','ใช้ข้อมูล production จริงในเครื่องเทส'],
+  say:'“Rate-limit ใช้ header IP ที่เชื่อถือได้แล้ว ผมเพิ่มเทสยิงซ้ำด้วย header ปลอมเข้าไปใน regression ช่วยดูเกณฑ์ให้หน่อยได้ไหมครับ”'}};
+var cf=document.getElementById('collabF');
+function fill(id,arr){var u=document.getElementById(id);u.textContent='';arr.forEach(function(t){var li=document.createElement('li');li.textContent=t;u.appendChild(li)})}
+function showCollab(r){var c=COLLAB[r];
+ Array.prototype.forEach.call(cf.children,function(x){x.setAttribute('aria-pressed',String(x.getAttribute('data-k')===r))});
+ fill('cGive',c.give);fill('cNeed',c.need);fill('cRit',c.rit);fill('cAnti',c.anti);
+ document.getElementById('cNeedBox').setAttribute('data-r',r);
+ var s=document.getElementById('cSay');s.textContent='';var b=document.createElement('b');b.textContent='QA พูดกับ '+ROLE[r]+' แบบนี้: ';s.append(b,document.createTextNode(c.say))}
+Object.keys(COLLAB).forEach(function(r){var b=document.createElement('button');b.type='button';b.className='opt';b.setAttribute('data-k',r);b.textContent='QA กับ '+ROLE[r];
+ b.addEventListener('click',function(){showCollab(r)});cf.appendChild(b)});
+showCollab('dev');
+var CAD=[
+ {w:'ก่อน sprint',t:'Three Amigos',p:'คุย story ทีละเรื่อง ได้ตัวอย่างที่กลายเป็น test case',r:['po','dev','qa']},
+ {w:'วันแรก',t:'Test plan ร่วม',p:'ตกลงว่าแต่ละ criteria เทสชั้นไหน ใครเขียน',r:['dev','qa']},
+ {w:'ระหว่าง sprint',t:'Pairing + PR review',p:'เขียนเทสคู่ขนาน รีวิวไฟล์เทสใน PR เดียวกัน',r:['dev','qa','ops']},
+ {w:'ทุก 2–3 วัน',t:'Bug triage',p:'ตกลง severity และลำดับการแก้ 15 นาที',r:['po','dev','qa']},
+ {w:'ท้าย sprint',t:'Go / no-go + Retro',p:'ตัดสินจากหลักฐาน แล้วทบทวนว่าเทสชั้นไหนควรจับได้เร็วกว่านี้',r:['po','dev','qa','ops','sec']}];
+var cad=document.getElementById('cadence');
+CAD.forEach(function(c){var d=document.createElement('div');d.className='cad';
+ var w=document.createElement('span');w.className='when';w.textContent=c.w;
+ var b=document.createElement('b');b.textContent=c.t;var p=document.createElement('p');p.textContent=c.p;
+ var rs=document.createElement('div');rs.className='roles';c.r.forEach(function(r){rs.appendChild(chip(r,r==='qa'))});
+ d.append(w,b,p,rs);cad.appendChild(d)});
+
+/* 03 simulator */
+var JOB={static:{t:'Static checks',m:1},unit:{t:'Unit',m:2},build:{t:'Build',m:2},contract:{t:'Contract',m:2},security:{t:'Security scan',m:3},deploy:{t:'Deploy test env',m:3},smoke:{t:'Smoke E2E',m:5},regression:{t:'Full regression',m:30}};
+var GOOD=['static','unit','build','contract','security','deploy','smoke','regression'];
+var BAD=['build','deploy','regression','smoke','contract','unit','static','security'];
+// at: the layer built to catch it. e2e: which E2E layers would also notice it (user-visible symptoms).
+var BUGS=[
+ {t:'พิมพ์ผิด / type ไม่ตรง',at:'static',e2e:[]},
+ {t:'สูตรคำนวณผิด',at:'unit',e2e:['regression']},
+ {t:'API เปลี่ยนชื่อ field',at:'contract',e2e:['smoke','regression']},
+ {t:'library มีช่องโหว่',at:'security',e2e:[]},
+ {t:'ปุ่ม “เพิ่มงาน” กดไม่ได้',at:'smoke',e2e:['smoke','regression']},
+ {t:'บั๊กใน flow ที่ไม่ค่อยใช้',at:'regression',e2e:['regression']}];
+var bug=BUGS[1],timers=[],bugsEl=document.getElementById('bugs');
+BUGS.forEach(function(b){var e=document.createElement('button');e.type='button';e.className='opt';e.textContent=b.t;e.setAttribute('aria-pressed',String(b===bug));
+ e.addEventListener('click',function(){bug=b;Array.prototype.forEach.call(bugsEl.children,function(x){x.setAttribute('aria-pressed',String(x===e))});play()});bugsEl.appendChild(e)});
+function catchAt(order){var tot=0;
+ for(var i=0;i<order.length;i++){var k=order[i];tot+=JOB[k].m;if(k===bug.at||bug.e2e.indexOf(k)>-1)return{i:i,m:tot,by:k}}
+ return{i:order.length-1,m:tot,by:order[order.length-1]}}
+function list(el,order){el.textContent='';return order.map(function(k){
+ var li=document.createElement('li'),a=document.createElement('span'),m=document.createElement('span');
+ a.textContent=JOB[k].t;m.className='m';m.textContent=JOB[k].m+' นาที';li.append(a,m);el.appendChild(li);return li})}
+function play(){
+ timers.forEach(clearTimeout);timers=[];
+ var step=matchMedia('(prefers-reduced-motion: reduce)').matches?0:260;
+ var g=catchAt(GOOD),b=catchAt(BAD),v=document.getElementById('simV');v.textContent='…';
+ [['tGood','cGood',GOOD,g],['tBad','cBad',BAD,b]].forEach(function(x){
+  var lis=list(document.getElementById(x[0]),x[2]),clock=document.getElementById(x[1]),r=x[3];
+  clock.innerHTML='… <small>กำลังรัน</small>';
+  lis.forEach(function(li,i){
+   if(i<=r.i)timers.push(setTimeout(function(){li.className='running'},step*i));
+   timers.push(setTimeout(function(){
+    li.className=i<r.i?'pass':i===r.i?'fail':'skip';
+    if(i===lis.length-1)clock.innerHTML=r.m+' <small>นาที แดงที่ '+JOB[r.by].t+'</small>';
+   },step*(i+1)))})});
+ timers.push(setTimeout(function(){
+  var d=b.m-g.m,msg;
+  if(d>0)msg='เรียงดีรู้ผลเร็วกว่า '+d+' นาที ('+g.m+' กับ '+b.m+' นาที)'+(b.by!==bug.at?' และแบบเรียงไม่ดีไปแดงที่ '+JOB[b.by].t+' ซึ่งบอกแค่ว่า “มีอะไรพัง” ต้องไล่หาต่อเองว่าพังตรงไหน':'');
+  else if(d===0)msg='บั๊กแบบนี้ต้องรอถึง '+JOB[bug.at].t+' ทั้งสองแบบ จึงควรแยกรอบที่ช้ามากไปรันตามเวลา และให้ smoke ครอบเส้นทางหลักไว้ทุก PR';
+  else msg='แบบเรียงไม่ดีเจอเร็วกว่าเพราะบังเอิญรันชั้นนั้นก่อน แต่บั๊กชนิดอื่นจะช้ากว่าทั้งหมด ลองเลือกชนิดอื่นดู';
+  v.textContent=msg},step*(GOOD.length+1)));
+}
+document.getElementById('replay').addEventListener('click',play);
+play();
+
+var tb=document.getElementById('theme'),r=document.documentElement;
+try{var sv=localStorage.getItem('docs.theme');if(sv)r.setAttribute('data-theme',sv)}catch(e){}
+tb.addEventListener('click',function(){var c=r.getAttribute('data-theme');var dark=c?c==='dark':matchMedia('(prefers-color-scheme: dark)').matches;
+var n=dark?'light':'dark';r.setAttribute('data-theme',n);try{localStorage.setItem('docs.theme',n)}catch(e){}});
+})();
+</script>
+</body>
+</html>
